@@ -244,7 +244,30 @@ npx drizzle-kit push     # 推送 Schema 到 Neon
 | Anthropic | `@anthropic-ai/sdk`（使用 `fetch`） | ⚠️ 需在 `wrangler pages dev` 验证 |
 | DeepSeek | 直接用 `fetch` 调 OpenAI 兼容端点 | ✅ |
 
-**验证**：写简单测试脚本或用 `console.log`，确认三个 Provider 都能返回流式响应。
+**`models` 构造参数 — OpenAI 格式复用的关键设计**：
+
+接入 OpenAI 兼容的国内模型（千问、GLM、Kimi 等）时，复用 `OpenAIProvider` 但需要覆盖模型列表。通过 constructor 注入 `models` 参数实现：
+
+```ts
+// factory.ts 中接入千问
+case 'qwen':
+  return new OpenAIProvider({
+    apiKey: config.qwenApiKey,
+    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    models: [                              // 千问自己的模型白名单
+      { id: 'qwen-max', name: '千问 Max', supportsTools: true },
+      { id: 'qwen-plus', name: '千问 Plus', supportsTools: true },
+    ],
+  })
+```
+
+接入新模型只需三个构造参数：`baseURL`（往哪发请求）、`apiKey`（鉴权）、`models`（前端白名单）。不写新文件。
+
+**环境变量方案补充**：如果不想安装 `@types/node`，可以在 `.env` 中使用 `NUXT_` 前缀（如 `NUXT_DATABASE_URL`），`nuxt.config.ts` 的 `runtimeConfig` 中用空字符串作为默认值，Nitro 会自动映射。详见 [Provider 实现记录](./2026-06-01-provider-implementation.md)。
+
+> 📖 **深层架构理解**：[Provider 实现记录](./2026-06-01-provider-implementation.md) 覆盖了三层架构设计、`models()` 精选白名单的取舍逻辑、SSE 字节流手动解析的完整流程，以及两个实际踩坑记录。建议 Phase 1.2 写完 Provider 代码后阅读。
+
+**验证**：写一个测试端点（如 `server/api/test-llm.get.ts`），用 `createLLMProvider()` 获取实例 → `provider.chat()` 拿到流 → `reader.read()` 收集 token，确认终端看到完整 AI 回复。
 
 ---
 

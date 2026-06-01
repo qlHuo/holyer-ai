@@ -1,10 +1,25 @@
-import { db } from '~~/server/db'
-import { conversations } from '~~/server/db/schema'
-import { count } from 'drizzle-orm'
+import { createLLMProvider } from '~~/server/service/llm/factory';
 
 export default defineEventHandler(async () => {
-  const res = await db.select().from(conversations)
-  console.log('Conversations count:', res)
-  const result = await db.select({ count: count() }).from(conversations)
-  return { ok: true, conversationsCount: result?.[0]?.count, data: res }
+  const provider = createLLMProvider('deepseek')
+
+  const stream = await provider.chat(
+    [{ role: 'user', content: '用一句话介绍你自己，帮我规划一下AI 学习路线' }],
+    { model: 'deepseek-v4-flash' }
+  )
+
+  // 收集所有 token 拼接成完整文本
+  const reader = stream.getReader()
+  let result = ''
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    result += value
+  }
+
+  return { ok: true, reply: result }
+
+  // 获取模型列表
+  // const models = await provider.models()
+  // return { ok: true, models }
 })

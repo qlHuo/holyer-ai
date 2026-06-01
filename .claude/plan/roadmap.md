@@ -10,8 +10,8 @@
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 1.1 | 项目初始化 | Nuxt 4 + Nuxt UI v4 + Drizzle ORM（Wrangler 部署时再配） | ⬜ |
-| 1.2 | LLM Provider 层 | types → factory → openai / anthropic / deepseek（详见 ADR-008、ADR-009） | ⬜ |
+| 1.1 | 项目初始化 | Nuxt 4 + Nuxt UI v4 + Drizzle ORM（Wrangler 部署时再配） | ✅ |
+| 1.2 | LLM Provider 层 | types → factory → openai / anthropic / deepseek（详见 ADR-008、ADR-009） | ✅ |
 | 1.3 | SSE 工具 | 带心跳的流式响应工具函数（详见流式架构讨论） | ⬜ |
 | 1.4 | `/api/chat` 端点 | 多模型流式对话 API | ⬜ |
 | 1.5 | Chat UI | Nuxt UI v4 Chat 组件集成 | ⬜ |

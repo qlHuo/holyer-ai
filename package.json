@@ -11,12 +11,14 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@iconify-json/lucide": "^1.2.108",
     "@iconify-json/simple-icons": "^1.2.83",
     "@neondatabase/serverless": "^1.1.0",
     "@nuxt/ui": "^4.7.1",
     "drizzle-orm": "^0.45.2",
     "nuxt": "^4.4.6",
+    "openai": "^6.39.1",
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {

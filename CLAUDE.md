@@ -91,5 +91,7 @@ npx nuxi typecheck              # TypeScript 类型检查
 | @docs/dev-log/2026-05-31-discussion.md | LangChain.js 集成评估 + Cloudflare 部署方案 |
 | @docs/dev-log/2026-05-31-init.md | .claude/ 配置记录 + 权限设计经验 |
 | @docs/dev-log/2026-05-31-streaming-architecture.md | **流式架构深层讨论** — 四段流式模型、为什么后端不可或缺、三个落地场景验证 |
+| @docs/dev-log/2026-06-01-provider-implementation.md | **Provider 层实现记录** — 三层架构、`models()` 精选白名单、SSE 解析、OpenAI 格式复用公式 |
+| @docs/dev-log/2026-06-02-type-safety-review.md | **Provider 类型安全审查** — `as` 断言 vs `switch` 穷尽性检查、tool 消息跨 Provider 映射表 |
 | @docs/decisions/008-vercel-ai-sdk.md | **ADR-008** — Vercel AI SDK 不集成，自建 Provider 抽象层 |
 | @docs/decisions/009-model-compatibility.md | **ADR-009** — 国内模型 API 兼容性调研与统一策略 |

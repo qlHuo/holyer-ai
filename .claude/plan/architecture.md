@@ -178,6 +178,8 @@ interface ChatOptions {
 **流式统一**：所有 Provider 都适配为 `ReadableStream<string>`，由 SSE 工具函数统一发送。
 
 > 📋 **相关决策**：[ADR-008 不集成 Vercel AI SDK](../../docs/decisions/008-vercel-ai-sdk.md) · [ADR-009 国内模型兼容性](../../docs/decisions/009-model-compatibility.md) — 国内模型（千问、GLM、Kimi 等）几乎全部兼容 OpenAI 格式，复用同一个适配器即可。
+> 📖 **实现记录**：[Provider 实现记录](../../docs/dev-log/2026-06-01-provider-implementation.md) — 三层架构详解、`models()` 精选白名单设计、SSE 字节流解析、OpenAI 格式复用公式（`baseURL + apiKey + models`）。
+> 🔍 **审查记录**：[Provider 类型安全审查](../../docs/dev-log/2026-06-02-type-safety-review.md) — `as` 断言风险分析、`switch` 穷尽性检查模式、tool 消息跨 Provider 映射表。
 
 ### 3.2 Agent Runtime
 
