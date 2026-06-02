@@ -1,0 +1,27 @@
+{
+  // 禁用默认格式化，统一由 ESLint 负责
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+  // ESLint 校验文件类型
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "vue",
+    "html",
+    "markdown",
+    "css",
+    "json"
+  ],
+  // 文件图标和语言模式
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  // TypeScript / Vue 类型检查
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

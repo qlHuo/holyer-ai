@@ -115,6 +115,7 @@ Message role            OpenAI API               Anthropic API           DeepSee
 ## 相关文档
 
 - [2026-06-01 Provider 实现记录](./2026-06-01-provider-implementation.md) — 初次实现的设计决策
+- [2026-06-02 代码规范配置](./2026-06-02-code-standards-setup.md) — ESLint 统一管理质量与风格，`_this` 别名的 lint 处理
 - [ADR-009 国内模型兼容性](../decisions/009-model-compatibility.md) — Anthropic vs OpenAI 格式差异根源
 - [架构设计](../../.claude/plan/architecture.md) — 3.1 LLM Provider 抽象层
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 2 Agent Runtime 依赖

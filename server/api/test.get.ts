@@ -1,4 +1,4 @@
-import { createLLMProvider } from '~~/server/service/llm/factory';
+import { createLLMProvider } from '~~/server/service/llm/factory'
 
 export default defineEventHandler(async () => {
   const provider = createLLMProvider('deepseek')

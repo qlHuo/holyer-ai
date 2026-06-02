@@ -8,10 +8,10 @@
  * - toolCallId: 如果消息是工具调用的结果，记录调用 ID 以便关联
 */
 export interface Message {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string;
-  toolCalls?: ToolCall[];
-  toolCallId?: string;
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content: string
+  toolCalls?: ToolCall[]
+  toolCallId?: string
 }
 
 /**
@@ -21,11 +21,10 @@ export interface Message {
  * - parameters: 工具所需的参数结构，LLM 需要根据这个结构构造调用参数
 */
 export interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: object;
+  name: string
+  description: string
+  parameters: object
 }
-
 
 /**
  * 工具调用接口，LLM 发起的一次工具调用，包括调用 ID、工具名称和参数
@@ -34,9 +33,9 @@ export interface ToolDefinition {
  * - arguments: 调用该工具所需的参数，LLM 需要根据工具定义构造这个参数字符串
 */
 export interface ToolCall {
-  id: string;
-  name: string;
-  arguments: string;
+  id: string
+  name: string
+  arguments: string
 }
 
 /**
@@ -48,9 +47,9 @@ export interface ToolCall {
  * - systemPrompt: 系统提示词，用于指导 LLM 的行为和回答风格
 */
 export interface ChatOptions {
-  model: string;
-  temperature?: number;
-  maxTokens?: number;
-  tools?: ToolDefinition[];
-  systemPrompt?: string;
+  model: string
+  temperature?: number
+  maxTokens?: number
+  tools?: ToolDefinition[]
+  systemPrompt?: string
 }

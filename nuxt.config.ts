@@ -9,13 +9,42 @@ export default defineNuxtConfig({
     enabled: true
   },
 
+  css: ['~/assets/css/main.css'],
+
   // 声明服务端环境变量
   // 私有变量（仅服务端可访问，不会暴露给前端）
   runtimeConfig: {
     databaseUrl: '',
     openaiApiKey: '',
     anthropicApiKey: '',
-    deepseekApiKey: '',
+    deepseekApiKey: ''
+  },
+
+  routeRules: {
+    '/': { prerender: true }
+  },
+
+  compatibilityDate: '2025-01-15',
+
+  eslint: {
+    config: {
+      stylistic: {
+        commaDangle: 'never',
+        braceStyle: '1tbs',
+        semi: false,
+        quotes: 'single',
+        indent: 2,
+        arrowParens: false,
+        quoteProps: 'consistent-as-needed',
+        blockSpacing: true
+      },
+      formatters: {
+        css: true,
+        html: true,
+        // Markdown 默认关闭——Prettier 不理解 MDC 语法且会破坏表格排版
+        markdown: false
+      }
+    }
   },
 
   // nitro: {
@@ -34,23 +63,6 @@ export default defineNuxtConfig({
 
   // 禁用 Google Fonts 远程拉取（国内网络不通），使用本地字体回退
   fonts: {
-    provider: 'local',
-  },
-
-  css: ['~/assets/css/main.css'],
-
-  routeRules: {
-    '/': { prerender: true }
-  },
-
-  compatibilityDate: '2025-01-15',
-
-  eslint: {
-    config: {
-      stylistic: {
-        commaDangle: 'never',
-        braceStyle: '1tbs'
-      }
-    }
+    provider: 'local'
   }
 })
