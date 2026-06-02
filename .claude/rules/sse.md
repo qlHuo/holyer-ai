@@ -27,7 +27,7 @@ event.node.req.on('close', () => clearInterval(heartbeat))
 
 ```
 Cache-Control: no-cache
-Content-Type: text/event-stream
+Content-Type: text/event-stream; charset=utf-8
 Connection: keep-alive
 ```
 

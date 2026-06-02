@@ -368,4 +368,5 @@ RAG 管道 (Phase 4)        →      向量化存储缺陷/任务描述
 - [2026-05-31 项目初始化指南](2026-05-31-scaffold-guide.md) — 分步操作手册
 - [ADR-008: Vercel AI SDK 不集成决策](../decisions/008-vercel-ai-sdk.md)
 - [ADR-009: 国内模型 API 兼容性调研](../decisions/009-model-compatibility.md)
+- [2026-06-03 SSE 工具实现](./2026-06-03-sse-implementation.md) — 四段流式模型的实际代码落地
 - [架构设计](../../.claude/plan/architecture.md) — 完整架构图

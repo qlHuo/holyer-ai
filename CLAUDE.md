@@ -96,6 +96,7 @@ npx nuxi typecheck              # TypeScript 类型检查
 | @docs/dev-log/2026-06-02-provider-review-round2.md | **Provider 第二轮审查** — 构造参数一致性、`\|\|` vs `??` 空值陷阱、system prompt 统一 |
 | @docs/dev-log/2026-06-02-code-standards-setup.md | **代码规范配置指南** — ESLint 统一管理质量与风格、替代 Prettier、VS Code 集成 |
 | @docs/dev-log/2026-06-02-cicd-setup.md | **CI/CD 初始配置** — Action 版本修正、Matrix 策略、首次拦截（runtimeConfig 类型安全）与扩展方向 |
+| @docs/dev-log/2026-06-03-sse-implementation.md | **SSE 工具与 /api/chat 实现** — 两层 ReadableStream 包装、心跳机制、双环境兼容、调试方法 |
 | @docs/decisions/008-vercel-ai-sdk.md | **ADR-008** — Vercel AI SDK 不集成，自建 Provider 抽象层 |
 | @docs/decisions/009-model-compatibility.md | **ADR-009** — 国内模型 API 兼容性调研与统一策略 |
 | @docs/decisions/010-eslint-over-prettier.md | **ADR-010** — ESLint stylistic rules 替代 Prettier |
