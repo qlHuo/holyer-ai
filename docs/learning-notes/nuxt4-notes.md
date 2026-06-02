@@ -17,6 +17,7 @@ v4:  app/pages/ app/components/ app/composables/ server/
 - **SSE 原生支持**：`sendStream()` 返回 `ReadableStream`
 - **中间件**：`server/middleware/auth.ts` 全局鉴权
 - **运行时配置**：`useRuntimeConfig()` 读取环境变量
+  - ⚠️ **类型安全规则**：`runtimeConfig` 中未声明的 key 推断为 `unknown`，不是 `string | undefined`。只要代码中访问了 `config.xxx`，就必须在 `nuxt.config.ts` 的 `runtimeConfig` 中声明 `xxx`，否则 typecheck 会报 `Type 'unknown' is not assignable to type 'string | undefined'`
 
 ## Nuxt UI v4 Chat 组件套件
 

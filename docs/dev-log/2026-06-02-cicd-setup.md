@@ -128,8 +128,50 @@ typecheck             typecheck                 typecheck
 - **Matrix 的价值在于一维扩展**：当前 `node: [22]` 只有一个值看不出威力，但理解了"单值变数组 = 自动 N 倍并行 job"，就不会觉得它多余
 - **占位 CI > 没有 CI**：即使现在用处不大，保留 CI 文件意味着通道畅通——哪天要加测试、要限制 PR，改一行 YAML 就行，不用从头折腾
 
+## 6. 首次 CI 拦截：runtimeConfig 类型安全
+
+CI 通道跑通后首次成功拦截了一个真实 bug——`pnpm run typecheck` 报错：
+
+```
+Error: server/service/llm/factory.ts(33,9): error TS2322:
+  Type 'unknown' is not assignable to type 'string | undefined'.
+Error: server/service/llm/factory.ts(50,9): error TS2322:
+  Type 'unknown' is not assignable to type 'string | undefined'.
+```
+
+### 根因
+
+`factory.ts` 访问了 `config.openaiBaseUrl` 和 `config.deepseekBaseUrl`，但这两个 key 在 `nuxt.config.ts` 的 `runtimeConfig` 中**没有声明**。Nuxt 对未声明的 `runtimeConfig` key 推断类型为 `unknown`，而不是 `string | undefined`，与 Provider 构造函数期望的类型不兼容。
+
+### 修复
+
+在 `nuxt.config.ts` 的 `runtimeConfig` 中声明所有访问过的 key：
+
+```ts
+runtimeConfig: {
+  databaseUrl: '',
+  openaiApiKey: '',
+  openaiBaseUrl: '',       // ← 补声明
+  anthropicApiKey: '',
+  anthropicBaseUrl: '',    // ← 补声明
+  deepseekApiKey: '',
+  deepseekBaseUrl: ''      // ← 补声明
+},
+```
+
+### 关键教训
+
+**Nuxt runtimeConfig 的类型推断规则**：`runtimeConfig` 中声明的 key → 类型为 `string`（默认值类型）；未声明的 key → 类型为 `unknown`。访问未声明的 key 不会在运行时报错（Nitro 会从环境变量注入），但 TypeScript 编译时会因类型不匹配而失败。
+
+**规则**：只要 `useRuntimeConfig()` 中访问了一个 key，就必须在 `nuxt.config.ts` 的 `runtimeConfig` 中声明它。这是 Nuxt 的"声明即类型"模式——`runtimeConfig` 不仅是默认值，更是类型定义的唯一真相源。
+
+### 这次拦截证明了 CI 的价值
+
+这个 bug 本地 `npx nuxi typecheck` 也能发现，但实际开发中很少手动跑。CI 在 push 后自动拦截，阻止了一个会在后续 PR 中被发现的类型错误。即使单人开发期，CI 也是个有用的"自动检查员"。
+
 ## 相关文档
 
 - [项目初始化完整指南](2026-05-31-scaffold-guide.md) — 项目脚手架搭建
 - [架构设计](../../.claude/plan/architecture.md) — 部署架构（Cloudflare Pages）
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 进度
+- [Nuxt 4 学习笔记](../../docs/learning-notes/nuxt4-notes.md) — runtimeConfig 类型安全
