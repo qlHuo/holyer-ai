@@ -13,8 +13,8 @@ interface DeepSeekConfig {
 }
 
 const SUPPORTED_MODELS: ModelInfo[] = [
-  { id: 'deepseek-v4-flash', name: 'deepseek-v4-flash', supportsVision: false, supportsTools: false },
-  { id: 'deepseek-v4-pro', name: 'deepseek-v4-pro', supportsVision: false, supportsTools: false }
+  { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash', supportsVision: false, supportsTools: false },
+  { id: 'deepseek-v4-pro', name: 'DeepSeek V4 Pro', supportsVision: false, supportsTools: false }
 ]
 
 export class DeepSeekProvider implements LLMProvider {
@@ -25,24 +25,35 @@ export class DeepSeekProvider implements LLMProvider {
 
   constructor(config: DeepSeekConfig) {
     this.apiKey = config.apiKey
-    this.baseUrl = config.baseUrl ?? 'https://api.deepseek.com'
+    this.baseUrl = config.baseUrl || 'https://api.deepseek.com'
     this.modelsList = config.models || SUPPORTED_MODELS
   }
 
   async chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>> {
-    // 1. 构建请求体
+    // 1. 提取并合并 system prompt
+    const systemFromMessages = messages
+      .filter(m => m.role === 'system')
+      .map(m => m.content)
+      .join('\n\n')
+
+    const systemPrompt = [options.systemPrompt, systemFromMessages]
+      .filter(Boolean)
+      .join('\n\n') || undefined
+
     const requestMessages: Array<{ role: string, content: string }> = []
 
-    if (options.systemPrompt) {
-      requestMessages.push({ role: 'system', content: options.systemPrompt })
+    if (systemPrompt) {
+      requestMessages.push({ role: 'system', content: systemPrompt })
     }
 
     for (const msg of messages) {
       switch (msg.role) {
         case 'user':
         case 'assistant':
-        case 'system':
           requestMessages.push({ role: msg.role, content: msg.content })
+          break
+        case 'system':
+          // 已通过 options.systemPrompt 处理，跳过
           break
         case 'tool':
           requestMessages.push({

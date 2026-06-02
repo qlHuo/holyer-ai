@@ -9,6 +9,7 @@ import type { LLMProvider, ModelInfo } from './types'
 
 interface AnthropicConfig {
   apiKey: string
+  baseUrl?: string
   models?: ModelInfo[] // 可选的模型列表，默认为预定义的 SUPPORTED_MODELS
 }
 
@@ -25,7 +26,8 @@ export class AnthropicProvider implements LLMProvider {
 
   constructor(config: AnthropicConfig) {
     this.client = new Anthropic({
-      apiKey: config.apiKey
+      apiKey: config.apiKey,
+      baseURL: config.baseUrl || 'https://api.anthropic.com' // 默认地址，允许覆盖
     })
     this.modelList = config.models || SUPPORTED_MODELS
   }
@@ -63,7 +65,9 @@ export class AnthropicProvider implements LLMProvider {
       .map(msg => msg.content)
       .join('\n\n')
 
-    const effectiveSystemPrompt = options.systemPrompt || systemFromMessages || undefined
+    const systemPrompt = [options.systemPrompt, systemFromMessages]
+      .filter(Boolean)
+      .join('\n\n') || undefined
 
     const params: Anthropic.MessageCreateParams = {
       model: options.model,
@@ -72,8 +76,8 @@ export class AnthropicProvider implements LLMProvider {
       stream: true
     }
 
-    if (effectiveSystemPrompt) {
-      params.system = effectiveSystemPrompt
+    if (systemPrompt) {
+      params.system = systemPrompt
     }
 
     if (options.temperature !== undefined) {

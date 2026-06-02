@@ -4,7 +4,7 @@ export default defineEventHandler(async () => {
   const provider = createLLMProvider('deepseek')
 
   const stream = await provider.chat(
-    [{ role: 'user', content: '用一句话介绍你自己，帮我规划一下AI 学习路线' }],
+    [{ role: 'user', content: '用一句话介绍你自己' }],
     { model: 'deepseek-v4-flash' }
   )
 

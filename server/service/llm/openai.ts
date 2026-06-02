@@ -32,24 +32,29 @@ export class OpenAIProvider implements LLMProvider {
   constructor(config: OpenAIConfig) {
     this.client = new OpenAI({
       apiKey: config.apiKey,
-      baseURL: config.baseUrl
+      baseURL: config.baseUrl || 'https://api.openai.com/v1'
     })
     this.modelsList = config.models || SUPPORTED_MODELS
   }
 
   async chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>> {
-    // ① 构建请求体 —— systemPrompt 转为 messages 中的 system role
+    // ① 提取并合并 system prompt
+    const systemFromMessages = messages
+      .filter(m => m.role === 'system')
+      .map(m => m.content)
+      .join('\n\n')
+
+    const systemPrompt = [options.systemPrompt, systemFromMessages]
+      .filter(Boolean)
+      .join('\n\n') || undefined
+
+    // ② 构建请求体
     const requestMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = []
 
-    if (options.systemPrompt) {
-      requestMessages.push({ role: 'system', content: options.systemPrompt })
+    if (systemPrompt) {
+      requestMessages.push({ role: 'system', content: systemPrompt })
     }
-    // for (const msg of messages) {
-    //   requestMessages.push({
-    //     role: msg.role as 'user' | 'assistant' | 'system',
-    //     content: msg.content
-    //   });
-    // }
+
     for (const msg of messages) {
       switch (msg.role) {
         case 'user':

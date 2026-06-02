@@ -3,7 +3,7 @@
 // 按 provider ID 返回对应实例 —— 一行配置接入新模型
 // ============================================================
 
-import type { LLMProvider } from './types'
+import type { LLMProvider, ModelInfo } from './types'
 import { OpenAIProvider } from './openai'
 import { AnthropicProvider } from './anthropic'
 import { DeepSeekProvider } from './deepseek'
@@ -20,7 +20,7 @@ import { DeepSeekProvider } from './deepseek'
  *   2. 在下面的 switch 中加一个 case
  *   3. 在 process.env 中配 API Key
  */
-export function createLLMProvider(providerId: string): LLMProvider {
+export function createLLMProvider(providerId: string, models?: ModelInfo[]): LLMProvider {
   const config = useRuntimeConfig()
 
   switch (providerId) {
@@ -30,7 +30,8 @@ export function createLLMProvider(providerId: string): LLMProvider {
       }
       return new OpenAIProvider({
         apiKey: config.openaiApiKey,
-        baseUrl: config.openaiBaseUrl // 可选，默认为官方地址
+        baseUrl: config.openaiBaseUrl,
+        models
       })
 
     case 'anthropic':
@@ -38,7 +39,9 @@ export function createLLMProvider(providerId: string): LLMProvider {
         throw new Error('Anthropic API Key 未配置。请在 .env 中设置 NUXT_ANTHROPIC_API_KEY')
       }
       return new AnthropicProvider({
-        apiKey: config.anthropicApiKey
+        apiKey: config.anthropicApiKey,
+        baseUrl: config.anthropicBaseUrl,
+        models
       })
 
     case 'deepseek':
@@ -47,7 +50,8 @@ export function createLLMProvider(providerId: string): LLMProvider {
       }
       return new DeepSeekProvider({
         apiKey: config.deepseekApiKey,
-        baseUrl: config.deepseekBaseUrl // 可选，默认为官方地址
+        baseUrl: config.deepseekBaseUrl,
+        models
       })
 
     default:

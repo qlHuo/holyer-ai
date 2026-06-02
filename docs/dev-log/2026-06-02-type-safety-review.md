@@ -97,9 +97,11 @@ Message role            OpenAI API               Anthropic API           DeepSee
 
 | 问题 | 优先级 | 说明 |
 |------|:------:|------|
-| 三个 Provider 的 `as` 断言 → `switch` 模式 | 高 | Phase 2 Agent 引入 tool 消息前必须改 |
-| factory 无 API Key 校验 | 中 | 避免把空字符串当 API Key 传给 Provider |
+| ~~三个 Provider 的 `as` 断言 → `switch` 模式~~ | ~~高~~ | ✅ 已修复（2026-06-02 第二轮审查） |
+| ~~factory 无 API Key 校验~~ | ~~中~~ | ✅ 已修复（2026-06-02 第二轮审查） |
 | Anthropic 模型 ID 格式确认 | 低 | 验证 `claude-sonnet-4-6` 是否是有效的 API model ID |
+
+> **2026-06-02 更新**：前两项已在[第二轮审查](./2026-06-02-provider-review-round2.md)中修复。该轮审查还发现并修复了构造参数一致性、空值安全、system prompt 统一等问题。
 
 ---
 
