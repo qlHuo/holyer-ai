@@ -16,8 +16,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     databaseUrl: '',
     openaiApiKey: '',
+    openaiBaseUrl: '',
     anthropicApiKey: '',
-    deepseekApiKey: ''
+    anthropicBaseUrl: '',
+    deepseekApiKey: '',
+    deepseekBaseUrl: ''
   },
 
   routeRules: {
