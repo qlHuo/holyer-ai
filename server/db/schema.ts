@@ -19,6 +19,7 @@ export const messages = pgTable('messages', {
   role: varchar('role', { length: 20 }).notNull(), // 'user' | 'assistant' | 'system'
   content: text('content').notNull(),
   toolCalls: jsonb('tool_calls'), // Agent 工具调用的原始 JSON
+  toolCallId: varchar('tool_call_id', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow().notNull()
 }, table => ({
   conversationIdx: index('idx_messages_conversation_id').on(table.conversationId),
