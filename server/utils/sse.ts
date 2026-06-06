@@ -1,18 +1,32 @@
 /**
  * @Description SSE 流式相应工具
- * 把Provider的ReadableStream<string> 包装成标准SSE格式的Response
- * /api/chat 和 /api/agent/run（Phase 2）共用这一套。
  *
- * 职责：
- * 1. 设置 SSE 响应头
- * 2. 每 30s 发送心跳，防止 Cloudflare 100s 空闲超时
- * 3. token → SSE data 行格式转换
- * 4. 客户端断开时清理资源
+ * 把上游产出的 SSEChunk 事件流包装成功标准 SSE Response
+ * 所有需要 SSE 的端点（api/chat、api/agent/run） 公用
+ *
+ * 职责（纯传输端，不关注业务语义）
+ * 1. SSE 格式转换： SSEChunk -> "data: {json}\n\n"
+ * 2. 每 30s 心跳，防止 Cloudflare 100s 空闲超时
+ * 3. 客户端断开时清理资源
+ * 4. 设置 SSE 所需要的响应头
  */
 
 import type { H3Event } from 'h3'
 
-export function createSSEResponse(sourceStream: ReadableStream<string>, event: H3Event): Response {
+/** SSE 事件的最小结构 */
+export interface SSEChunk {
+  type: string
+  [key: string]: unknown
+}
+
+/**
+ * 创建 SSE Response
+ *
+ * @param sourceStream  上游端点构建的事件流（SSEChunk 逐个入队）
+ * @param event         H3事件对象，用于监听客户端断开
+ * @return              Response(Content-Type: text/event-stream)
+*/
+export function createSSEResponse(sourceStream: ReadableStream<SSEChunk>, event: H3Event): Response {
   let isClosed = false
 
   // Nodejs 环境，监听客户端断开
@@ -43,20 +57,17 @@ export function createSSEResponse(sourceStream: ReadableStream<string>, event: H
           if (done || isClosed) break
 
           // 构造标准的SSE格式：data: <json> \n\n
-          const payload = JSON.stringify({ type: 'text', content: value })
+          const payload = JSON.stringify(value)
           controller.enqueue(encoder.encode(`data: ${payload}\n\n`))
-        }
-
-        // 发送结束信号
-        if (!isClosed) {
-          controller.enqueue(encoder.encode('data: {"type": "done"}\n\n'))
         }
       } catch (error) {
         const errorPayload = JSON.stringify({
           type: 'error',
           content: error instanceof Error ? error.message : 'Unknown error'
         })
-        controller.enqueue(encoder.encode(`data: ${errorPayload}\n\n`))
+        if (!isClosed) {
+          controller.enqueue(encoder.encode(`data: ${errorPayload}\n\n`))
+        }
       } finally {
         clearInterval(heartbeat)
         controller.close()

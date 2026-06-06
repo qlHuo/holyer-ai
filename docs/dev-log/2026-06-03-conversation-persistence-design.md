@@ -249,3 +249,49 @@ function enqueueError(c, content)  → data: {"type":"error","content":"..."}\n\
 - [2026-05-31 项目初始化指南](./2026-05-31-scaffold-guide.md) — Phase 1.6 原始规划
 - [架构设计](../../.claude/plan/architecture.md) — 3.1 LLM Provider 抽象层
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 1 任务清单
+
+---
+
+## 2026-06-05 代码审查修正
+
+> 审查报告详见 [2026-06-05-code-review-conversation.md](./2026-06-05-code-review-conversation.md)，此处记录设计层面需要修正的决策。
+
+### 修正 1：SSE 工具不应被绕过
+
+**原设计**："chat 端点内联 SSE 逻辑，不调用 `createSSEResponse`"
+
+**审查发现**：chat 端点内联的 SSE 代码与 `createSSEResponse` 重复度超过 70%。限制复用的不是工具设计缺陷，而是其输入契约（`ReadableStream<string>`）太窄。
+
+**修正方案**：将 `createSSEResponse` 的输入泛化为 `ReadableStream<SSEChunk>`：
+
+```ts
+interface SSEChunk {
+  type: 'text' | 'meta' | 'tool_call' | 'tool_result' | 'done' | 'error'
+  [key: string]: unknown
+}
+
+function createSSEResponse(sourceStream: ReadableStream<SSEChunk>, event: H3Event): Response
+```
+
+这样 chat 端点只负责"构建事件序列"（meta → text... → done），SSE 工具负责"格式转换 + 心跳 + 响应头"。Phase 2 Agent 端点直接复用，零改动。
+
+### 修正 2：contentBuffer 发送 bug
+
+**原设计的代码结构**：
+
+```ts
+contentBuffer += value
+enqueueText(controller, contentBuffer)  // ❌ 发送累积值
+```
+
+Provider 输出是 Delta 模式（每次新 token），但 `enqueueText` 发送的是累积后的全量文本。客户端会收到重复内容。
+
+**修正**：`enqueueText(controller, value)` — 只发增量。`contentBuffer` 仅用于流结束后一次性写库。
+
+### 修正 3：缺少 Service 层
+
+**原设计**："四个辅助函数 + chat 端点自己掌控 ReadableStream"
+
+**审查发现**：架构文档明确是三层模式（API → Service → DB），但对话代码全部挤在 API 路由里。CRUD 端点可以接受，但 chat 端点已有 6 处 DB 操作，到 Phase 2 Agent 引入 tool 消息循环后会失控。
+
+**修正方案**：新增 `server/service/conversation/` 目录，提取 DB 操作到 Service 层。详见 [2026-06-05-code-review-conversation.md](./2026-06-05-code-review-conversation.md)。
