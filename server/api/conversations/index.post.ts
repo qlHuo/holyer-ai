@@ -1,7 +1,7 @@
 /**
  * 新建对话
 */
-import { createConversation } from '~~/server/service/conversation/mutations'
+import { createConversation } from '~~/server/service/conversation'
 import type { ConversationDetail } from '~~/shared/types/conversation'
 
 export default defineEventHandler(async (event): Promise<ConversationDetail> => {

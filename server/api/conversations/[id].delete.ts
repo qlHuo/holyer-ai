@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const deleted = deleteConversation(id)
+  const deleted = await deleteConversation(id)
   if (!deleted) {
     throw createError({
       statusCode: 404,

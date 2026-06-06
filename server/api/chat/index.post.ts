@@ -7,7 +7,7 @@
  * 3. 调用LLM
  * 4. 构建 SSEChunk 事件流，交给createSSEResponse工具处理
 */
-import { addMessages, getHistory, getOrCreateConversation } from '~~/server/service/conversation'
+import { addMessages, getOrCreateConversation } from '~~/server/service/conversation'
 import { createLLMProvider } from '~~/server/service/llm/factory'
 import type { SSEChunk } from '~~/server/utils/sse'
 import type { ConversationDetail } from '~~/shared/types/conversation'
@@ -49,10 +49,7 @@ export default defineEventHandler(async (event) => {
   await addMessages(conv.id, message)
 
   // 3. 拼装上下文：历史 + 当前用户信息
-  const historyMessages = conv.messages.length > 0
-    ? conv.messages
-    : await getHistory(conv.id)
-  const allMessages = [...historyMessages, ...message]
+  const allMessages = [...conv.messages, ...message]
 
   // 4. 创建 LLM Provider
   const llmProvider = createLLMProvider(provider)
