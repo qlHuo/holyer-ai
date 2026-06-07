@@ -81,3 +81,7 @@ function createSSEStream(event: H3Event) {
 | `langchain` | ❌ | 依赖 Node.js API |
 | `@nuxt/ui` | ✅ | SSR 安全 |
 | `zod` | ✅ | 纯 JS 校验 |
+
+## 相关文档
+
+- [Web Streams API 详解](web-streams-api.md) — ReadableStream、TextEncoder、Response 等核心原语的项目级用法

@@ -168,4 +168,5 @@ string token                      ← 纯文本 token，enqueue 到 ReadableStre
 - [项目初始化完整指南](./2026-05-31-scaffold-guide.md) — Phase 1.2 操作步骤
 - [架构设计](../../.claude/plan/architecture.md) — 3.1 LLM Provider 抽象层
 - [2026-06-02 类型安全审查](./2026-06-02-type-safety-review.md) — `as` 断言 vs `switch` 模式
+- [Web Streams API 详解](../learning-notes/web-streams-api.md) — ReadableStream、TextEncoder、Response 等核心原语的项目级用法
 - [实施路线图](../../.claude/plan/roadmap.md)

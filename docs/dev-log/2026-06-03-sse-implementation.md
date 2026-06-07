@@ -177,3 +177,4 @@ while (true) {
 - [架构设计](../../.claude/plan/architecture.md) — 3.6 SSE 心跳机制
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 1 任务清单
 - [2026-06-03 对话持久化设计](./2026-06-03-conversation-persistence-design.md) — Phase 1.6 三层工作、chat 改造核心约束、**SSE 工具不修改决策**（chat 端点内联 SSE 逻辑，`createSSEResponse` 保持通用）
+- [Web Streams API 详解](../learning-notes/web-streams-api.md) — ReadableStream、TextEncoder、Response 等核心原语的项目级用法

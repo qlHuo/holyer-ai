@@ -102,13 +102,24 @@ export async function addMessages(
   msgs: AddMessageInput[]
 ): Promise<void> {
   for (const msg of msgs) {
-    await db.insert(messages).values({
-      conversationId,
-      role: msg.role,
-      content: msg.content,
-      toolCallId: msg.toolCallId ?? null,
-      toolCalls: msg.toolCalls ?? null
-    })
+    try {
+      await db.insert(messages).values({
+        conversationId,
+        role: msg.role,
+        content: msg.content,
+        toolCallId: msg.toolCallId ?? null,
+        toolCalls: msg.toolCalls ?? null
+      })
+    } catch (error: any) {
+      console.error('[addMessages] INSERT failed:', {
+        cause: error.cause?.message || error.cause,
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        hint: error.hint
+      })
+      throw error
+    }
   }
 
   // 更新对话时间戳

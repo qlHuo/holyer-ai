@@ -80,25 +80,33 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 ## 项目文档
 
-@docs/ — 架构决策记录 (decisions/)、开发日志 (dev-log/)、Claude Code 技巧 (claude-tips/)、学习笔记 (learning-notes/)
+`docs/` — 架构决策记录 (decisions/)、开发日志 (dev-log/)、Claude Code 技巧 (claude-tips/)、学习笔记 (learning-notes/)
 
 ### 开发日志速览
 
 | 文档 | 内容 |
 |------|------|
-| @docs/dev-log/2026-05-31-scaffold-guide.md | **项目初始化完整指南** — 从零搭建的分步操作手册 |
-| @docs/dev-log/2026-05-31-mindset.md | **开发思维转变** — 为什么必须后端优先，从"数据"往"界面"推 |
-| @docs/dev-log/2026-05-31-discussion.md | LangChain.js 集成评估 + Cloudflare 部署方案 |
-| @docs/dev-log/2026-05-31-init.md | .claude/ 配置记录 + 权限设计经验 |
-| @docs/dev-log/2026-05-31-streaming-architecture.md | **流式架构深层讨论** — 四段流式模型、为什么后端不可或缺、三个落地场景验证 |
-| @docs/dev-log/2026-06-01-provider-implementation.md | **Provider 层实现记录** — 三层架构、`models()` 精选白名单、SSE 解析、OpenAI 格式复用公式 |
-| @docs/dev-log/2026-06-02-type-safety-review.md | **Provider 类型安全审查** — `as` 断言 vs `switch` 穷尽性检查、tool 消息跨 Provider 映射表 |
-| @docs/dev-log/2026-06-02-provider-review-round2.md | **Provider 第二轮审查** — 构造参数一致性、`\|\|` vs `??` 空值陷阱、system prompt 统一 |
-| @docs/dev-log/2026-06-02-code-standards-setup.md | **代码规范配置指南** — ESLint 统一管理质量与风格、替代 Prettier、VS Code 集成 |
-| @docs/dev-log/2026-06-02-cicd-setup.md | **CI/CD 初始配置** — Action 版本修正、Matrix 策略、首次拦截（runtimeConfig 类型安全）与扩展方向 |
-| @docs/dev-log/2026-06-03-sse-implementation.md | **SSE 工具与 /api/chat 实现** — 两层 ReadableStream 包装、心跳机制、双环境兼容、调试方法 |
-| @docs/dev-log/2026-06-03-conversation-persistence-design.md | **对话持久化设计** — 三层工作分解、Schema 扩展、chat 改造核心约束、SSE 事件扩展、边界问题、实现级决策（SSE 工具不改，chat 内联 SSE）→ 2026-06-05 审查修正 |
-| @docs/dev-log/2026-06-05-code-review-conversation.md | **对话 CRUD + chat 端点代码审查** — Service 层缺失分析、SSE 工具重复代码量化、contentBuffer 累积发送 bug、N+1 查询、修复方案 |
-| @docs/decisions/008-vercel-ai-sdk.md | **ADR-008** — Vercel AI SDK 不集成，自建 Provider 抽象层 |
-| @docs/decisions/009-model-compatibility.md | **ADR-009** — 国内模型 API 兼容性调研与统一策略 |
-| @docs/decisions/010-eslint-over-prettier.md | **ADR-010** — ESLint stylistic rules 替代 Prettier |
+| [scaffold-guide](docs/dev-log/2026-05-31-scaffold-guide.md) | **项目初始化完整指南** — 从零搭建的分步操作手册 |
+| [mindset](docs/dev-log/2026-05-31-mindset.md) | **开发思维转变** — 为什么必须后端优先，从"数据"往"界面"推 |
+| [discussion](docs/dev-log/2026-05-31-discussion.md) | LangChain.js 集成评估 + Cloudflare 部署方案 |
+| [init](docs/dev-log/2026-05-31-init.md) | .claude/ 配置记录 + 权限设计经验 |
+| [streaming-architecture](docs/dev-log/2026-05-31-streaming-architecture.md) | **流式架构深层讨论** — 四段流式模型、为什么后端不可或缺、三个落地场景验证 |
+| [provider-implementation](docs/dev-log/2026-06-01-provider-implementation.md) | **Provider 层实现记录** — 三层架构、`models()` 精选白名单、SSE 解析、OpenAI 格式复用公式 |
+| [type-safety-review](docs/dev-log/2026-06-02-type-safety-review.md) | **Provider 类型安全审查** — `as` 断言 vs `switch` 穷尽性检查、tool 消息跨 Provider 映射表 |
+| [provider-review-round2](docs/dev-log/2026-06-02-provider-review-round2.md) | **Provider 第二轮审查** — 构造参数一致性、`\|\|` vs `??` 空值陷阱、system prompt 统一 |
+| [code-standards-setup](docs/dev-log/2026-06-02-code-standards-setup.md) | **代码规范配置指南** — ESLint 统一管理质量与风格、替代 Prettier、VS Code 集成 |
+| [cicd-setup](docs/dev-log/2026-06-02-cicd-setup.md) | **CI/CD 初始配置** — Action 版本修正、Matrix 策略、首次拦截（runtimeConfig 类型安全）与扩展方向 |
+| [sse-implementation](docs/dev-log/2026-06-03-sse-implementation.md) | **SSE 工具与 /api/chat 实现** — 两层 ReadableStream 包装、心跳机制、双环境兼容、调试方法 |
+| [conversation-persistence-design](docs/dev-log/2026-06-03-conversation-persistence-design.md) | **对话持久化设计** — 三层工作分解、Schema 扩展、chat 改造核心约束、SSE 事件扩展、边界问题、实现级决策 |
+| [code-review-conversation](docs/dev-log/2026-06-05-code-review-conversation.md) | **对话 CRUD + chat 端点代码审查** — Service 层缺失分析、SSE 工具重复代码量化、contentBuffer 累积发送 bug、N+1 查询、修复方案 |
+| [ADR-008](docs/decisions/008-vercel-ai-sdk.md) | Vercel AI SDK 不集成，自建 Provider 抽象层 |
+| [ADR-009](docs/decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略 |
+| [ADR-010](docs/decisions/010-eslint-over-prettier.md) | ESLint stylistic rules 替代 Prettier |
+
+### 学习笔记
+
+| 文档 | 内容 |
+|------|------|
+| [nuxt4-notes](docs/learning-notes/nuxt4-notes.md) | Nuxt 4 学习笔记 |
+| [cloudflare-edge-notes](docs/learning-notes/cloudflare-edge-notes.md) | Cloudflare Workers Edge Runtime 限制与应对 |
+| [web-streams-api](docs/learning-notes/web-streams-api.md) | **Web Streams API 详解** — ReadableStream、TextEncoder、Response、fetch 等后端核心原语 |

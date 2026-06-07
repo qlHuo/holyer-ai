@@ -74,6 +74,7 @@ export default defineEventHandler(async (event) => {
 
         while (true) {
           const { done, value } = await reader.read()
+          console.log('done, value***', done, value)
           if (done) break
 
           contentBuffer += value

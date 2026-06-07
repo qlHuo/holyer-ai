@@ -369,4 +369,5 @@ RAG 管道 (Phase 4)        →      向量化存储缺陷/任务描述
 - [ADR-008: Vercel AI SDK 不集成决策](../decisions/008-vercel-ai-sdk.md)
 - [ADR-009: 国内模型 API 兼容性调研](../decisions/009-model-compatibility.md)
 - [2026-06-03 SSE 工具实现](./2026-06-03-sse-implementation.md) — 四段流式模型的实际代码落地
+- [Web Streams API 详解](../learning-notes/web-streams-api.md) — ReadableStream、TextEncoder、Response 等核心原语的项目级用法
 - [架构设计](../../.claude/plan/architecture.md) — 完整架构图
