@@ -34,6 +34,32 @@ colorMode.preference = 'dark'     // 手动切换
 - Tailwind CSS v4 使用 **CSS 驱动配置**（`@theme` 指令在 `app/assets/css/main.css` 中），不需要 `tailwind.config.ts`（v4 已废弃 JS 配置文件）
 - Nuxt UI v4 组件使用语义化颜色 token（`bg-(--ui-bg)` 等），不硬编码颜色值
 
+## 状态管理 (Pinia)
+
+**Nuxt 4 不自带 Pinia**，必须显式安装：
+
+```bash
+pnpm add pinia @pinia/nuxt
+```
+
+然后在 `nuxt.config.ts` 的 `modules` 中注册：
+
+```ts
+modules: [
+  '@nuxt/eslint',
+  '@nuxt/ui',
+  '@pinia/nuxt'   // ← 必须手动添加
+],
+```
+
+安装后运行 `npx nuxi prepare` 生成类型，`defineStore`、`storeToRefs` 等 API 自动导入，无需手动 import。
+
+### Store 文件规范
+
+- 放在 `app/stores/`，Nuxt 自动导入
+- 使用 Setup Store 语法（`defineStore('name', () => { ... })`）
+- 文件名 `xxx.store.ts`
+
 ## Composable 模式（待创建）
 
 以下 composable 将在开发中逐步创建：

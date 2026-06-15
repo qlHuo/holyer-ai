@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
@@ -7,7 +7,7 @@ useHead({
     { rel: 'icon', href: '/favicon.ico' }
   ],
   htmlAttrs: {
-    lang: 'en'
+    lang: 'zh-CN'
   }
 })
 
@@ -25,5 +25,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <NuxtPage />
+  <UApp>
+    <NuxtPage />
+  </UApp>
 </template>

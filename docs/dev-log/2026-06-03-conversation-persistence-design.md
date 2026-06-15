@@ -249,6 +249,7 @@ function enqueueError(c, content)  → data: {"type":"error","content":"..."}\n\
 - [2026-05-31 项目初始化指南](./2026-05-31-scaffold-guide.md) — Phase 1.6 原始规划
 - [架构设计](../../.claude/plan/architecture.md) — 3.1 LLM Provider 抽象层
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 1 任务清单
+- [前端开发方案](./2026-06-08-frontend-dev-plan.md) — 前端如何消费对话持久化 API
 
 ---
 
