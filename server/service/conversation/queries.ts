@@ -95,9 +95,12 @@ export async function getHistory(conversationId: string): Promise<Message[]> {
  * API 路由拿到 null 后抛 404。
  */
 export async function getConversationDetail(id: string): Promise<ConversationDetail | null> {
-  const conversation = await getConversation(id)
+  // getConversation 和 getHistory 互不依赖，并行查询
+  const [conversation, messageList] = await Promise.all([
+    getConversation(id),
+    getHistory(id)
+  ])
   if (!conversation) return null
-  const messageList = await getHistory(id)
 
   return {
     id: conversation.id,

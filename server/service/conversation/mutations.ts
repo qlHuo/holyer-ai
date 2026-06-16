@@ -36,24 +36,20 @@ export async function createConversation(input: CreateConversationInput): Promis
 /**
  * 删除对话
  *
- * 先查询再删除（区分404和删除成功）
- * 消息由数据库外键 CASCADE 自动删除，不需要手动删除
+ * DELETE...RETURNING 一个往返完成"查是否存在 + 删除"，
+ * 返回删除的 id，空数组表示对话不存在。
+ *
+ * 消息由数据库外键 CASCADE 自动删除，不需要手动删除。
  *
  * 返回 true 表示删除成功，false 表示对话不存在
 */
 export async function deleteConversation(id: string): Promise<boolean> {
-  const [conversation] = await db
-    .select({ id: conversations.id })
-    .from(conversations)
+  const deleted = await db
+    .delete(conversations)
     .where(eq(conversations.id, id))
+    .returning({ id: conversations.id })
 
-  if (conversation) {
-    // 删除对话
-    await db.delete(conversations).where(eq(conversations.id, id))
-    return true
-  }
-
-  return false
+  return deleted.length > 0
 }
 
 /**
@@ -89,10 +85,8 @@ export async function getOrCreateConversation(
 /**
  * 批量添加消息
  *
- * 循环 INSERT Drizzle neon-http 不支持批量插入数据
- * Phase 1 最多插入 2-3 条（用户消息 1-2 条 + assistant 1 条），
- * 循环 IO 不是瓶颈。Phase 2 Agent 引入后如果一轮插入 5+ 条，
- * 再改用 Promise.all 或事务。
+ * 并行 INSERT（消息之间互不依赖）+ 同时更新 updatedAt，
+ * N+1 次 DB 往返压缩为 1 次等待。
  *
  * 注意：toolCallId 用 ?? null 而不是 ?? undefined。
  * Drizzle 中 undefined 语义是"跳过该列"而非"设为 NULL"。
@@ -101,30 +95,32 @@ export async function addMessages(
   conversationId: string,
   msgs: AddMessageInput[]
 ): Promise<void> {
-  for (const msg of msgs) {
-    try {
-      await db.insert(messages).values({
-        conversationId,
-        role: msg.role,
-        content: msg.content,
-        toolCallId: msg.toolCallId ?? null,
-        toolCalls: msg.toolCalls ?? null
-      })
-    } catch (error: any) {
-      console.error('[addMessages] INSERT failed:', {
-        cause: error.cause?.message || error.cause,
-        message: error.message,
-        code: error.code,
-        detail: error.detail,
-        hint: error.hint
-      })
-      throw error
-    }
+  try {
+    await Promise.all([
+      // 并行插入所有消息
+      ...msgs.map(msg =>
+        db.insert(messages).values({
+          conversationId,
+          role: msg.role,
+          content: msg.content,
+          toolCallId: msg.toolCallId ?? null,
+          toolCalls: msg.toolCalls ?? null
+        })
+      ),
+      // 同时更新时间戳
+      db
+        .update(conversations)
+        .set({ updatedAt: new Date() })
+        .where(eq(conversations.id, conversationId))
+    ])
+  } catch (error: any) {
+    console.error('[addMessages] INSERT/UPDATE failed:', {
+      cause: error.cause?.message || error.cause,
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint
+    })
+    throw error
   }
-
-  // 更新对话时间戳
-  await db
-    .update(conversations)
-    .set({ updatedAt: new Date() })
-    .where(eq(conversations.id, conversationId))
 }

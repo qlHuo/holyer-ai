@@ -39,4 +39,4 @@
 ## 代价
 
 - 需要学习 SQL + ORM 概念（Drizzle 降低了这个门槛）
-- 跨云（Cloudflare → Neon）增加网络延迟，但 HTTP/2 多路复用缓解
+- 跨云（Cloudflare → Neon）增加网络延迟，但 HTTP/2 多路复用缓解。**本地开发从中国直连 Neon 延迟更高（200–350ms），见 [性能诊断](../dev-log/2026-06-16-perf-neon-latency.md)**
