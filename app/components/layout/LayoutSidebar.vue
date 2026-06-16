@@ -12,9 +12,6 @@ const emit = defineEmits(['update:modelValue', 'close'])
 const chatStore = useChatStore()
 const toast = useToast()
 
-/** 悬停中对话 ID（用于显示删除按钮） */
-const hoveringId = ref<string | null>(null)
-
 /** 确认删除的对话 ID */
 const deletingId = ref<string | null>(null)
 
@@ -110,28 +107,26 @@ onMounted(() => {
       <!-- 对话列表项 -->
       <div
         v-for="conv in chatStore.conversations"
+        v-else
         :key="conv.id"
         class="group relative mx-2 mt-1 rounded-lg cursor-pointer transition-colors"
         :class="chatStore.currentConvId === conv.id
           ? 'bg-(--ui-primary)/10 text-(--ui-primary)'
           : 'hover:bg-(--ui-bg) text-(--ui-text)'"
         @click="handleSelect(conv.id)"
-        @mouseenter="hoveringId = conv.id"
-        @mouseleave="hoveringId = null"
       >
         <div class="px-3 py-2.5">
           <!-- 标题 + 删除按钮 -->
-          <div class="flex items-center justify-between gap-1">
+          <div class="h-6 flex items-center justify-between gap-1">
             <p class="text-sm font-medium truncate flex-1">
               {{ conv.title }}
             </p>
             <UButton
-              v-show="hoveringId === conv.id"
               icon="i-lucide-trash"
               variant="ghost"
               size="xs"
-              color="neutral"
-              class="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              color="error"
+              class="shrink-0 hidden group-hover:block"
               @click.stop="deletingId = conv.id"
             />
           </div>

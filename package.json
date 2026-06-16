@@ -19,6 +19,8 @@
     "@nuxt/ui": "^4.7.1",
     "@pinia/nuxt": "^0.11.3",
     "drizzle-orm": "^0.45.2",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.2.0",
     "nuxt": "^4.4.6",
     "openai": "^6.39.1",
     "pinia": "^3.0.4",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.15.2",
+    "@types/markdown-it": "^14.1.2",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.4.0",
     "eslint-plugin-format": "^2.0.1",

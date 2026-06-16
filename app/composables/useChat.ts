@@ -1,5 +1,6 @@
 // SSE消费核心代码
 import type { Message } from '#shared/types/provider'
+import type { ConversationDetail } from '#shared/types/conversation'
 
 /**
  * SSE 流式聊天

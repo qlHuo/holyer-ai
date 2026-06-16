@@ -58,7 +58,7 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const data = await $fetch<ConversationDetail>(`/api/conversations/${id}`)
       messages.value = data.messages
-      selectModel.value = data.provider
+      selectProvider.value = data.provider
       selectModel.value = data.model
     } catch (error) {
       console.error('加载对话详情失败：', error)
