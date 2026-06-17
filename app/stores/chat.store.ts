@@ -24,8 +24,8 @@ export const useChatStore = defineStore('chat', () => {
   const streamContent = ref('')
 
   // 模型
-  const selectProvider = ref('deepseek')
-  const selectModel = ref('deepseek-v4-flash')
+  const selectedProvider = ref('deepseek')
+  const selectedModel = ref('deepseek-v4-flash')
 
   // 当前会话信息
   const currentConversation = computed(() =>
@@ -58,8 +58,8 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const data = await $fetch<ConversationDetail>(`/api/conversations/${id}`)
       messages.value = data.messages
-      selectProvider.value = data.provider
-      selectModel.value = data.model
+      selectedProvider.value = data.provider
+      selectedModel.value = data.model
     } catch (error) {
       console.error('加载对话详情失败：', error)
     }
@@ -67,8 +67,8 @@ export const useChatStore = defineStore('chat', () => {
 
   // 创建新对话
   async function createConversation(provider?: string, model?: string) {
-    const p = provider || selectProvider.value
-    const m = model || selectModel.value
+    const p = provider || selectedProvider.value
+    const m = model || selectedModel.value
 
     try {
       const data = await $fetch<ConversationDetail>('/api/conversations', {
@@ -91,8 +91,8 @@ export const useChatStore = defineStore('chat', () => {
       currentConvId.value = data.id
       messages.value = []
       streamContent.value = ''
-      selectProvider.value = p
-      selectModel.value = m
+      selectedProvider.value = p
+      selectedModel.value = m
     } catch (error) {
       console.error('创建对话失败：', error)
     }
@@ -152,8 +152,8 @@ export const useChatStore = defineStore('chat', () => {
       conversations.value.unshift({
         id,
         title: '新对话',
-        model: selectModel.value,
-        provider: selectProvider.value,
+        model: selectedModel.value,
+        provider: selectedProvider.value,
         messageCount: 0,
         lastPreview: null,
         createdAt: new Date().toISOString(),
@@ -172,11 +172,11 @@ export const useChatStore = defineStore('chat', () => {
 
   // -----Provider/Model 选择-----
   function setProvider(providerId: string) {
-    selectProvider.value = providerId
+    selectedProvider.value = providerId
   }
 
   function setModel(modelId: string) {
-    selectModel.value = modelId
+    selectedModel.value = modelId
   }
 
   // 开启新对话（清空currentId 和消息）
@@ -194,8 +194,8 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     isStreaming,
     streamContent,
-    selectProvider,
-    selectModel,
+    selectedProvider,
+    selectedModel,
     currentConversation,
     hasMessages,
     loadConversations,

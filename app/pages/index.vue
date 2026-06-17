@@ -1,8 +1,4 @@
 <script lang='ts' setup>
-import ChatPanel from '~/components/chat/ChatPanel.vue'
-import LayoutHeader from '~/components/layout/LayoutHeader.vue'
-import LayoutSidebar from '~/components/layout/LayoutSidebar.vue'
-
 // 移动端侧边栏
 const sidebarOpen = ref(false)
 

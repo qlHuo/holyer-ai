@@ -52,8 +52,8 @@ export function useChat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: chatStore.selectProvider,
-          model: chatStore.selectModel,
+          provider: chatStore.selectedProvider,
+          model: chatStore.selectedModel,
           message: [userMessage],
           conversationId: chatStore.currentConvId
         }),
