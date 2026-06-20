@@ -11,11 +11,14 @@
  * 4. 设置 SSE 所需要的响应头
  */
 
+import type { SSEEventType } from '~~/shared/types/sse'
+import { SSE_EVENT } from '~~/shared/types/sse'
+
 import type { H3Event } from 'h3'
 
 /** SSE 事件的最小结构 */
 export interface SSEChunk {
-  type: string
+  type: SSEEventType
   [key: string]: unknown
 }
 
@@ -62,7 +65,7 @@ export function createSSEResponse(sourceStream: ReadableStream<SSEChunk>, event:
         }
       } catch (error) {
         const errorPayload = JSON.stringify({
-          type: 'error',
+          type: SSE_EVENT.ERROR,
           content: error instanceof Error ? error.message : 'Unknown error'
         })
         if (!isClosed) {

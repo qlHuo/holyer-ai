@@ -1,6 +1,8 @@
 // SSE消费核心代码
 import type { Message } from '#shared/types/provider'
 import type { ConversationDetail } from '#shared/types/conversation'
+import { extractSSEField } from '~/utils/sse'
+import { SSE_EVENT } from '~~/shared/types/sse'
 
 /**
  * SSE 流式聊天
@@ -93,7 +95,7 @@ export function useChat() {
 
           if (!data) continue
 
-          if (eventType === 'ping') continue
+          if (eventType === SSE_EVENT.PING) continue
 
           try {
             const payload = JSON.parse(data)
@@ -124,27 +126,6 @@ export function useChat() {
   }
 
   /**
-   * 从 SSE 帧中提取指定字段的值
-   *
-   * SSE 帧格式示例：
-   *   event: text
-   *   data: {"type":"text","content":"hello"}
-   *
-   * @param frame 完整的 SSE 帧（可能跨多行）
-   * @param fieldName 字段名，如 'event'、'data'
-   * @returns 字段值，未找到时返回 null
-   */
-  function extractSSEField(frame: string, fieldName: string): string | null {
-    const prefix = `${fieldName}:`
-    for (const line of frame.split('\n')) {
-      if (line.startsWith(prefix)) {
-        return line.slice(prefix.length).trim()
-      }
-    }
-    return null
-  }
-
-  /**
    * 分发 SSE 事件
    *
    * 后端事件类型
@@ -155,20 +136,20 @@ export function useChat() {
   */
   function handleSSEEvent(payload: { type: string, [key: string]: any }) {
     switch (payload.type) {
-      case 'meta':
+      case SSE_EVENT.META:
         // 如果之前没有 conversationId 新对话 后端会返回新的
         if (payload.conversationId && !chatStore.currentConvId) {
           chatStore.setCurrentConvId(payload.conversationId)
         }
         break
 
-      case 'text':
+      case SSE_EVENT.TEXT:
         if (payload.content) {
           chatStore.appendStreamContent(payload.content)
         }
         break
 
-      case 'done':
+      case SSE_EVENT.DONE:
         chatStore.finishStreaming()
         // 流式结束后更新对话列表
         if (payload.conversationId) {
@@ -176,7 +157,7 @@ export function useChat() {
         }
         break
 
-      case 'error':
+      case SSE_EVENT.ERROR:
         error.value = payload.content || '未知错误'
         chatStore.finishStreaming()
         break

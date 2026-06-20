@@ -1,5 +1,5 @@
 {
-  "name": "ai-temp",
+  "name": "holyer-ai",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,7 +25,8 @@
     "openai": "^6.39.1",
     "pinia": "^3.0.4",
     "postgres": "^3.4.9",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.15.2",

@@ -61,7 +61,7 @@ export async function deleteConversation(id: string): Promise<boolean> {
  *   const conv = await getOrCreateConversation(conversationId, { model, provider })
 */
 export async function getOrCreateConversation(
-  conversationId: string | undefined,
+  conversationId: string | undefined | null,
   defaults: { model: string, provider: string }
 ): Promise<ConversationDetail> {
   // 有id,加载已有对话

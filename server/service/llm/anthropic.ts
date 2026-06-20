@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { Message, ChatOptions } from '~~/shared/types/provider'
 import type { LLMProvider, ModelInfo } from './types'
+import { extractSystemPrompt } from '~~/server/utils/system-prompt'
 
 interface AnthropicConfig {
   apiKey: string
@@ -60,14 +61,7 @@ export class AnthropicProvider implements LLMProvider {
     }
 
     // 2. 从 messages 中提取 system prompt（如果调用方通过 messages 传入）
-    const systemFromMessages = messages
-      .filter(msg => msg.role === 'system')
-      .map(msg => msg.content)
-      .join('\n\n')
-
-    const systemPrompt = [options.systemPrompt, systemFromMessages]
-      .filter(Boolean)
-      .join('\n\n') || undefined
+    const systemPrompt = extractSystemPrompt(messages, options.systemPrompt)
 
     const params: Anthropic.MessageCreateParams = {
       model: options.model,

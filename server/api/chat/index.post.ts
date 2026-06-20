@@ -12,9 +12,11 @@ import { createLLMProvider } from '~~/server/service/llm/factory'
 import type { SSEChunk } from '~~/server/utils/sse'
 import type { ConversationDetail } from '~~/shared/types/conversation'
 import { createSSEResponse } from '~~/server/utils/sse'
+import { ChatBodySchema } from './schema'
+import { SSE_EVENT } from '~~/shared/types/sse'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
+  const body = ChatBodySchema.parse(await readBody(event))
   const {
     provider,
     model,
@@ -26,21 +28,13 @@ export default defineEventHandler(async (event) => {
     maxTokens
   } = body
 
-  // 参数校验
-  if (!provider || !model || !message?.length) {
-    throw createError({
-      status: 400,
-      message: '缺少必要参数：provider, model, messages'
-    })
-  }
-
   // 1. 获取/创建对话
   let conv: ConversationDetail
   try {
     conv = await getOrCreateConversation(conversationId, { model, provider })
   } catch (error: any) {
     if (error?.message === 'NOT FOUND') {
-      throw createError({ status: 404, message: '会话不存在' })
+      throw createError({ statusCode: 404, message: '会话不存在' })
     }
     throw error
   }
@@ -58,7 +52,7 @@ export default defineEventHandler(async (event) => {
   const eventStream = new ReadableStream<SSEChunk>({
     async start(controller) {
       // 立即发meta 事件，前端获取conversationId
-      controller.enqueue({ type: 'meta', conversationId: conv.id })
+      controller.enqueue({ type: SSE_EVENT.META, conversationId: conv.id })
 
       try {
         const llmStream = await llmProvider.chat(allMessages, {
@@ -77,7 +71,7 @@ export default defineEventHandler(async (event) => {
           if (done) break
 
           contentBuffer += value
-          controller.enqueue({ type: 'text', content: value })
+          controller.enqueue({ type: SSE_EVENT.TEXT, content: value })
         }
 
         // 流结束，存assistant消息
@@ -88,12 +82,12 @@ export default defineEventHandler(async (event) => {
         }
 
         controller.enqueue({
-          type: 'done',
+          type: SSE_EVENT.DONE,
           conversationId: conv.id
         })
       } catch (error) {
         controller.enqueue({
-          type: 'error',
+          type: SSE_EVENT.ERROR,
           content: error instanceof Error ? error.message : 'LLM调用失败'
         })
       } finally {

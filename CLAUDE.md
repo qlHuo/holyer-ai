@@ -59,7 +59,7 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 ## 当前进度
 
-实施 Phase 1 — 核心基础（任务清单 + 状态见 @.claude/plan/roadmap.md）
+Phase 1 核心基础已完成，当前处于 Phase 1.5 完善阶段（任务清单 + 状态见 @.claude/plan/roadmap.md）
 
 ## 自定义命令
 
@@ -101,6 +101,7 @@ npx nuxi typecheck              # TypeScript 类型检查
 | [code-review-conversation](docs/dev-log/2026-06-05-code-review-conversation.md) | **对话 CRUD + chat 端点代码审查** — Service 层缺失分析、SSE 工具重复代码量化、contentBuffer 累积发送 bug、N+1 查询、修复方案 |
 | [frontend-dev-plan](docs/dev-log/2026-06-08-frontend-dev-plan.md) | **前端开发方案** — 项目现状审计、学习收益最大化策略、三阶段渐进式实施计划、SSE 消费端设计 |
 | [perf-neon-latency](docs/dev-log/2026-06-16-perf-neon-latency.md) | **接口性能诊断** — Neon 延迟与串行查询叠加导致本地卡顿、中国到不同区域的路由实测、并行化方案 |
+| [phase1-review](docs/dev-log/2026-06-18-phase1-review.md) | **Phase 1 全面审查** — 五大类 36 项问题、三层改造方案、工程基础改造记录（2.1–2.4 已完成） |
 | [ADR-008](docs/decisions/008-vercel-ai-sdk.md) | Vercel AI SDK 不集成，自建 Provider 抽象层 |
 | [ADR-009](docs/decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略 |
 | [ADR-010](docs/decisions/010-eslint-over-prettier.md) | ESLint stylistic rules 替代 Prettier |

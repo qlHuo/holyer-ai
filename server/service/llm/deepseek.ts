@@ -5,6 +5,7 @@
 
 import type { Message, ChatOptions } from '~~/shared/types/provider'
 import type { LLMProvider, ModelInfo } from './types'
+import { extractSystemPrompt } from '~~/server/utils/system-prompt'
 
 interface DeepSeekConfig {
   apiKey: string
@@ -31,14 +32,7 @@ export class DeepSeekProvider implements LLMProvider {
 
   async chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>> {
     // 1. 提取并合并 system prompt
-    const systemFromMessages = messages
-      .filter(m => m.role === 'system')
-      .map(m => m.content)
-      .join('\n\n')
-
-    const systemPrompt = [options.systemPrompt, systemFromMessages]
-      .filter(Boolean)
-      .join('\n\n') || undefined
+    const systemPrompt = extractSystemPrompt(messages, options.systemPrompt)
 
     const requestMessages: Array<{ role: string, content: string }> = []
 

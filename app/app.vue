@@ -12,7 +12,7 @@ useHead({
 })
 
 const title = 'Holyer的AI小站'
-const description = '一个基于Nuxt3和Nuxt UI构建的AI工具集合，提供多种实用的AI功能，帮助用户轻松访问和使用AI技术。'
+const description = '一个基于 Nuxt 4 和 Nuxt UI 构建的个人 AI 系统，提供多种实用的AI功能，帮助用户轻松访问和使用AI技术。'
 
 useSeoMeta({
   title,
