@@ -47,7 +47,7 @@ export async function deleteConversation(id: string): Promise<boolean> {
   const deleted = await db
     .delete(conversations)
     .where(eq(conversations.id, id))
-    .returning({ id: conversations.id })
+    .returning()
 
   return deleted.length > 0
 }
