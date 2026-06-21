@@ -15,6 +15,7 @@
     "html",
     "markdown",
     "css",
+    "tailwindcss",
     "json"
   ],
   // 文件图标和语言模式

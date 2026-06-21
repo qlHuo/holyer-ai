@@ -75,6 +75,40 @@ const _this = this
 
 详见 [2026-06-02 类型安全审查](2026-06-02-type-safety-review.md#已验证无问题审查中的误判)。
 
+### 5. `files.associations` 与 `eslint.validate` 的语言 ID 冲突
+
+**问题表现**：CI 报 CSS `format/prettier` 错误，但本地 VS Code 保存时不报错、不自动修复。
+
+**根因**：两行配置互相矛盾——
+
+```json
+// .vscode/settings.json
+"eslint.validate": ["css", ...],          // ← 只认 language ID "css"
+"files.associations": { "*.css": "tailwindcss" }  // ← 把 .css 映射成 "tailwindcss"
+```
+
+执行链路：
+```
+保存 .css 文件
+  → VS Code 按 files.associations 识别语言为 "tailwindcss"
+  → ESLint 在 eslint.validate 中找 "tailwindcss" → 未找到
+  → 跳过该文件（不检查、不修复）
+  → push 到 CI，eslint . 命令行不管语言映射，直接扫 .css
+  → 15 个 format/prettier 错误全暴露
+```
+
+**修复**：在 `eslint.validate` 中补齐被 `files.associations` 重映射的语言 ID：
+
+```json
+"eslint.validate": [
+  "css",
+  "tailwindcss",  // ← 与 files.associations 的 "*.css": "tailwindcss" 对应
+  ...
+]
+```
+
+**通用原则**：每次在 `files.associations` 中新增一个映射，都要检查对应的语言 ID 是否在 `eslint.validate` 中——否则该类文件在编辑器内会被 ESLint 静默跳过。
+
 ---
 
 ## 配置清单
@@ -135,6 +169,7 @@ eslint: {
 - **formatters 是惊喜但 markdown 要关**：CSS 和 HTML 用 ESLint 格式化工作良好；Markdown 表格被 Prettier 破坏（这是 `@nuxt/eslint` 默认关闭它的原因——不是因为不需要，而是因为 Prettier 不懂 MDC）
 - **`files` 过滤是规则分层的关键**：TS 规则必须加 `files: ['**/*.ts', '**/*.tsx', '**/*.vue']`，否则 ESLint 会把它们应用到 `.md` 文件并因缺少 TS parser 而报错
 - **不要一上来就启用类型感知 linting**：`consistent-type-imports` 是好规则，但它强制要求 `parserOptions.project`，会导致 lint 速度下降 3-5 倍。等项目代码量超过 50 个文件时再评估
+- **`files.associations` 会静默破坏 ESLint**：VS Code 按语言 ID 匹配 `eslint.validate`，而 `files.associations` 会改变文件的语言 ID——两者不同步时，该类文件在编辑器内被完全跳过，直到 CI 才暴露
 
 ## 相关文档
 

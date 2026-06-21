@@ -4,7 +4,9 @@
 /* 引入highlight.js 样式 */
 @import 'highlight.js/styles/github.css';
 /* 暗黑模式 */
-.dark { @import 'highlight.js/styles/github-dark.css'; }
+.dark {
+  @import 'highlight.js/styles/github-dark.css';
+}
 
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
@@ -29,22 +31,42 @@
 
 .markdown-body {
   /* 重置：气泡内首个和末个元素去掉多余外边距 */
-  > :first-child { margin-top: 0 !important; }
-  > :last-child  { margin-bottom: 0 !important; }
+  > :first-child {
+    margin-top: 0 !important;
+  }
+  > :last-child {
+    margin-bottom: 0 !important;
+  }
 
   /* ---- 标题 ---- */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     margin-top: 1.25em;
     margin-bottom: 0.5em;
     font-weight: 600;
     line-height: 1.35;
     color: var(--ui-text-highlighted);
   }
-  h1 { font-size: 1.375rem; }
-  h2 { font-size: 1.2rem; }
-  h3 { font-size: 1.075rem; }
-  h4 { font-size: 1rem; }
-  h5, h6 { font-size: 0.925rem; }
+  h1 {
+    font-size: 1.375rem;
+  }
+  h2 {
+    font-size: 1.2rem;
+  }
+  h3 {
+    font-size: 1.075rem;
+  }
+  h4 {
+    font-size: 1rem;
+  }
+  h5,
+  h6 {
+    font-size: 0.925rem;
+  }
 
   /* ---- 段落 ---- */
   p {
@@ -73,7 +95,8 @@
   }
 
   /* ---- 列表 ---- */
-  ul, ol {
+  ul,
+  ol {
     margin-top: 0;
     margin-bottom: 0.75em;
     padding-inline-start: 1.5em;
@@ -81,7 +104,8 @@
   li {
     margin-bottom: 0.25em;
   }
-  li > ul, li > ol {
+  li > ul,
+  li > ol {
     margin-top: 0.25em;
     margin-bottom: 0;
   }
@@ -95,8 +119,12 @@
     border-radius: 0 0.25rem 0.25rem 0;
     color: var(--ui-text-dimmed);
   }
-  blockquote > :first-child { margin-top: 0; }
-  blockquote > :last-child  { margin-bottom: 0; }
+  blockquote > :first-child {
+    margin-top: 0;
+  }
+  blockquote > :last-child {
+    margin-bottom: 0;
+  }
 
   /* ---- 分割线 ---- */
   hr {
@@ -112,7 +140,8 @@
     border-collapse: collapse;
     font-size: 0.875em;
   }
-  th, td {
+  th,
+  td {
     padding: 0.5em 0.75em;
     border: 1px solid var(--ui-border);
     text-align: start;
@@ -168,7 +197,9 @@
   background: transparent;
   color: var(--ui-text-dimmed);
   cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 .code-copy-btn:hover {
   color: var(--ui-text-highlighted);

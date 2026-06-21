@@ -425,7 +425,7 @@ Ctrl+/      → 显示快捷键帮助面板
 
 ## 十、工程基础改造记录（2026-06-20）
 
-> 第一层四项（2.1–2.4）已全部完成改造，进度 ~95%，剩余 2 个小遗漏。
+> 第一层四项（2.1–2.4）已全部完成改造，进度 100%。
 
 ### 完成清单
 
@@ -496,12 +496,12 @@ Ctrl+/      → 显示快捷键帮助面板
 | `app/app.vue` — "Nuxt3" → "Nuxt 4" | ✅ |
 | `package.json#name` — "ai-temp" → "holyer-ai" | ✅ |
 
-### 剩余问题（2 个）
+### 遗留问题（已全部修复）
 
-| # | 位置 | 问题 | 严重度 |
+| # | 位置 | 问题 | 状态 |
 |---|------|------|:--:|
-| ① | `server/utils/sse.ts:67` | catch 分支硬编码 `type: 'error'`，未用 `SSE_EVENT.ERROR`（文件只导入了 type，未导入 const 对象） | 低 |
-| ② | `server/api/chat/index.post.ts:37` | `createError({ status: 404 })` 应改为 `statusCode: 404`（h3 标准属性名，其他端点均用 `statusCode`） | 中 |
+| ① | `server/utils/sse.ts:67` | catch 分支硬编码 `type: 'error'`，未用 `SSE_EVENT.ERROR` | ✅ 已修复 |
+| ② | `server/api/chat/index.post.ts:37` | `createError({ status: 404 })` 应改为 `statusCode: 404` | ✅ 已修复 |
 
 ### 相关文档
 
