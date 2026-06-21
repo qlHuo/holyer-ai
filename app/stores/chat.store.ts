@@ -10,7 +10,8 @@
  */
 
 import type { Message } from '#shared/types/provider'
-import type { ConversationDetail, ConversationListItem } from '#shared/types/conversation'
+import type { ConversationListItem } from '#shared/types/conversation'
+import ConversationApi from '~/api/conversations'
 
 export const useChatStore = defineStore('chat', () => {
   // 会话
@@ -38,7 +39,7 @@ export const useChatStore = defineStore('chat', () => {
   async function loadConversations() {
     listLoading.value = true
     try {
-      const data = await $fetch<ConversationListItem[]>('/api/conversations')
+      const data = await ConversationApi.getList()
       conversations.value = data
     } catch (error) {
       console.error('加载对话列表失败：', error)
@@ -56,7 +57,7 @@ export const useChatStore = defineStore('chat', () => {
     streamContent.value = ''
 
     try {
-      const data = await $fetch<ConversationDetail>(`/api/conversations/${id}`)
+      const data = await ConversationApi.getDetailById(id)
       messages.value = data.messages
       selectedProvider.value = data.provider
       selectedModel.value = data.model
@@ -71,10 +72,7 @@ export const useChatStore = defineStore('chat', () => {
     const m = model || selectedModel.value
 
     try {
-      const data = await $fetch<ConversationDetail>('/api/conversations', {
-        method: 'POST',
-        body: { provider: p, model: m }
-      })
+      const data = await ConversationApi.create({ model: m, provider: p })
 
       conversations.value.unshift({
         id: data.id,
@@ -101,9 +99,7 @@ export const useChatStore = defineStore('chat', () => {
   // 删除对话
   async function deleteConversation(id: string) {
     try {
-      await $fetch(`/api/conversations/${id}`, {
-        method: 'DELETE'
-      })
+      await ConversationApi.deleteById(id)
       conversations.value = conversations.value.filter(c => c.id !== id)
       if (currentConvId.value === id) {
         currentConvId.value = null

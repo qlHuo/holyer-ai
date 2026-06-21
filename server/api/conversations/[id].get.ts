@@ -4,8 +4,10 @@
 import { getConversationDetail } from '~~/server/service/conversation'
 import type { ConversationDetail } from '~~/shared/types/conversation'
 import { z } from 'zod'
+import { successResponse } from '~~/server/utils/response'
+import type { ApiSuccess } from '~~/shared/types/response'
 
-export default defineEventHandler(async (event): Promise<ConversationDetail> => {
+export default defineEventHandler(async (event): Promise<ApiSuccess<ConversationDetail>> => {
   const id = z.string().uuid().parse(getRouterParam(event, 'id'))
 
   // 获取对话详情
@@ -16,5 +18,5 @@ export default defineEventHandler(async (event): Promise<ConversationDetail> => 
       message: '对话不存在'
     })
   }
-  return detail
+  return successResponse(detail)
 })

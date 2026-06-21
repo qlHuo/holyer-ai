@@ -35,10 +35,10 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 1.8 | 死代码清理 | 删除 settings.store.ts（重写）、test.get.ts、修正 package.json/app.vue 文本 | ✅ |
 | 1.9 | 后端参数验证 | 引入 zod，所有 API 端点类型安全校验 | ✅ |
 | 1.10 | 后端错误中间件 | 全局捕获异常，统一返回 JSON（非 HTML） | ✅ |
-| 1.11 | 后端响应格式统一 | 全部 REST 接口统一为 `{ success, data, error }` 包装 | ⬜ |
-| 1.12 | 后端公共抽取 | system-prompt 函数（✅）、Provider 注册表模式、日志中间件 | 🔄 |
-| 1.13 | 前端 API 层 | `app/api/` 统一封装 $fetch，类型自动推断 | ⬜ |
-| 1.14 | Store 拆分 | conversation / message / settings 三 Store 各司其职 | ⬜ |
+| 1.11 | 后端响应格式统一 | 全部 REST 接口统一为 `{ success, data, error }` 包装 | ✅ |
+| 1.12 | 后端公共抽取 | system-prompt 函数（✅）、Provider 注册表模式、日志中间件 | ✅ |
+| 1.13 | 前端 API 层 | `app/api/` 统一封装 $fetch，类型自动推断 | ✅ |
+| 1.14 | Store 拆分 | conversation / message / settings 三 Store 各司其职 | ⏸️ |
 | 1.15 | 前端公共抽取 | SSE 事件枚举化（✅）、extractSSEField（✅）、formatTime/clipboard（⏸️ 推迟） | 🔄 |
 
 ### 第二轮：交互兜底 + 功能补全（P0/P1）

@@ -1,8 +1,9 @@
 // SSE消费核心代码
 import type { Message } from '#shared/types/provider'
-import type { ConversationDetail } from '#shared/types/conversation'
 import { extractSSEField } from '~/utils/sse'
 import { SSE_EVENT } from '~~/shared/types/sse'
+import ConversationApi from '~/api/conversations'
+import ChatApi from '~/api/chat'
 
 /**
  * SSE 流式聊天
@@ -50,17 +51,15 @@ export function useChat() {
 
     try {
       // 发起 sse 请求
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await ChatApi.sendChatMessage(
+        {
           provider: chatStore.selectedProvider,
           model: chatStore.selectedModel,
           message: [userMessage],
           conversationId: chatStore.currentConvId
-        }),
-        signal: abortController.signal
-      })
+        },
+        abortController.signal
+      )
 
       if (!response.ok) {
         throw new Error(`请求失败： ${response.status} ${response.statusText}`)
@@ -170,7 +169,7 @@ export function useChat() {
   // 流式结束后刷新列表中的对话项
   async function refreshConversationInList(id: string) {
     try {
-      const data = await $fetch<ConversationDetail>(`/api/conversations/${id}`)
+      const data = await ConversationApi.getDetailById(id)
       const lastMsg = data.messages[data.messages.length - 1]
       chatStore.updateConversationItem(id, {
         title: data.title,

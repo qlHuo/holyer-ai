@@ -1,5 +1,5 @@
 /**
- * 全局错误处理插件
+ * 全局错误处理插件, 统一错误响应流
  *
  * 通过 Nitro error hook 统一拦截所有 API handler 抛出的错误，
  * 确保始终返回 JSON 格式的错误响应，而非 HTML 错误页。
@@ -8,10 +8,21 @@
  * - ZodError       → 400 + 字段级校验详情
  * - H3Error        → 保持原 statusCode + 统一格式
  * - 未知 Error      → 500 + 通用内部错误消息（生产环境不泄露细节）
+ *
+ *
+ * GET /api/conversations/not-a-uuid
+  → [id].get.ts: z.string().uuid().parse("not-a-uuid")
+  → 抛出 ZodError (未捕获，向上穿透)
+  → Nitro 捕获未处理异常
+  → 触发 error hook
+  → error-handler.ts: handleZodError()
+  → setResponseStatus(400)
+  → send(event, { success: false, error: { code: 'VALIDATION_ERROR', ... } })
  */
 import { ZodError } from 'zod'
 import type { H3Error } from 'h3'
 import { isError, setResponseHeader, setResponseStatus, send } from 'h3'
+import { errorResponse } from '~~/server/utils/response'
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook('error', (error, context) => {
@@ -40,18 +51,17 @@ export default defineNitroPlugin((nitroApp) => {
 */
 function handleZodError(error: ZodError, event: any) {
   setResponseStatus(event, 400)
-
-  send(event, JSON.stringify({
-    success: false,
-    error: {
-      code: 'VALIDATION_ERROR',
-      message: '请求参数校验失败',
-      details: error.issues.map(e => ({
+  const errorRes = JSON.stringify(
+    errorResponse(
+      'VALIDATION_ERROR',
+      '请求参数校验失败',
+      error.issues.map(e => ({
         path: e.path.join('.'),
         message: e.message
-      }))
-    }
-  }))
+      })))
+  )
+  // 统一错误格式
+  send(event, errorRes)
 }
 
 /**
@@ -59,14 +69,12 @@ function handleZodError(error: ZodError, event: any) {
  */
 function handleH3Error(error: H3Error, event: any) {
   setResponseStatus(event, error.statusCode)
+  const errorRes = JSON.stringify(
+    errorResponse(statusToCode(error.statusCode), error.message)
+  )
+  // 统一错误格式
 
-  send(event, JSON.stringify({
-    success: false,
-    error: {
-      code: statusToCode(error.statusCode),
-      message: error.message
-    }
-  }))
+  send(event, errorRes)
 }
 
 /**
@@ -75,17 +83,13 @@ function handleH3Error(error: H3Error, event: any) {
  */
 function handleUnknownError(error: unknown, event: any) {
   setResponseStatus(event, 500)
-
-  send(event, JSON.stringify({
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      // 开发时看完整错误，生产环境不泄露细节
-      message: import.meta.dev
-        ? (error instanceof Error ? error.message : String(error))
-        : '服务器内部错误，请稍后重试'
-    }
-  }))
+  const errorRes = JSON.stringify(
+    errorResponse('INTERNAL_ERROR', import.meta.dev
+      ? (error instanceof Error ? error.message : String(error))
+      : '服务器内部错误，请稍后重试'
+    )
+  )
+  send(event, errorRes)
 }
 
 /** 状态码 → 语义化错误码 */
