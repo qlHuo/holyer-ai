@@ -7,7 +7,7 @@
  * 3. 调用LLM
  * 4. 构建 SSEChunk 事件流，交给createSSEResponse工具处理
 */
-import { addMessages, getOrCreateConversation } from '~~/server/service/conversation'
+import { addMessages, deleteLastAssistantMessage, getOrCreateConversation } from '~~/server/service/conversation'
 import { createLLMProvider } from '~~/server/service/llm/factory'
 import type { SSEChunk } from '~~/server/utils/sse'
 import type { ConversationDetail } from '~~/shared/types/conversation'
@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
     provider,
     model,
     message,
+    regenerate,
     conversationId, // 创建新会话时为空
     tools,
     systemPrompt,
@@ -40,10 +41,23 @@ export default defineEventHandler(async (event) => {
   }
 
   // 2. 保存用户信息（调用LLM之前，宁可多存不丢）
-  await addMessages(conv.id, message)
+  // regenerate 为 true 时用户消息已在 DB 中，不重复写入
+  if (!regenerate) {
+    await addMessages(conv.id, message)
+  }
 
   // 3. 拼装上下文：历史 + 当前用户信息
-  const allMessages = [...conv.messages, ...message]
+  let allMessages: typeof conv.messages
+  if (regenerate) {
+    // 去掉最后一条旧的 assistant 回复，LLM 不应看到它
+    const msgs = [...conv.messages]
+    if (msgs[msgs.length - 1]?.role === 'assistant') {
+      msgs.pop()
+    }
+    allMessages = msgs
+  } else {
+    allMessages = [...conv.messages, ...message]
+  }
 
   // 4. 创建 LLM Provider
   const llmProvider = createLLMProvider(provider)
@@ -76,9 +90,13 @@ export default defineEventHandler(async (event) => {
 
         // 流结束，存assistant消息
         if (contentBuffer) {
-          await addMessages(conv.id, [
-            { role: 'assistant', content: contentBuffer }
-          ])
+          if (regenerate) {
+            // 删除旧 assistant + 插入新 assistant
+            await deleteLastAssistantMessage(conv.id)
+            await addMessages(conv.id, [{ role: 'assistant', content: contentBuffer }])
+          } else {
+            await addMessages(conv.id, [{ role: 'assistant', content: contentBuffer }])
+          }
         }
 
         controller.enqueue({

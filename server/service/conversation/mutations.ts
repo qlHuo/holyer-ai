@@ -5,7 +5,7 @@
 import { db } from '~~/server/db'
 import type { AddMessageInput, ConversationDetail, CreateConversationInput } from './types'
 import { conversations, messages } from '~~/server/db/schema'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 
 /**
  * 创建新会话: 返回完整对象
@@ -122,5 +122,29 @@ export async function addMessages(
       hint: error.hint
     })
     throw error
+  }
+}
+
+/**
+ * 删除对话的最后一条消息，供 regenerate 使用
+ *
+ * 先查出最新消息的 id，再按 id 删除。
+ * 不回查 role 是否为 'assistant' —— 调用方保证只在 regenerate 场景使用。
+ *
+ * 如果对话没有消息（极端情况），静默成功（DELETE 0 行 ≠ 报错）。
+*/
+
+export async function deleteLastAssistantMessage(conversationId: string): Promise<void> {
+  // 1. 找到最新消息
+  const [lastMsg] = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(desc(messages.createdAt))
+    .limit(1)
+
+  // 2. 有则删除
+  if (lastMsg) {
+    await db.delete(messages).where(eq(messages.id, lastMsg.id))
   }
 }

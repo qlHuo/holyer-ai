@@ -10,6 +10,7 @@ export interface ChatRequest {
   provider: string
   model: string
   message: Message[]
+  regenerate?: boolean
   conversationId: string | null
   tools?: object[]
   systemPrompt?: string

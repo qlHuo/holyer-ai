@@ -23,22 +23,41 @@ const showDeleteModal = computed({
 
 /** 新建对话 */
 async function handleCreate() {
-  await chatStore.createConversation()
-  emit('close')
+  try {
+    // 若有空对话则切换到该对话，否则新建
+    const emptyConv = chatStore.conversations.find(conv => conv.messageCount === 0)
+    if (emptyConv) {
+      chatStore.selectConversation(emptyConv.id)
+      emit('close')
+      return
+    }
+    await chatStore.createConversation()
+    emit('close')
+  } catch (error: any) {
+    toast.add({ title: error || '新建对话失败', color: 'error', icon: 'i-lucide-alert-circle' })
+  }
 }
 
 /** 选中对话 */
 function handleSelect(id: string) {
-  chatStore.selectConversation(id)
-  emit('close')
+  try {
+    chatStore.selectConversation(id)
+    emit('close')
+  } catch (error: any) {
+    toast.add({ title: error || '切换对话失败', color: 'error', icon: 'i-lucide-alert-circle' })
+  }
 }
 
 /** 确认删除 */
 async function handleDelete() {
   if (!deletingId.value) return
-  await chatStore.deleteConversation(deletingId.value)
-  deletingId.value = null
-  toast.add({ title: '对话已删除', color: 'success', icon: 'i-lucide-check' })
+  try {
+    await chatStore.deleteConversation(deletingId.value)
+    deletingId.value = null
+    toast.add({ title: '对话已删除', color: 'success', icon: 'i-lucide-check', progress: false })
+  } catch (error: any) {
+    toast.add({ title: error || '删除对话失败', color: 'error', icon: 'i-lucide-alert-circle' })
+  }
 }
 
 /** 格式化时间为相对时间 */
@@ -58,8 +77,13 @@ function formatTime(isoStr: string): string {
 }
 
 // 组件挂载时加载对话列表
-onMounted(() => {
-  chatStore.loadConversations()
+onMounted(async () => {
+  try {
+    await chatStore.loadConversations()
+    toast.add({ title: '加载对话列表成功', color: 'success', icon: 'i-lucide-check' })
+  } catch (error: any) {
+    toast.add({ title: error || '加载对话列表失败', color: 'error', icon: 'i-lucide-alert-circle' })
+  }
 })
 </script>
 

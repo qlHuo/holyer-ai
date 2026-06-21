@@ -1,6 +1,11 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+/* 引入highlight.js 样式 */
+@import 'highlight.js/styles/github.css';
+/* 暗黑模式 */
+.dark { @import 'highlight.js/styles/github-dark.css'; }
+
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
 

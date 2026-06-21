@@ -36,14 +36,12 @@ function handleClick(e: MouseEvent) {
     toast.add({
       title: '已复制到剪贴板',
       color: 'success',
-      icon: 'i-lucide-check',
-      duration: 2000
+      icon: 'i-lucide-check'
     })
   }).catch(() => {
     toast.add({
       title: '复制失败',
-      color: 'error',
-      duration: 2000
+      color: 'error'
     })
   })
 }

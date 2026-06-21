@@ -13,7 +13,6 @@ async function handleSend() {
 
   const content = input.value
   input.value = ''
-
   await sendMessage(content)
 }
 

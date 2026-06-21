@@ -60,67 +60,102 @@ export function useChat() {
         },
         abortController.signal
       )
-
-      if (!response.ok) {
-        throw new Error(`请求失败： ${response.status} ${response.statusText}`)
-      }
-
-      // 6. 读取流
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error(`无法读取响应流`)
-      }
-
-      const decoder = new TextDecoder()
-      let buffer = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        // 解码字节
-        buffer += decoder.decode(value, { stream: true })
-
-        // 按 \n\n 分割 SSE chunk
-        const frames = buffer.split('\n\n')
-        buffer = frames.pop() || ''
-
-        // 处理每一个完整帧
-        for (const frame of frames) {
-          if (!frame.trim()) continue
-
-          // SSE 帧格式： 有可能 event: xxx + data: xxx行
-          const eventType = extractSSEField(frame, 'event')
-          const data = extractSSEField(frame, 'data')
-
-          if (!data) continue
-
-          if (eventType === SSE_EVENT.PING) continue
-
-          try {
-            const payload = JSON.parse(data)
-            handleSSEEvent(payload)
-          } catch (error) {
-            console.error(error)
-          }
-        }
-      }
+      await consumeSSEStream(response)
     } catch (err: any) {
-      // 用户主动中断
-      if (err.name === 'AbortError') {
-        chatStore.finishStreaming()
-      } else {
-        error.value = err.message || '请求失败'
-        chatStore.finishStreaming()
-
-        // 移除空的 assistant 占位消息
-        const lastMsg = chatStore.messages[chatStore.messages.length - 1]
-        if (lastMsg && lastMsg.role === 'assistant' && !lastMsg.content) {
-          chatStore.messages.pop()
-        }
-      }
+      handleStreamError(err)
     } finally {
       isSending.value = false
       abortController = null
+    }
+  }
+
+  /**
+   * 重新生成
+  */
+  async function regenerate() {
+    // 前提：最后一条必须是 assistant
+    const msgs = chatStore.messages
+    const lastMsg = msgs[msgs.length - 1]
+    if (!lastMsg || lastMsg.role !== 'assistant') return
+    if (isSending.value) return
+
+    // 1. 移除旧 assistant（UI 上消失）
+    msgs.pop()
+
+    // 2. 新建空占位
+    chatStore.startStreaming()
+    isSending.value = true
+    error.value = null
+    abortController = new AbortController()
+
+    try {
+      // 3. message: [] — 不传新用户消息，后端从 DB 历史中取
+      const response = await ChatApi.sendChatMessage({
+        provider: chatStore.selectedProvider,
+        model: chatStore.selectedModel,
+        message: [],
+        conversationId: chatStore.currentConvId,
+        regenerate: true
+      }, abortController.signal)
+      await consumeSSEStream(response)
+    } catch (err: any) {
+      handleStreamError(err)
+    } finally {
+      isSending.value = false
+      abortController = null
+    }
+  }
+
+  /**
+   * 读取 SSE Response，解析事件帧并分发到 handleSSEEvent
+   * sendMessage 和 regenerate 共用
+   */
+  async function consumeSSEStream(response: Response) {
+    if (!response.ok) {
+      throw new Error(`请求失败： ${response.status} ${response.statusText}`)
+    }
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法读取响应流')
+    }
+    const decoder = new TextDecoder()
+    let buffer = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const frames = buffer.split('\n\n')
+      buffer = frames.pop() || ''
+      for (const frame of frames) {
+        if (!frame.trim()) continue
+        const eventType = extractSSEField(frame, 'event')
+        const data = extractSSEField(frame, 'data')
+        if (!data) continue
+        if (eventType === SSE_EVENT.PING) continue
+        try {
+          const payload = JSON.parse(data)
+          handleSSEEvent(payload)
+        } catch (error) {
+          console.error(error)
+        }
+      }
+    }
+  }
+
+  /**
+   * 统一的流错误处理：区分 AbortError（用户主动中断）和真实错误
+   */
+  function handleStreamError(err: any) {
+    if (err.name === 'AbortError') {
+      chatStore.finishStreaming()
+    } else {
+      error.value = err.message || '请求失败'
+      chatStore.finishStreaming()
+      // 清除空占位消息
+      const lastMsg = chatStore.messages[chatStore.messages.length - 1]
+      if (lastMsg && lastMsg.role === 'assistant' && !lastMsg.content) {
+        chatStore.messages.pop()
+      }
     }
   }
 
@@ -194,6 +229,7 @@ export function useChat() {
     isSending,
     error,
     sendMessage,
+    regenerate,
     abort
   }
 }

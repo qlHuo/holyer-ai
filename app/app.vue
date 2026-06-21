@@ -22,10 +22,16 @@ useSeoMeta({
   ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
   twitterCard: 'summary_large_image'
 })
+
+const toaster = {
+  position: 'top-center' as const,
+  progress: false,
+  duration: 1000
+}
 </script>
 
 <template>
-  <UApp>
+  <UApp :toaster="toaster">
     <NuxtPage />
   </UApp>
 </template>

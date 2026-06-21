@@ -41,8 +41,6 @@ export const useChatStore = defineStore('chat', () => {
     try {
       const data = await ConversationApi.getList()
       conversations.value = data
-    } catch (error) {
-      console.error('加载对话列表失败：', error)
     } finally {
       listLoading.value = false
     }
@@ -56,14 +54,10 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = []
     streamContent.value = ''
 
-    try {
-      const data = await ConversationApi.getDetailById(id)
-      messages.value = data.messages
-      selectedProvider.value = data.provider
-      selectedModel.value = data.model
-    } catch (error) {
-      console.error('加载对话详情失败：', error)
-    }
+    const data = await ConversationApi.getDetailById(id)
+    messages.value = data.messages
+    selectedProvider.value = data.provider
+    selectedModel.value = data.model
   }
 
   // 创建新对话
@@ -71,42 +65,34 @@ export const useChatStore = defineStore('chat', () => {
     const p = provider || selectedProvider.value
     const m = model || selectedModel.value
 
-    try {
-      const data = await ConversationApi.create({ model: m, provider: p })
+    const data = await ConversationApi.create({ model: m, provider: p })
 
-      conversations.value.unshift({
-        id: data.id,
-        title: data.title,
-        model: data.model,
-        provider: data.provider,
-        messageCount: 0,
-        lastPreview: null,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt
-      })
+    conversations.value.unshift({
+      id: data.id,
+      title: data.title,
+      model: data.model,
+      provider: data.provider,
+      messageCount: 0,
+      lastPreview: null,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt
+    })
 
-      // 切换到新对话
-      currentConvId.value = data.id
-      messages.value = []
-      streamContent.value = ''
-      selectedProvider.value = p
-      selectedModel.value = m
-    } catch (error) {
-      console.error('创建对话失败：', error)
-    }
+    // 切换到新对话
+    currentConvId.value = data.id
+    messages.value = []
+    streamContent.value = ''
+    selectedProvider.value = p
+    selectedModel.value = m
   }
 
   // 删除对话
   async function deleteConversation(id: string) {
-    try {
-      await ConversationApi.deleteById(id)
-      conversations.value = conversations.value.filter(c => c.id !== id)
-      if (currentConvId.value === id) {
-        currentConvId.value = null
-        messages.value = []
-      }
-    } catch (error) {
-      console.error('删除对话失败', error)
+    await ConversationApi.deleteById(id)
+    conversations.value = conversations.value.filter(c => c.id !== id)
+    if (currentConvId.value === id) {
+      currentConvId.value = null
+      messages.value = []
     }
   }
 

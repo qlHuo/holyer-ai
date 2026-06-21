@@ -1,5 +1,7 @@
 <script setup lang="ts">
 const chatStore = useChatStore()
+const { error: chatError } = useChat()
+const toast = useToast()
 
 /** 消息列表容器引用（用于自动滚底） */
 const messagesContainer = ref<HTMLElement | null>(null)
@@ -29,6 +31,17 @@ watch(
   () => chatStore.streamContent,
   () => scrollToBottom()
 )
+
+// 监听流式错误
+watch(chatError, (newError) => {
+  if (newError) {
+    toast.add({
+      title: newError || '流式请求失败',
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  }
+})
 </script>
 
 <template>

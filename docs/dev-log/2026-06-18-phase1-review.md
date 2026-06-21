@@ -322,7 +322,7 @@ Ctrl+/      → 显示快捷键帮助面板
 | `LoadingSkeleton` | 列表加载、消息加载 | 新建 |
 | `EmptyState` | 空对话、空搜索结果 | 整合欢迎页和侧边栏空状态 |
 | `ErrorBanner` | 网络断开、服务异常 | 新建 |
-| `MessageActions` | 复制、重新生成、编辑 | 新建 |
+| `MessageActions` | 复制、重新生成、编辑（重新生成详见[设计文档](2026-06-22-regenerate-design.md)） | 新建 |
 
 ---
 

@@ -22,7 +22,7 @@ defineProps({
 <template>
   <!-- 消息气泡 -->
   <div
-    class="max-w-[75%] rounded-lg px-4 py-2.5 text-sm leading-relaxed"
+    class="max-w-[calc(100%-36px)] rounded-lg px-4 py-2.5 text-sm leading-relaxed"
     :class="role === 'user'
       ? 'bg-(--ui-primary) text-white'
       : 'bg-(--ui-bg-elevated) text-(--ui-text)'"
