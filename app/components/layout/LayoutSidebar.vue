@@ -15,6 +15,9 @@ const toast = useToast()
 /** 确认删除的对话 ID */
 const deletingId = ref<string | null>(null)
 
+/** 列表加载错误（null = 无错误） */
+const loadError = ref<string | null>(null)
+
 /** 删除确认弹窗是否显示 */
 const showDeleteModal = computed({
   get: () => deletingId.value !== null,
@@ -54,7 +57,6 @@ async function handleDelete() {
   try {
     await chatStore.deleteConversation(deletingId.value)
     deletingId.value = null
-    toast.add({ title: '对话已删除', color: 'success', icon: 'i-lucide-check', progress: false })
   } catch (error: any) {
     toast.add({ title: error || '删除对话失败', color: 'error', icon: 'i-lucide-circle-alert' })
   }
@@ -76,13 +78,19 @@ function formatTime(isoStr: string): string {
   return date.toLocaleDateString('zh-CN')
 }
 
-// 组件挂载时加载对话列表
-onMounted(async () => {
+/** 重试加载对话列表 */
+async function retryLoad() {
+  loadError.value = null
   try {
     await chatStore.loadConversations()
   } catch (error: any) {
-    toast.add({ title: error || '加载对话列表失败', color: 'error', icon: 'i-lucide-alert-circle' })
+    loadError.value = error?.message || '加载对话列表失败'
   }
+}
+
+// 组件挂载时加载对话列表
+onMounted(() => {
+  retryLoad()
 })
 </script>
 
@@ -112,6 +120,29 @@ onMounted(async () => {
           name="i-lucide-loader"
           class="w-5 h-5 animate-spin text-(--ui-text-dimmed)"
         />
+      </div>
+
+      <!-- 加载失败 -->
+      <div
+        v-else-if="loadError && chatStore.conversations.length === 0"
+        class="p-6 text-center"
+      >
+        <UIcon
+          name="i-lucide-alert-circle"
+          class="w-8 h-8 mx-auto mb-2 text-(--ui-color-error-400)"
+        />
+        <p class="text-sm text-(--ui-color-error-500) mb-3">
+          {{ loadError }}
+        </p>
+        <UButton
+          size="xs"
+          color="error"
+          variant="outline"
+          icon="i-lucide-refresh-cw"
+          @click="retryLoad"
+        >
+          重试
+        </UButton>
       </div>
 
       <!-- 空状态 -->

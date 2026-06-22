@@ -7,7 +7,7 @@
  * 3. 调用LLM
  * 4. 构建 SSEChunk 事件流，交给createSSEResponse工具处理
 */
-import { addMessages, deleteLastAssistantMessage, getOrCreateConversation } from '~~/server/service/conversation'
+import { addMessages, deleteLastAssistantMessage, getOrCreateConversation, updateConversationById } from '~~/server/service/conversation'
 import { createLLMProvider } from '~~/server/service/llm/factory'
 import type { SSEChunk } from '~~/server/utils/sse'
 import type { ConversationDetail } from '~~/shared/types/conversation'
@@ -40,6 +40,12 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
+  // 首条消息 → 用消息内容作为标题（覆盖「新建对话」时写入的默认标题）
+  const isFirstMessage = conv.messages.length === 0
+  const title = isFirstMessage
+    ? (message[0]?.content?.slice(0, 50) || '新对话')
+    : conv.title
+
   // 2. 保存用户信息（调用LLM之前，宁可多存不丢）
   // regenerate 为 true 时用户消息已在 DB 中，不重复写入
   if (!regenerate) {
@@ -65,8 +71,17 @@ export default defineEventHandler(async (event) => {
   // 5. 构建SSE事件流
   const eventStream = new ReadableStream<SSEChunk>({
     async start(controller) {
-      // 立即发meta 事件，前端获取conversationId
-      controller.enqueue({ type: SSE_EVENT.META, conversationId: conv.id })
+      // 立即发meta 事件，前端获取conversationId，title
+      controller.enqueue({ type: SSE_EVENT.META, conversationId: conv.id, title })
+
+      // 首条消息 → 更新 DB 标题（在流开始前完成，确保 refreshConversationInList 读到新标题）
+      if (isFirstMessage) {
+        try {
+          await updateConversationById(conv.id, { title })
+        } catch {
+          // 标题更新失败不阻塞对话
+        }
+      }
 
       try {
         const llmStream = await llmProvider.chat(allMessages, {

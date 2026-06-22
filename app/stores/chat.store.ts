@@ -137,14 +137,14 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // 处理新对话的 conversationId (SSE meta 事件返回)
-  function setCurrentConvId(id: string) {
+  function setCurrentConvId(id: string, title?: string) {
     currentConvId.value = id
     // 更新或者添加到对话列表
     const existing = conversations.value.find(c => c.id === id)
     if (!existing) {
       conversations.value.unshift({
         id,
-        title: '新对话',
+        title: title || '新对话',
         model: selectedModel.value,
         provider: selectedProvider.value,
         messageCount: 0,

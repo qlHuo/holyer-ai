@@ -3,4 +3,4 @@
 */
 
 export { getConversationList, getConversation, getHistory, getConversationDetail } from './queries'
-export { createConversation, deleteConversation, getOrCreateConversation, addMessages, deleteLastAssistantMessage } from './mutations'
+export { createConversation, deleteConversation, getOrCreateConversation, addMessages, deleteLastAssistantMessage, updateConversationById } from './mutations'

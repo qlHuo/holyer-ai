@@ -164,9 +164,15 @@ export function useChat() {
   function handleSSEEvent(payload: { type: string, [key: string]: any }) {
     switch (payload.type) {
       case SSE_EVENT.META:
-        // 如果之前没有 conversationId 新对话 后端会返回新的
-        if (payload.conversationId && !chatStore.currentConvId) {
-          chatStore.setCurrentConvId(payload.conversationId)
+        if (payload.conversationId) {
+          if (!chatStore.currentConvId) {
+            // 对话不在列表中，添加
+            chatStore.setCurrentConvId(payload.conversationId, payload.title as string | undefined)
+          }
+          // 如果列表中有该对话且标题是默认值，用 META 带来的标题更新
+          chatStore.updateConversationItem(payload.conversationId, {
+            title: payload.title as string
+          })
         }
         break
 

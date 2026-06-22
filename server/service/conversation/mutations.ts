@@ -95,34 +95,23 @@ export async function addMessages(
   conversationId: string,
   msgs: AddMessageInput[]
 ): Promise<void> {
-  try {
-    await Promise.all([
-      // 并行插入所有消息
-      ...msgs.map(msg =>
-        db.insert(messages).values({
-          conversationId,
-          role: msg.role,
-          content: msg.content,
-          toolCallId: msg.toolCallId ?? null,
-          toolCalls: msg.toolCalls ?? null
-        })
-      ),
-      // 同时更新时间戳
-      db
-        .update(conversations)
-        .set({ updatedAt: new Date() })
-        .where(eq(conversations.id, conversationId))
-    ])
-  } catch (error: any) {
-    console.error('[addMessages] INSERT/UPDATE failed:', {
-      cause: error.cause?.message || error.cause,
-      message: error.message,
-      code: error.code,
-      detail: error.detail,
-      hint: error.hint
-    })
-    throw error
-  }
+  await Promise.all([
+    // 并行插入所有消息
+    ...msgs.map(msg =>
+      db.insert(messages).values({
+        conversationId,
+        role: msg.role,
+        content: msg.content,
+        toolCallId: msg.toolCallId ?? null,
+        toolCalls: msg.toolCalls ?? null
+      })
+    ),
+    // 同时更新时间戳
+    db
+      .update(conversations)
+      .set({ updatedAt: new Date() })
+      .where(eq(conversations.id, conversationId))
+  ])
 }
 
 /**
@@ -147,4 +136,25 @@ export async function deleteLastAssistantMessage(conversationId: string): Promis
   if (lastMsg) {
     await db.delete(messages).where(eq(messages.id, lastMsg.id))
   }
+}
+
+/**
+ * 更新对话信息
+ *
+*/
+/**
+ * 更新对话信息
+ *
+ * - 只允许更新 title / model / provider
+ * - id 和 createdAt 不可变
+ * - updatedAt 自动刷新
+ */
+export async function updateConversationById(
+  id: string,
+  data: { title?: string, model?: string, provider?: string }
+): Promise<void> {
+  await db
+    .update(conversations)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(conversations.id, id))
 }
