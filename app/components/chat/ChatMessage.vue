@@ -3,6 +3,9 @@ defineProps<{
   role: 'user' | 'assistant' | 'system' | 'tool'
   content: string
   isStreaming?: boolean
+  hasError?: boolean
+  isInitializing?: boolean
+  showRegenerate?: boolean
 }>()
 </script>
 
@@ -30,6 +33,8 @@ defineProps<{
         :content="content"
         :role="role"
         :is-streaming="isStreaming"
+        :has-error="hasError"
+        :is-initializing="isInitializing"
       />
     </div>
     <div
@@ -39,6 +44,8 @@ defineProps<{
       <ChatMessageActions
         :content="content"
         :role="role"
+        :has-error="hasError"
+        :show-regenerate="showRegenerate"
       />
     </div>
   </div>

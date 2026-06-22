@@ -26,7 +26,7 @@ export function useChat() {
   // 是否有进行中的请求
   const isSending = ref(false)
 
-  const error = ref<string | null>(null)
+  const error = computed(() => chatStore.streamError)
 
   /**
    * @Description 发送消息并接口流式响应
@@ -44,7 +44,6 @@ export function useChat() {
     // 3. 开始流式状态
     chatStore.startStreaming()
     isSending.value = true
-    error.value = null
 
     // 4. 创建 AbortController
     abortController = new AbortController()
@@ -85,7 +84,6 @@ export function useChat() {
     // 2. 新建空占位
     chatStore.startStreaming()
     isSending.value = true
-    error.value = null
     abortController = new AbortController()
 
     try {
@@ -149,13 +147,8 @@ export function useChat() {
     if (err.name === 'AbortError') {
       chatStore.finishStreaming()
     } else {
-      error.value = err.message || '请求失败'
+      chatStore.streamError = err.message || '网络请求失败'
       chatStore.finishStreaming()
-      // 清除空占位消息
-      const lastMsg = chatStore.messages[chatStore.messages.length - 1]
-      if (lastMsg && lastMsg.role === 'assistant' && !lastMsg.content) {
-        chatStore.messages.pop()
-      }
     }
   }
 
@@ -185,6 +178,7 @@ export function useChat() {
 
       case SSE_EVENT.DONE:
         chatStore.finishStreaming()
+        chatStore.streamError = null
         // 流式结束后更新对话列表
         if (payload.conversationId) {
           refreshConversationInList(payload.conversationId)
@@ -192,7 +186,7 @@ export function useChat() {
         break
 
       case SSE_EVENT.ERROR:
-        error.value = payload.content || '未知错误'
+        chatStore.streamError = payload.content || '未知错误'
         chatStore.finishStreaming()
         break
 

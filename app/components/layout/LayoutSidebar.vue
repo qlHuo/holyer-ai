@@ -56,7 +56,7 @@ async function handleDelete() {
     deletingId.value = null
     toast.add({ title: '对话已删除', color: 'success', icon: 'i-lucide-check', progress: false })
   } catch (error: any) {
-    toast.add({ title: error || '删除对话失败', color: 'error', icon: 'i-lucide-alert-circle' })
+    toast.add({ title: error || '删除对话失败', color: 'error', icon: 'i-lucide-circle-alert' })
   }
 }
 
@@ -80,7 +80,6 @@ function formatTime(isoStr: string): string {
 onMounted(async () => {
   try {
     await chatStore.loadConversations()
-    toast.add({ title: '加载对话列表成功', color: 'success', icon: 'i-lucide-check' })
   } catch (error: any) {
     toast.add({ title: error || '加载对话列表失败', color: 'error', icon: 'i-lucide-alert-circle' })
   }

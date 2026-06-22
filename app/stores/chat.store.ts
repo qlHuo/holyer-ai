@@ -22,11 +22,15 @@ export const useChatStore = defineStore('chat', () => {
   // 消息
   const messages = ref<Message[]>([])
   const isStreaming = ref(false)
+  const isInitializing = ref(false)
   const streamContent = ref('')
 
   // 模型
   const selectedProvider = ref('deepseek')
   const selectedModel = ref('deepseek-v4-flash')
+
+  /** 当前流式请求的错误信息（null = 无错误） */
+  const streamError = ref<string | null>(null)
 
   // 当前会话信息
   const currentConversation = computed(() =>
@@ -53,11 +57,13 @@ export const useChatStore = defineStore('chat', () => {
     currentConvId.value = id
     messages.value = []
     streamContent.value = ''
+    streamError.value = null
 
     const data = await ConversationApi.getDetailById(id)
     messages.value = data.messages
     selectedProvider.value = data.provider
     selectedModel.value = data.model
+    isInitializing.value = false
   }
 
   // 创建新对话
@@ -84,6 +90,7 @@ export const useChatStore = defineStore('chat', () => {
     streamContent.value = ''
     selectedProvider.value = p
     selectedModel.value = m
+    isInitializing.value = false
   }
 
   // 删除对话
@@ -106,11 +113,14 @@ export const useChatStore = defineStore('chat', () => {
   function startStreaming() {
     isStreaming.value = true
     streamContent.value = ''
+    streamError.value = null
     messages.value.push({ role: 'assistant', content: '' })
+    isInitializing.value = true
   }
 
   // 追加流式内容 -- 更新占位消息的content
   function appendStreamContent(chunk: string) {
+    isInitializing.value = false
     streamContent.value += chunk
     // 找到最后一条 assistant 消息并更新
     const lastMsg = messages.value[messages.value.length - 1]
@@ -121,6 +131,7 @@ export const useChatStore = defineStore('chat', () => {
 
   // 结束流式接收
   function finishStreaming() {
+    isInitializing.value = false
     isStreaming.value = false
     streamContent.value = ''
   }
@@ -166,7 +177,9 @@ export const useChatStore = defineStore('chat', () => {
     currentConvId.value = null
     messages.value = []
     streamContent.value = ''
+    streamError.value = null
     isStreaming.value = false
+    isInitializing.value = false
   }
 
   return {
@@ -175,11 +188,13 @@ export const useChatStore = defineStore('chat', () => {
     listLoading,
     messages,
     isStreaming,
+    isInitializing,
     streamContent,
     selectedProvider,
     selectedModel,
     currentConversation,
     hasMessages,
+    streamError,
     loadConversations,
     selectConversation,
     createConversation,

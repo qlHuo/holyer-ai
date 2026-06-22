@@ -507,3 +507,114 @@ Ctrl+/      → 显示快捷键帮助面板
 
 - [Phase 1 审查报告](2026-06-18-phase1-review.md)
 - [实施路线图](../../.claude/plan/roadmap.md)
+
+---
+
+## 十一、讨论结论（2026-06-22）
+
+> 结合 Phase 1 审查和工程基础改造后的实际代码状态，逐项讨论争议点，明确做与不做。
+
+### 11.1 不做的事项
+
+#### ❌ Store 拆分（审查 3.3）
+
+**审查建议**：chatStore 拆为 conversation / message / settings 三个 Store。
+
+**不做理由**：
+
+- 当前 [chat.store.ts](../../app/stores/chat.store.ts) 共 197 行，对于一个涵盖 CRUD + 流式状态 + 模型选择的 Store 来说规模健康
+- 拆分后三个 Store 相互依赖（切换对话需清空消息、新建对话需读取当前模型），协调成本大于组织收益
+- 不存在"只需 message store 不需 conversation store"的独立复用场景
+
+**触发重新评估的条件**：Store 超过 400 行，或出现需要独立复用的场景。
+
+#### ❌ ErrorBanner 全局组件（审查 4.1）
+
+**审查建议**：新增 `app/components/common/ErrorBanner.vue` 全局横幅组件，持久显示网络断开/服务异常。
+
+**不做理由**：
+
+- Toast 已覆盖操作级错误反馈（ChatPanel 监听 chatError 弹出 toast，LayoutSidebar 所有 catch 块调 toast.add）
+- 持久横幅的真实使用场景极窄——只有"网络断开"需要，用 `navigator.onLine` + ChatPanel 顶部简单内联提示即可，不需独立组件
+- 真正缺失的不是顶层横幅，而是**消息气泡内联错误态**（消息发送失败后气泡变红 + 重试按钮）
+
+**替代方案**：错误反馈体系聚焦三个点——① 补齐现有 catch 块的 toast 调用；② 消息气泡错误态；③ 空状态错误变体（加载失败→点击重试）。ChatPanel 顶部加一个轻量网络状态条（不抽组件）。
+
+#### ❌ contenteditable div 重写 ChatInput — **确认要做**
+
+**审查建议**（审查 5.1）：用 contenteditable div 替代 textarea，为附件/富文本/Agent 切换预留结构。
+
+**讨论结论**：经讨论确认在 Phase 1.5 中直接实施。textarea 虽然在纯文本场景足够，但 contenteditable div 方案（ChatGPT/DeepSeek/千问/Claude.ai 全部采用）是行业标准做法，且为后续附件、富文本、Agent 切换预留了扩展结构。Phase 1.5 范围：contenteditable 输入区 + 发送/停止按钮 + 模型切换 + 粘贴处理（超长截断、图片提示），不涉及附件上传。
+
+#### ❌ `/api/models` 动态模型列表（审查 3.5）
+
+**审查建议**：后端新增 `/api/models` 接口，前端从接口动态获取模型列表，替代 `providers.ts` 硬编码。
+
+**不做理由**：
+
+- 当前仅 3 个 Provider、7 个模型，数据量小到可以忽略
+- 硬编码零延迟、离线可用；后端 API 引入网络依赖（加载失败→选择器不可用）
+- `providers.ts` 天然是离线 fallback
+
+**触发重新评估的条件**：Phase 2 Agent 系统需要按 skill 推荐不同模型时。
+
+#### ❌ Provider 注册表模式（审查 3.4）
+
+**审查建议**：Provider 自注册 + 工厂查找，替代硬编码 switch-case。
+
+**不做理由**：
+
+- 当前仅 3 个 Provider，[factory.ts](../../server/service/llm/factory.ts) switch-case 共 29 行，逻辑清晰
+- 注册表模式（装饰器 + 反射 + 自动发现）对 3 个 case 过度抽象
+- 新增 Provider 只需复制一个 case 分支，约 8 行代码
+
+**触发重新评估的条件**：Provider 数量超过 6 个时。
+
+#### ❌ API 版本前缀 `/api/v1/*`（审查 7.1）
+
+**审查建议**：所有 API 加 `/v1` 前缀，为未来平滑升级预留。
+
+**不做理由**：
+
+- 典型的 speculative future-proofing——为可能永远不会发生的 v2 而污染所有 URL
+- 当真的需要 v2 时，更好的做法是 deploy 一个新版本而非在同一代码库维护两套 API
+- 无实际收益，只有 URL 噪声
+
+#### ❌ 后端日志中间件（审查 7.1）
+
+**审查建议**：添加请求日志中间件，输出 `[POST /api/chat] 200 2.3s`。
+
+**不做理由**：个人应用 console.log 足够，Wrangler 部署后 Cloudflare Dashboard 自带请求日志。
+
+### 11.2 确认要做的事
+
+按优先级重排后的 Sprint 计划：
+
+**Sprint A — 补洞（用户直接感知的缺口）**：
+
+| 优先级 | 任务 | 说明 |
+|:--:|------|------|
+| P0 | 消息气泡错误态 | catch 到错误后 assistant 气泡变红 + 显示重试按钮 |
+| P0 | 对话列表加载失败态 | 区分"空"和"失败"，失败时显示"加载失败，点击重试" |
+| P0 | 移除成功 Toast | 删除侧边栏"加载对话列表成功"弹窗，成功操作不需要 toast |
+| P1 | ChatInput contenteditable 重写 | 替代 textarea，含粘贴处理（超长截断确认 + 图片提示） |
+| P1 | 侧边栏搜索 | 顶部搜索框，按标题模糊过滤 |
+| P1 | 侧边栏折叠 | 收起后只显示图标 |
+
+**Sprint B — 加固（健壮性 + 精致度）**：
+
+| 优先级 | 任务 | 说明 |
+|:--:|------|------|
+| P2 | SSE 断线重连 | 指数退避（1s→2s→4s→max 30s），携带 Last-Event-ID |
+| P2 | 编辑后重发 | 用户消息 hover 显示编辑按钮，回填或就地编辑后重发 |
+| P2 | 骨架屏 | 首次加载侧边栏 + 主区域 USkeleton 占位 |
+| P2 | Mermaid 渲染 | fence renderer 识别 `mermaid` 语言，动态 import 渲染 SVG |
+
+### 11.3 已完成（审查后至 6.22）
+
+| 项 | 编号 | 说明 |
+|----|------|------|
+| 代码高亮 CSS | 1.20 | main.css 已引入 github.css + github-dark.css，fence renderer 已输出 hljs class |
+| 消息复制按钮 | 1.19 | ChatMessageActions 已实现 navigate.clipboard.writeText + toast 反馈 |
+| 消息重新生成 | 1.19 | 前端 useChat.regenerate() + 后端 regenerate 参数，方案 B（详见 [regenerate-design](2026-06-22-regenerate-design.md)） |
+| 侧边栏防重复创建 | 1.21 | handleCreate 检查空对话→切换而非新建 |

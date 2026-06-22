@@ -36,32 +36,40 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 1.9 | 后端参数验证 | 引入 zod，所有 API 端点类型安全校验 | ✅ |
 | 1.10 | 后端错误中间件 | 全局捕获异常，统一返回 JSON（非 HTML） | ✅ |
 | 1.11 | 后端响应格式统一 | 全部 REST 接口统一为 `{ success, data, error }` 包装 | ✅ |
-| 1.12 | 后端公共抽取 | system-prompt 函数（✅）、Provider 注册表模式、日志中间件 | ✅ |
+| 1.12 | 后端公共抽取 | system-prompt 函数抽取 + SSE 事件类型枚举化 | ✅ |
 | 1.13 | 前端 API 层 | `app/api/` 统一封装 $fetch，类型自动推断 | ✅ |
-| 1.14 | Store 拆分 | conversation / message / settings 三 Store 各司其职 | ⏸️ |
-| 1.15 | 前端公共抽取 | SSE 事件枚举化（✅）、extractSSEField（✅）、formatTime/clipboard（⏸️ 推迟） | 🔄 |
+| 1.14 | ~~Store 拆分~~ | conversation / message / settings 三 Store — **不做**（197 行规模合理，协调成本 > 组织收益，详见审查文档 11.2 节） | ❌ |
+| 1.15 | 前端公共抽取 | SSE 事件枚举化（✅）、extractSSEField（✅）、~~formatTime/clipboard~~（❌ 不做） | ✅ |
 
 ### 第二轮：交互兜底 + 功能补全（P0/P1）
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 1.16 | 错误反馈体系 | Toast 补齐 + ErrorBanner + 消息错误态 + 空状态错误变体 + SSE 错误恢复 | ⬜ |
+| 1.16 | 错误反馈体系 | Toast 补齐 + 消息气泡错误态（变红+重试按钮）+ 空状态错误变体（加载失败→重试）。~~ErrorBanner~~（简化：仅 ChatPanel 顶部网络状态条，不做独立全局组件） | ⬜ |
 | 1.17 | SSE 重连 | 指数退避重连，断点续传 | ⬜ |
-| 1.18 | ChatInput 重写 | contenteditable div 替代 textarea，粘贴处理 | ⬜ |
-| 1.19 | 消息操作按钮 | 复制（纯文本/Markdown）、重新生成、编辑重发（详见[重新生成设计](../../docs/dev-log/2026-06-22-regenerate-design.md)） | ⬜ |
-| 1.20 | 代码高亮主题 | highlight.js CSS 引入（亮暗双模式） | ⬜ |
-| 1.21 | 侧边栏完善 | 搜索、折叠、骨架屏、防重复创建、删除确认位置修正 | ⬜ |
-| 1.22 | 前端动态模型列表 | `/api/models` 接口替代 providers.ts 硬编码 | ⬜ |
+| 1.18 | ChatInput 优化 | contenteditable div 替代 textarea + 粘贴处理（超长截断、图片提示） | ⬜ |
+| 1.19 | 消息操作按钮 | 复制纯文本（✅）、重新生成（✅）、编辑重发（⬜） | 🔄 |
+| 1.20 | 代码高亮主题 | highlight.js CSS 引入（亮暗双模式） | ✅ |
+| 1.21 | 侧边栏完善 | 防重复创建（✅）、搜索（⬜）、折叠（⬜）、骨架屏（⬜） | 🔄 |
+| 1.22 | ~~前端动态模型列表~~ | `/api/models` 接口替代 providers.ts 硬编码 — **不做**（7 个模型不需要动态化，推迟到 Phase 2 Agent 按 skill 推荐模型时再做） | ❌ |
 
 ### 第三轮：体验打磨 + 工程化（P1/P2）
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 1.23 | 设计规范体系 | 配色/字体/间距/圆角/阴影/动效/滚动条定制 | ⬜ |
+| 1.23 | 设计规范体系 | 配色/字体/间距/圆角/阴影/动效/滚动条定制（部分已落地：main.css 绿色色板 + markdown-body + 代码块样式） | ⬜ |
 | 1.24 | 页面初始化 | 骨架屏 + 欢迎页优化（参考 DeepSeek 风格） | ⬜ |
-| 1.25 | 键盘快捷键 | Ctrl+K/N/Enter、Esc、Ctrl+/ | ⬜ |
+| 1.25 | 键盘快捷键 | Ctrl+N/Enter、Esc、Ctrl+/（Ctrl+K 命令面板需搜索功能先落地） | ⬜ |
 | 1.26 | Mermaid 渲染 | markdown-it fence 识别 mermaid 语言 | ⬜ |
 | 1.27 | TS strict + 测试 | TypeScript strict:true、conversations API 测试 | ⬜ |
+
+> **明确不做**：以下审查文档中提出的改造项经讨论确认不在 Phase 1.5 范围内：
+> - ❌ Store 拆分（1.14）— 当前 197 行规模合理，协调成本大于组织收益
+> - ❌ ErrorBanner 全局横幅 — 简化为 ChatPanel 内联网络状态条，不单独抽组件
+> - ❌ `/api/models` 动态模型列表（1.22）— 7 个模型不需要动态化，推迟到 Phase 2
+> - ❌ Provider 注册表模式 — 3 个 Provider 用 switch-case 足够，推迟到 ≥6 个时
+> - ❌ `/api/v1/` 版本前缀 — 过度未来-proofing，无实际收益
+> - ❌ 后端日志中间件 — 个人应用 console.log 足够
 
 **交付物**：体验完整、架构规范、可直接承接 Phase 2 开发的稳定基础。
 

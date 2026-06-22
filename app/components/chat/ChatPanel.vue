@@ -20,6 +20,17 @@ function scrollToBottom() {
   })
 }
 
+// 判断指定消息是否为错误状态
+function isMessageError(index: number, role: string): boolean {
+  // 只有最后一条 assistant 消息可能处于错误状态
+  return (
+    role === 'assistant'
+    && index === chatStore.messages.length - 1
+    && !chatStore.isStreaming // 流还在跑 = 不是错误
+    && chatStore.streamError !== null // 有错误信息
+  )
+}
+
 // 监听消息变化，自动滚底
 watch(
   () => chatStore.messages.length,
@@ -81,6 +92,9 @@ watch(chatError, (newError) => {
           :role="msg.role"
           :content="msg.content"
           :is-streaming="index === chatStore.messages.length - 1 && chatStore.isStreaming"
+          :has-error="isMessageError(index, msg.role)"
+          :is-initializing="index === chatStore.messages.length - 1 && chatStore.isInitializing"
+          :show-regenerate="index === chatStore.messages.length - 1"
         />
       </div>
     </div>

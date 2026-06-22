@@ -1,60 +1,72 @@
 <script setup lang="ts">
-defineProps({
+defineProps<{
   /** 聊天消息内容 */
-  content: {
-    type: String,
-    default: ''
-  },
+  content: string
   /** 聊天消息角色 */
-  role: {
-    type: String as () => 'user' | 'assistant' | 'tool' | 'system',
-    required: true
-  },
+  role: 'user' | 'assistant' | 'tool' | 'system'
   /** 是否为流式传输中（显示打字光标） */
-  isStreaming: {
-    type: Boolean,
-    default: false
-  }
+  isStreaming?: boolean
+  hasError?: boolean
+  /** 是否正在初始化中 */
+  isInitializing?: boolean
+}>()
 
-})
+const chatStore = useChatStore()
 </script>
 
 <template>
   <!-- 消息气泡 -->
   <div
-    class="max-w-[calc(100%-36px)] rounded-lg px-4 py-2.5 text-sm leading-relaxed"
-    :class="role === 'user'
-      ? 'bg-(--ui-primary) text-white'
-      : 'bg-(--ui-bg-elevated) text-(--ui-text)'"
+    class="max-w-[75%] rounded-lg px-4 py-2.5 text-sm leading-relaxed"
+    :class="[
+      role === 'user'
+        ? 'bg-(--ui-primary) text-white'
+        : 'bg-(--ui-bg-elevated) text-(--ui-text) max-w-[calc(100%-36px)]',
+      hasError
+        ? 'border-2 border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/40'
+        : ''
+
+    ]"
   >
-    <!-- ===== Phase 2：推理过程（折叠） ===== -->
-    <!--
-    <ReasoningBlock v-if="reasoning" :content="reasoning" />
-    -->
-
-    <!-- ===== Markdown 渲染（仅助手消息） ===== -->
-    <ChatMarkdownContent
-      v-if="role === 'assistant' && content"
-      :content="content"
-    />
-
-    <!-- ===== 用户消息纯文本 ===== -->
+    <!-- ===== 新增：无内容 + 错误 = 显示错误文案 ===== -->
     <p
-      v-else-if="role === 'user' && content"
-      class="whitespace-pre-wrap break-words"
+      v-if="hasError && !content"
+      class="text-red-600 dark:text-red-400 text-sm"
     >
-      {{ content }}
+      ⚠️ {{ chatStore.streamError || '生成失败' }}
     </p>
 
-    <!-- ===== Phase 2：工具调用卡片列表 ===== -->
-    <!--
-    <ToolCallList v-if="toolCalls?.length" :calls="toolCalls" />
-    -->
+    <template v-if="content">
+      <!-- ===== Markdown 渲染（仅助手消息） ===== -->
+      <ChatMarkdownContent
+        v-if="role === 'assistant'"
+        :content="content"
+      />
+
+      <!-- ===== 用户消息纯文本 ===== -->
+      <p
+        v-else-if="role === 'user'"
+        class="whitespace-pre-wrap break-words"
+      >
+        {{ content }}
+      </p>
+
+      <!-- 错误时在内容末尾加分隔线和错误提示 -->
+      <div
+        v-if="hasError"
+        class="mt-2 pt-2 border-t border-red-300 dark:border-red-700"
+      >
+        <p class="text-red-600 dark:text-red-400 text-xs">
+          ⚠️ {{ chatStore.streamError || '生成中断' }}
+        </p>
+      </div>
+    </template>
 
     <!-- ===== 流式光标 ===== -->
-    <span
-      v-if="isStreaming && role === 'assistant'"
-      class="inline-block w-0.5 h-5 ml-0.5 bg-current animate-pulse align-text-bottom"
+    <UIcon
+      v-if="isInitializing && role === 'assistant'"
+      name="i-lucide-sparkles"
+      class="inline-block w-4 h-4 text-(--ui-primary) animate-pulse"
     />
   </div>
 </template>
