@@ -3,7 +3,7 @@
  */
 
 import { db } from '~~/server/db'
-import type { AddMessageInput, ConversationDetail, CreateConversationInput } from './types'
+import type { AddMessageInput, ConversationDetail, CreateConversationInput, MessageDetail } from './types'
 import { conversations, messages } from '~~/server/db/schema'
 import { desc, eq } from 'drizzle-orm'
 
@@ -112,6 +112,46 @@ export async function addMessages(
       .set({ updatedAt: new Date() })
       .where(eq(conversations.id, conversationId))
   ])
+}
+
+/**
+ * 插入单条消息，返回插入的行。
+ *
+ * 注意：toolCallId 用 ?? null 而不是 ?? undefined。
+ * Drizzle 中 undefined 语义是"跳过该列"而非"设为 NULL"。
+*/
+export async function insertMessage(
+  conversationId: string,
+  data: { role: string, content: string }
+): Promise<MessageDetail> {
+  const [row] = await db.insert(messages).values({
+    conversationId,
+    role: data.role,
+    content: data.content
+  }).returning()
+
+  return {
+    id: row!.id,
+    conversationId: row!.conversationId,
+    role: row!.role as Message['role'],
+    content: row!.content,
+    toolCallId: row!.toolCallId ?? undefined,
+    toolCalls: row!.toolCalls as Message['toolCalls'],
+    createdAt: row!.createdAt.toISOString()
+  }
+}
+
+/**
+ * 更新消息内容
+*/
+export async function updateMessage(
+  messageId: string,
+  data: { content: string }
+): Promise<void> {
+  await db
+    .update(messages)
+    .set(data)
+    .where(eq(messages.id, messageId))
 }
 
 /**

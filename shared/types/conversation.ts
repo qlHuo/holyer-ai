@@ -33,3 +33,14 @@ export interface ConversationInput {
   model: string
   provider: string
 }
+
+// Messgae 详情
+export interface MessageDetail {
+  id: string
+  conversationId: string
+  role: Message['role']
+  content: string
+  toolCalls?: Message['toolCalls']
+  toolCallId?: string
+  createdAt: string
+}

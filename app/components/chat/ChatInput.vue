@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// useChat() 现在是模块级单例，多次调用返回的是同一份状态的视图
 const { isSending, sendMessage, abort } = useChat()
 
 /** 输入内容 */
@@ -53,6 +54,7 @@ function handleStop() {
         />
 
         <!-- 发送 / 停止按钮 -->
+        <!-- isSending 是模块级单例，停止按钮可以停止任何流（包括 regenerate） -->
         <UButton
           v-if="isSending"
           icon="i-lucide-square"

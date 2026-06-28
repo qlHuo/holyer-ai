@@ -64,6 +64,10 @@ export function createSSEResponse(sourceStream: ReadableStream<SSEChunk>, event:
           controller.enqueue(encoder.encode(`data: ${payload}\n\n`))
         }
       } catch (error) {
+        // 忽略 AbortError
+        if (error instanceof Error && error.name === 'AbortError') {
+          return
+        }
         const errorPayload = JSON.stringify({
           type: SSE_EVENT.ERROR,
           content: error instanceof Error ? error.message : 'Unknown error'

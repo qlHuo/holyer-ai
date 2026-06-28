@@ -45,13 +45,16 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 1.16 | 错误反馈体系 | Toast 补齐 + 消息气泡错误态（变红+重试按钮）+ 空状态错误变体（加载失败→重试）。~~ErrorBanner~~（简化：仅 ChatPanel 顶部网络状态条，不做独立全局组件） | ⬜ |
-| 1.17 | SSE 重连 | 指数退避重连，断点续传 | ⬜ |
+| 1.16 | 错误反馈体系 | Toast 补齐 + 消息气泡错误态（变红+重试按钮）+ 空状态错误变体（加载失败→重试）。~~ErrorBanner~~（简化：仅 ChatPanel 顶部网络状态条，不做独立全局组件） | ✅ |
+| 1.17 | ~~SSE 重连~~ | 指数退避重连，断点续传 — **推迟**（网络闪断场景极少、无法实现真重连只能从头生成，收益抵不上复杂度。详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md)） | ⏸️ |
 | 1.18 | ChatInput 优化 | contenteditable div 替代 textarea + 粘贴处理（超长截断、图片提示） | ⬜ |
 | 1.19 | 消息操作按钮 | 复制纯文本（✅）、重新生成（✅）、编辑重发（⬜） | 🔄 |
 | 1.20 | 代码高亮主题 | highlight.js CSS 引入（亮暗双模式） | ✅ |
 | 1.21 | 侧边栏完善 | 防重复创建（✅）、搜索（⬜）、折叠（⬜）、骨架屏（⬜） | 🔄 |
 | 1.22 | ~~前端动态模型列表~~ | `/api/models` 接口替代 providers.ts 硬编码 — **不做**（7 个模型不需要动态化，推迟到 Phase 2 Agent 按 skill 推荐模型时再做） | ❌ |
+| 1.28 | 流式增量写入 DB | 后端 /api/chat 在 LLM 流开始前 INSERT 空占位 → 每 200 字符 UPDATE content → 流结束最终 UPDATE。解决用户刷新/切走页面时内容全部丢失的痛点（详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md) · [根因分析](../../docs/dev-log/2026-06-25-stream-leakage-root-cause.md)） | ✅ |
+| 1.29 | 切换对话自动 abort | useChat watch currentConvId → 变更时 abort 旧请求 + Store 层 `streamingConvId` 校验兜底。解决流式输出中切换对话，旧内容泄漏到新对话的竞态 bug（详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md) · [根因分析](../../docs/dev-log/2026-06-25-stream-leakage-root-cause.md)） | ✅ |
+| 1.30 | 后台流保持 + 切回续显 | **已与 1.28/1.29 合并为完整的 V2 架构升级**：模块级 `streamSessions` Map + `sendingConvIds` Set、`switchConversation` 切换入口、`restoreStreamSession` 恢复实时输出、服务端 `AbortSignal` 完整取消链（详见 [流式架构 V2](../../docs/dev-log/2026-06-27-stream-architecture-v2.md)） | ✅ |
 
 ### 第三轮：体验打磨 + 工程化（P1/P2）
 
@@ -63,13 +66,15 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 1.26 | Mermaid 渲染 | markdown-it fence 识别 mermaid 语言 | ⬜ |
 | 1.27 | TS strict + 测试 | TypeScript strict:true、conversations API 测试 | ⬜ |
 
-> **明确不做**：以下审查文档中提出的改造项经讨论确认不在 Phase 1.5 范围内：
+> **明确不做/推迟**：以下审查文档中提出的改造项经讨论确认不在 Phase 1.5 范围内或推迟到后续 Phase：
 > - ❌ Store 拆分（1.14）— 当前 197 行规模合理，协调成本大于组织收益
 > - ❌ ErrorBanner 全局横幅 — 简化为 ChatPanel 内联网络状态条，不单独抽组件
 > - ❌ `/api/models` 动态模型列表（1.22）— 7 个模型不需要动态化，推迟到 Phase 2
 > - ❌ Provider 注册表模式 — 3 个 Provider 用 switch-case 足够，推迟到 ≥6 个时
 > - ❌ `/api/v1/` 版本前缀 — 过度未来-proofing，无实际收益
 > - ❌ 后端日志中间件 — 个人应用 console.log 足够
+> - ⏸️ SSE 重连（1.17）— 网络闪断场景极少且无法实现真重连（只能从头生成），推迟到 Phase 3+ 移动端适配时重新评估
+> - ✅ 后台流保持（1.30）— 已与 1.28/1.29 合并为流式架构 V2 完整升级，包含模块级单例、多路并行、切回恢复、服务端 AbortSignal 取消链（详见 [流式架构 V2](../../docs/dev-log/2026-06-27-stream-architecture-v2.md)）
 
 **交付物**：体验完整、架构规范、可直接承接 Phase 2 开发的稳定基础。
 

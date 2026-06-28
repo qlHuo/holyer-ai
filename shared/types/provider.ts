@@ -52,4 +52,6 @@ export interface ChatOptions {
   maxTokens?: number
   tools?: ToolDefinition[]
   systemPrompt?: string
+  /** AbortSignal — Provider 实现层用它取消底层的 LLM API 调用 */
+  signal?: AbortSignal
 }

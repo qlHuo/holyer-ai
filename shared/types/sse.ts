@@ -1,4 +1,12 @@
-// 事件类型枚举（供前端 switch 后端 enqueue 使用）
+/**
+ * SSE 事件类型枚举
+ *
+ * 所有事件（除 PING）都携带 conversationId 用于前端按对话路由：
+ * - META:  { type: 'meta', conversationId, title }
+ * - TEXT:  { type: 'text', content, conversationId }
+ * - DONE:  { type: 'done', conversationId }
+ * - ERROR: { type: 'error', content, conversationId }
+ */
 export const SSE_EVENT = {
   META: 'meta',
   TEXT: 'text',

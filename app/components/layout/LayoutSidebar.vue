@@ -9,6 +9,7 @@ defineProps({
 
 const emit = defineEmits(['update:modelValue', 'close'])
 
+const { switchConversation } = useChat()
 const chatStore = useChatStore()
 const toast = useToast()
 
@@ -30,7 +31,7 @@ async function handleCreate() {
     // 若有空对话则切换到该对话，否则新建
     const emptyConv = chatStore.conversations.find(conv => conv.messageCount === 0)
     if (emptyConv) {
-      chatStore.selectConversation(emptyConv.id)
+      await switchConversation(emptyConv.id)
       emit('close')
       return
     }
@@ -44,7 +45,7 @@ async function handleCreate() {
 /** 选中对话 */
 function handleSelect(id: string) {
   try {
-    chatStore.selectConversation(id)
+    switchConversation(id)
     emit('close')
   } catch (error: any) {
     toast.add({ title: error || '切换对话失败', color: 'error', icon: 'i-lucide-alert-circle' })

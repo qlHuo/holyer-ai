@@ -7,6 +7,7 @@ import type { ChatOptions, Message } from '~~/shared/types/provider'
  *    上层不关心底层是 OpenAI SSE 还是 Anthropic SSE
  * 2. models() 返回模型列表 —— UI 自动获取，无需硬编码
  * 3. id 是唯一标识 —— factory 用它做路由
+ * 4. signal 是可选参数 —— 用于取消请求
 */
 export interface LLMProvider {
   readonly id: string

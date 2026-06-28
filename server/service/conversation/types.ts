@@ -8,7 +8,7 @@
  * 返回的是 Drizzle 插入后的行类型。
  */
 import type { Message } from '~~/shared/types/provider'
-import type { ConversationDetail, ConversationListItem } from '~~/shared/types/conversation'
+import type { ConversationDetail, ConversationListItem, MessageDetail } from '~~/shared/types/conversation'
 
 // 创建会话参数
 export interface CreateConversationInput {
@@ -25,4 +25,4 @@ export interface AddMessageInput {
   toolCallId?: string
 }
 
-export type { ConversationDetail, ConversationListItem }
+export type { ConversationDetail, ConversationListItem, MessageDetail }

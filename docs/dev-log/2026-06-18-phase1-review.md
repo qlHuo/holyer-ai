@@ -540,6 +540,20 @@ Ctrl+/      → 显示快捷键帮助面板
 
 **替代方案**：错误反馈体系聚焦三个点——① 补齐现有 catch 块的 toast 调用；② 消息气泡错误态；③ 空状态错误变体（加载失败→点击重试）。ChatPanel 顶部加一个轻量网络状态条（不抽组件）。
 
+#### ⏸️ SSE 重连（审查 4.2，2026-06-23 决策）
+
+**审查建议**：指数退避重连（1s→2s→4s→max 30s），携带 Last-Event-ID 断点续传。
+
+**推迟理由**：
+
+- **场景极少**：桌面端稳定 WiFi 下一次对话（30s–2min）内发生网络闪断概率极低，移动端项目初期不涉及
+- **无法真重连**：后端 LLM 流是一次性的——HTTP 断开后无法"接上"，所谓"重连"只是重新 POST 从头生成，已生成的 token 全部浪费
+- **真正的断点续传需要后端缓冲整个 LLM 输出 + Last-Event-ID 协议，Edge Runtime 内存受限**
+
+**替代方案 — 两步走**：第一步（立刻做）1.28 流式增量写入 DB + 1.29 切换对话自动 abort，35 行消除灾难问题。第二步（按需跟进）1.30 后台流保持 + 切回续显，120 行消除剩余 199 字符差距。核心洞察——"把流从绑定 UI 的短期请求升级为绑定对话的独立后台任务，UI 只是可插拔的观察窗口"。详见 [流式中断保护方案](2026-06-23-stream-interruption-protection.md)。
+
+**触发重新评估的条件**：Phase 3+ 移动端适配时，如果移动网络切换导致频繁断连。
+
 #### ❌ contenteditable div 重写 ChatInput — **确认要做**
 
 **审查建议**（审查 5.1）：用 contenteditable div 替代 textarea，为附件/富文本/Agent 切换预留结构。
@@ -610,7 +624,7 @@ Ctrl+/      → 显示快捷键帮助面板
 | P2 | 骨架屏 | 首次加载侧边栏 + 主区域 USkeleton 占位 |
 | P2 | Mermaid 渲染 | fence renderer 识别 `mermaid` 语言，动态 import 渲染 SVG |
 
-### 11.3 已完成（审查后至 6.22）
+### 11.3 已完成（审查后至 6.23）
 
 | 项 | 编号 | 说明 |
 |----|------|------|
@@ -618,3 +632,10 @@ Ctrl+/      → 显示快捷键帮助面板
 | 消息复制按钮 | 1.19 | ChatMessageActions 已实现 navigate.clipboard.writeText + toast 反馈 |
 | 消息重新生成 | 1.19 | 前端 useChat.regenerate() + 后端 regenerate 参数，方案 B（详见 [regenerate-design](2026-06-22-regenerate-design.md)） |
 | 侧边栏防重复创建 | 1.21 | handleCreate 检查空对话→切换而非新建 |
+| 对话标题生成 | Sprint A | 首条用户消息自动为对话标题，通过 META 事件推送（详见 [sprint-a-title-stream-error](2026-06-23-sprint-a-title-stream-error.md)） |
+| 流式错误态修复 | Sprint A | `isInitializing` 模式（等待首个 token）、`streamError` 生命周期修正（不在 finishStreaming 清除） |
+| **错误反馈体系** | **1.16** | Toast 补齐（流式/CRUD/复制全覆盖）+ 消息气泡错误态（红框+错误文案+重试按钮）+ 空状态错误变体（侧边栏 loadError+重试） |
+| SSE 重连推迟 | 1.17 | 网络闪断场景极少 + 无法真重连只能从头生成 → ⏸️ 推迟到 Phase 3+ |
+| **流式增量写入 DB** | **1.28** | 新增：替代 SSE 重连解决真正痛点——刷新/切走页面内容丢失（详见 [stream-interruption-protection](2026-06-23-stream-interruption-protection.md)） |
+| **切换对话自动 abort** | **1.29** | 新增：第一步 — 修复流式输出中切换对话旧内容泄漏到新对话的竞态 bug |
+| **后台流保持 + 切回续显** | **1.30** | 新增：第二步 — 多流会话管理器，切走继续跑、切回接着看。等第一步上线体验后判断是否需要 |

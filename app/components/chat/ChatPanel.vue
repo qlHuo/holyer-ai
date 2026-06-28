@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const chatStore = useChatStore()
+// useChat 是模块级单例，多次调用安全
 const { error: chatError } = useChat()
 const toast = useToast()
 
@@ -20,14 +21,13 @@ function scrollToBottom() {
   })
 }
 
-// 判断指定消息是否为错误状态
+/** 判断指定消息是否为错误状态 */
 function isMessageError(index: number, role: string): boolean {
-  // 只有最后一条 assistant 消息可能处于错误状态
   return (
     role === 'assistant'
     && index === chatStore.messages.length - 1
-    && !chatStore.isStreaming // 流还在跑 = 不是错误
-    && chatStore.streamError !== null // 有错误信息
+    && !chatStore.isStreaming
+    && chatStore.streamError !== null
   )
 }
 
@@ -37,13 +37,13 @@ watch(
   () => scrollToBottom()
 )
 
-// 监听流式内容变化，自动滚底（逐 token 追加时）
+// 监听流式内容变化，自动滚底
 watch(
   () => chatStore.streamContent,
   () => scrollToBottom()
 )
 
-// 监听流式错误
+// 监听流式错误 → toast 提示
 watch(chatError, (newError) => {
   if (newError) {
     toast.add({
