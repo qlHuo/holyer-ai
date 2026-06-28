@@ -64,7 +64,10 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 1.24 | 页面初始化 | 骨架屏 + 欢迎页优化（参考 DeepSeek 风格） | ⬜ |
 | 1.25 | 键盘快捷键 | Ctrl+N/Enter、Esc、Ctrl+/（Ctrl+K 命令面板需搜索功能先落地） | ⏸️ |
 | 1.26 | Mermaid 渲染 | markdown-it fence 识别 mermaid 语言 | ⬜ |
-| 1.27 | TS strict + 测试 | TypeScript strict:true、conversations API 测试 | ⬜ |
+| 1.27 | TS strict | TypeScript strict:true + noUncheckedIndexedAccess 等（Nuxt 4 默认开启，当前 typecheck 零错误） | ✅ |
+| 1.31 | API 单元测试 | vitest + conversations CRUD 测试 | ⏸️ |
+
+> **1.31 说明**：conversations CRUD 是标准 REST 包装层，无复杂业务逻辑，测的是 Drizzle ORM 调用而非项目自身逻辑。当前阶段投入产出严重倒挂——vitest + Nitro/Edge Runtime 集成成本高、个人项目无 CI 回归拦截需求。推迟到 **Phase 2 Agent Runtime** 有复杂逻辑（ReAct 循环、工具调用状态机）时再引入，那时测试才有真正的收益。
 
 > **明确不做/推迟**：以下审查文档中提出的改造项经讨论确认不在 Phase 1.5 范围内或推迟到后续 Phase：
 > - ❌ Store 拆分（1.14）— 当前 197 行规模合理，协调成本大于组织收益
@@ -76,6 +79,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 > - ⏸️ SSE 重连（1.17）— 网络闪断场景极少且无法实现真重连（只能从头生成），推迟到 Phase 3+ 移动端适配时重新评估
 > - ⏸️ 编辑重发（1.19 剩余）— 推迟到后续 Feature，当前消息操作（复制+重新生成）已满足日常使用
 > - ⏸️ 键盘快捷键（1.25）— 推迟到后续 Feature，当前鼠标操作已满足日常使用
+> - ⏸️ API 单元测试（1.31）— conversations CRUD 无复杂逻辑，vitest + Edge Runtime 集成成本高于收益，推迟到 Phase 2 Agent Runtime 有真实业务逻辑时再引入
 > - ✅ 后台流保持（1.30）— 已与 1.28/1.29 合并为流式架构 V2 完整升级，包含模块级单例、多路并行、切回恢复、服务端 AbortSignal 取消链（详见 [流式架构 V2](../../docs/dev-log/2026-06-27-stream-architecture-v2.md)）
 
 **交付物**：体验完整、架构规范、可直接承接 Phase 2 开发的稳定基础。

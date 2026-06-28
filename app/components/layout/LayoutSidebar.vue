@@ -1,13 +1,5 @@
 <script setup lang="ts">
-defineProps({
-  /** 移动端是否显示（slideover 模式） */
-  modelValue: {
-    type: Boolean,
-    default: true
-  }
-})
-
-const emit = defineEmits(['update:modelValue', 'close'])
+const emit = defineEmits(['close'])
 
 const { switchConversation } = useChat()
 const chatStore = useChatStore()
@@ -28,7 +20,6 @@ const showDeleteModal = computed({
 /** 新建对话 */
 async function handleCreate() {
   try {
-    // 若有空对话则切换到该对话，否则新建
     const emptyConv = chatStore.conversations.find(conv => conv.messageCount === 0)
     if (emptyConv) {
       await switchConversation(emptyConv.id)
@@ -43,9 +34,9 @@ async function handleCreate() {
 }
 
 /** 选中对话 */
-function handleSelect(id: string) {
+async function handleSelect(id: string) {
   try {
-    switchConversation(id)
+    await switchConversation(id)
     emit('close')
   } catch (error: any) {
     toast.add({ title: error || '切换对话失败', color: 'error', icon: 'i-lucide-alert-circle' })
@@ -89,20 +80,33 @@ async function retryLoad() {
   }
 }
 
-// 组件挂载时加载对话列表
 onMounted(() => {
   retryLoad()
 })
 </script>
 
 <template>
-  <!-- ===== 侧边栏内容（桌面端和移动端共用） ===== -->
   <div class="flex flex-col h-full bg-(--ui-bg-elevated)">
-    <!-- 顶部：新建按钮 -->
+    <div
+      class="h-14 px-3 border-b border-(--ui-border) flex items-center shrink-0"
+    >
+      <div class="flex items-center gap-2.5 select-none">
+        <div class="w-7 h-7 rounded-lg bg-(--ui-primary) flex items-center justify-center shrink-0">
+          <span class="text-white text-xs font-bold tracking-tight">H</span>
+        </div>
+        <h1 class="text-base font-semibold text-(--ui-text-highlighted) tracking-tight">
+          Holyer AI
+        </h1>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 新建对话按钮                                -->
+    <!-- ═══════════════════════════════════════════ -->
     <div class="p-3 border-b border-(--ui-border)">
       <UButton
         block
-        icon="i-lucide-plus"
+        icon="bx:message-add"
         color="primary"
         @click="handleCreate"
       >
@@ -110,11 +114,19 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <!-- 中间：对话列表 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 对话列表                                    -->
+    <!-- ═══════════════════════════════════════════ -->
     <div class="flex-1 overflow-y-auto">
       <!-- 加载中 -->
-      <div v-if="chatStore.listLoading" class="flex items-center justify-center py-12 gap-2">
-        <UIcon name="i-lucide-loader" class="w-5 h-5 animate-spin text-(--ui-text-dimmed)" />
+      <div
+        v-if="chatStore.listLoading"
+        class="flex items-center justify-center py-12 gap-2"
+      >
+        <UIcon
+          name="i-lucide-loader"
+          class="w-5 h-5 animate-spin text-(--ui-text-dimmed)"
+        />
         <span class="text-sm text-(--ui-text-dimmed)">加载中…</span>
       </div>
 
@@ -166,7 +178,6 @@ onMounted(() => {
         @click="handleSelect(conv.id)"
       >
         <div class="px-3 py-2.5">
-          <!-- 标题 + 删除按钮 -->
           <div class="h-6 flex items-center justify-between gap-1">
             <p class="text-sm font-medium truncate flex-1">
               {{ conv.title }}
@@ -180,7 +191,6 @@ onMounted(() => {
               @click.stop="deletingId = conv.id"
             />
           </div>
-          <!-- 预览 + 时间 -->
           <div class="flex items-center justify-between mt-1 gap-2">
             <p class="text-xs text-(--ui-text-dimmed) truncate flex-1">
               {{ conv.lastPreview || '暂无消息' }}
@@ -193,17 +203,27 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 底部：Provider/Model 信息 -->
-    <div
-      v-if="chatStore.currentConversation"
-      class="p-3 border-t border-(--ui-border)"
-    >
-      <p class="text-xs text-(--ui-text-dimmed)">
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 底部：Provider 信息（设置功能预留）         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="border-t border-(--ui-border) shrink-0 px-3 py-2">
+      <p
+        v-if="chatStore.currentConversation"
+        class="text-xs text-(--ui-text-dimmed) truncate"
+      >
         {{ chatStore.currentConversation.provider }} / {{ chatStore.currentConversation.model }}
+      </p>
+      <p
+        v-else
+        class="text-xs text-(--ui-text-dimmed)"
+      >
+        未选择模型
       </p>
     </div>
 
-    <!-- ===== 删除确认弹窗 ===== -->
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 删除确认弹窗                                -->
+    <!-- ═══════════════════════════════════════════ -->
     <UModal
       v-model:open="showDeleteModal"
       title="删除对话"
