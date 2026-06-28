@@ -48,9 +48,9 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 1.16 | 错误反馈体系 | Toast 补齐 + 消息气泡错误态（变红+重试按钮）+ 空状态错误变体（加载失败→重试）。~~ErrorBanner~~（简化：仅 ChatPanel 顶部网络状态条，不做独立全局组件） | ✅ |
 | 1.17 | ~~SSE 重连~~ | 指数退避重连，断点续传 — **推迟**（网络闪断场景极少、无法实现真重连只能从头生成，收益抵不上复杂度。详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md)） | ⏸️ |
 | 1.18 | ChatInput 优化 | contenteditable div 替代 textarea + 粘贴处理（超长截断、图片提示） | ⬜ |
-| 1.19 | 消息操作按钮 | 复制纯文本（✅）、重新生成（✅）、编辑重发（⬜） | 🔄 |
+| 1.19 | 消息操作按钮 | 复制纯文本（✅）、重新生成（✅）、编辑重发（⏸️） | ✅ |
 | 1.20 | 代码高亮主题 | highlight.js CSS 引入（亮暗双模式） | ✅ |
-| 1.21 | 侧边栏完善 | 防重复创建（✅）、搜索（⬜）、折叠（⬜）、骨架屏（⬜） | 🔄 |
+| 1.21 | 侧边栏完善 | 防重复创建（✅）、骨架屏（✅）、搜索（⬜）、折叠（⬜） | 🔄 |
 | 1.22 | ~~前端动态模型列表~~ | `/api/models` 接口替代 providers.ts 硬编码 — **不做**（7 个模型不需要动态化，推迟到 Phase 2 Agent 按 skill 推荐模型时再做） | ❌ |
 | 1.28 | 流式增量写入 DB | 后端 /api/chat 在 LLM 流开始前 INSERT 空占位 → 每 200 字符 UPDATE content → 流结束最终 UPDATE。解决用户刷新/切走页面时内容全部丢失的痛点（详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md) · [根因分析](../../docs/dev-log/2026-06-25-stream-leakage-root-cause.md)） | ✅ |
 | 1.29 | 切换对话自动 abort | useChat watch currentConvId → 变更时 abort 旧请求 + Store 层 `streamingConvId` 校验兜底。解决流式输出中切换对话，旧内容泄漏到新对话的竞态 bug（详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md) · [根因分析](../../docs/dev-log/2026-06-25-stream-leakage-root-cause.md)） | ✅ |
@@ -62,7 +62,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 |------|------|------|:--:|
 | 1.23 | 设计规范体系 | 配色/字体/间距/圆角/阴影/动效/滚动条定制（部分已落地：main.css 绿色色板 + markdown-body + 代码块样式） | ⬜ |
 | 1.24 | 页面初始化 | 骨架屏 + 欢迎页优化（参考 DeepSeek 风格） | ⬜ |
-| 1.25 | 键盘快捷键 | Ctrl+N/Enter、Esc、Ctrl+/（Ctrl+K 命令面板需搜索功能先落地） | ⬜ |
+| 1.25 | 键盘快捷键 | Ctrl+N/Enter、Esc、Ctrl+/（Ctrl+K 命令面板需搜索功能先落地） | ⏸️ |
 | 1.26 | Mermaid 渲染 | markdown-it fence 识别 mermaid 语言 | ⬜ |
 | 1.27 | TS strict + 测试 | TypeScript strict:true、conversations API 测试 | ⬜ |
 
@@ -74,6 +74,8 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 > - ❌ `/api/v1/` 版本前缀 — 过度未来-proofing，无实际收益
 > - ❌ 后端日志中间件 — 个人应用 console.log 足够
 > - ⏸️ SSE 重连（1.17）— 网络闪断场景极少且无法实现真重连（只能从头生成），推迟到 Phase 3+ 移动端适配时重新评估
+> - ⏸️ 编辑重发（1.19 剩余）— 推迟到后续 Feature，当前消息操作（复制+重新生成）已满足日常使用
+> - ⏸️ 键盘快捷键（1.25）— 推迟到后续 Feature，当前鼠标操作已满足日常使用
 > - ✅ 后台流保持（1.30）— 已与 1.28/1.29 合并为流式架构 V2 完整升级，包含模块级单例、多路并行、切回恢复、服务端 AbortSignal 取消链（详见 [流式架构 V2](../../docs/dev-log/2026-06-27-stream-architecture-v2.md)）
 
 **交付物**：体验完整、架构规范、可直接承接 Phase 2 开发的稳定基础。

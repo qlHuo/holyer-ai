@@ -37,6 +37,7 @@ export const useChatStore = defineStore('chat', () => {
 
   // ==================== 消息 ====================
   const messages = ref<Message[]>([])
+  const messagesLoading = ref(false)
   const isStreaming = ref(false)
   const isInitializing = ref(false)
   const streamContent = ref('')
@@ -108,11 +109,22 @@ export const useChatStore = defineStore('chat', () => {
       streamingConvId.value = id
     } else {
       // 正常场景：从 DB 加载
-      messages.value = []
-      const data = await ConversationApi.getDetailById(id)
-      messages.value = data.messages
-      selectedProvider.value = data.provider
-      selectedModel.value = data.model
+      messagesLoading.value = true
+      const loadingConvId = id
+      try {
+        messages.value = []
+        const data = await ConversationApi.getDetailById(id)
+        // 快速切换竞态防护：只有仍在加载同一对话时才应用结果
+        if (currentConvId.value !== loadingConvId) return
+        messages.value = data.messages
+        selectedProvider.value = data.provider
+        selectedModel.value = data.model
+      } finally {
+        // 只有仍在加载同一对话时才清除 loading（防止覆盖新对话的 loading）
+        if (currentConvId.value === loadingConvId) {
+          messagesLoading.value = false
+        }
+      }
     }
   }
 
@@ -290,6 +302,7 @@ export const useChatStore = defineStore('chat', () => {
     conversations,
     currentConvId,
     listLoading,
+    messagesLoading,
     messages,
     isStreaming,
     isInitializing,

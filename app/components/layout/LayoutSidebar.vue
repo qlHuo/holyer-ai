@@ -113,14 +113,9 @@ onMounted(() => {
     <!-- 中间：对话列表 -->
     <div class="flex-1 overflow-y-auto">
       <!-- 加载中 -->
-      <div
-        v-if="chatStore.listLoading"
-        class="flex justify-center py-8"
-      >
-        <UIcon
-          name="i-lucide-loader"
-          class="w-5 h-5 animate-spin text-(--ui-text-dimmed)"
-        />
+      <div v-if="chatStore.listLoading" class="flex items-center justify-center py-12 gap-2">
+        <UIcon name="i-lucide-loader" class="w-5 h-5 animate-spin text-(--ui-text-dimmed)" />
+        <span class="text-sm text-(--ui-text-dimmed)">加载中…</span>
       </div>
 
       <!-- 加载失败 -->
