@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="flex flex-col py-4 px-4 group">
+  <div class="flex flex-col py-4 px-4 group animate-message-enter">
     <div
       class="flex gap-3"
       :class="role === 'user' ? 'flex-row-reverse' : ''"

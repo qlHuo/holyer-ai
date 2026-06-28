@@ -72,7 +72,7 @@ watch(chatError, (newError) => {
           <div class="flex flex-col py-4 px-4">
             <div class="flex gap-3 flex-row-reverse">
               <USkeleton class="w-8 h-8 rounded-full shrink-0" />
-              <USkeleton class="h-10 rounded-lg max-w-[45%] w-full" />
+              <USkeleton class="h-10 rounded-(--radius-lg) max-w-[45%] w-full" />
             </div>
           </div>
 
@@ -80,7 +80,7 @@ watch(chatError, (newError) => {
           <div class="flex flex-col py-4 px-4">
             <div class="flex gap-3">
               <USkeleton class="w-8 h-8 rounded-full shrink-0" />
-              <USkeleton class="h-20 rounded-lg max-w-[65%] w-full" />
+              <USkeleton class="h-20 rounded-(--radius-lg) max-w-[65%] w-full" />
             </div>
           </div>
 
@@ -88,7 +88,7 @@ watch(chatError, (newError) => {
           <div class="flex flex-col py-4 px-4">
             <div class="flex gap-3 flex-row-reverse">
               <USkeleton class="w-8 h-8 rounded-full shrink-0" />
-              <USkeleton class="h-14 rounded-lg max-w-[55%] w-full" />
+              <USkeleton class="h-14 rounded-(--radius-lg) max-w-[55%] w-full" />
             </div>
           </div>
 
@@ -96,7 +96,7 @@ watch(chatError, (newError) => {
           <div class="flex flex-col py-4 px-4">
             <div class="flex gap-3">
               <USkeleton class="w-8 h-8 rounded-full shrink-0" />
-              <USkeleton class="h-24 rounded-lg max-w-[70%] w-full" />
+              <USkeleton class="h-24 rounded-(--radius-lg) max-w-[70%] w-full" />
             </div>
           </div>
         </div>
@@ -107,7 +107,7 @@ watch(chatError, (newError) => {
         v-else-if="showWelcome"
         class="flex items-center justify-center h-full"
       >
-        <div class="text-center max-w-md px-8">
+        <div class="text-center max-w-md px-8 animate-fade-in">
           <UIcon
             name="i-lucide-sparkles"
             class="w-12 h-12 mx-auto mb-4 text-(--ui-primary)"

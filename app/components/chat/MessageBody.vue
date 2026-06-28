@@ -17,13 +17,13 @@ const chatStore = useChatStore()
 <template>
   <!-- 消息气泡 -->
   <div
-    class="max-w-[75%] rounded-lg px-4 py-2.5 text-sm leading-relaxed"
+    class="max-w-[75%] rounded-(--radius-lg) px-4 py-2.5 text-sm leading-relaxed shadow-(--shadow-sm)"
     :class="[
       role === 'user'
         ? 'bg-(--ui-primary) text-white'
         : 'bg-(--ui-bg-elevated) text-(--ui-text) max-w-[calc(100%-36px)]',
       hasError
-        ? 'border-2 border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/40'
+        ? 'border-2 border-error-500 dark:border-error-500/60 bg-error-50 dark:bg-error-500/10'
         : ''
 
     ]"
@@ -31,7 +31,7 @@ const chatStore = useChatStore()
     <!-- ===== 新增：无内容 + 错误 = 显示错误文案 ===== -->
     <p
       v-if="hasError && !content"
-      class="text-red-600 dark:text-red-400 text-sm"
+      class="text-error-700 dark:text-error-500 text-sm"
     >
       ⚠️ {{ chatStore.streamError || '生成失败' }}
     </p>
@@ -54,9 +54,9 @@ const chatStore = useChatStore()
       <!-- 错误时在内容末尾加分隔线和错误提示 -->
       <div
         v-if="hasError"
-        class="mt-2 pt-2 border-t border-red-300 dark:border-red-700"
+        class="mt-2 pt-2 border-t border-error-500/40 dark:border-error-500/50"
       >
-        <p class="text-red-600 dark:text-red-400 text-xs">
+        <p class="text-error-700 dark:text-error-500 text-xs">
           ⚠️ {{ chatStore.streamError || '生成中断' }}
         </p>
       </div>

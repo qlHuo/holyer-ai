@@ -125,9 +125,9 @@ onMounted(() => {
       >
         <UIcon
           name="i-lucide-alert-circle"
-          class="w-8 h-8 mx-auto mb-2 text-(--ui-color-error-400)"
+          class="w-8 h-8 mx-auto mb-2 text-error-500"
         />
-        <p class="text-sm text-(--ui-color-error-500) mb-3">
+        <p class="text-sm text-error-500 mb-3">
           {{ loadError }}
         </p>
         <UButton
@@ -159,7 +159,7 @@ onMounted(() => {
         v-for="conv in chatStore.conversations"
         v-else
         :key="conv.id"
-        class="group relative mx-2 mt-1 rounded-lg cursor-pointer transition-colors"
+        class="group relative mx-2 mt-1 rounded-(--radius-lg) cursor-pointer transition-colors"
         :class="chatStore.currentConvId === conv.id
           ? 'bg-(--ui-primary)/10 text-(--ui-primary)'
           : 'hover:bg-(--ui-bg) text-(--ui-text)'"

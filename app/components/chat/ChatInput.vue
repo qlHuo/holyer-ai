@@ -46,9 +46,9 @@ function handleStop() {
           :disabled="isSending"
           rows="1"
           placeholder="输入消息，Enter 发送，Shift+Enter 换行"
-          class="flex-1 resize-none rounded-lg border border-(--ui-border) bg-(--ui-bg) px-4 py-2.5 text-sm
+          class="flex-1 resize-none rounded-(--radius-lg) border border-(--ui-border) bg-(--ui-bg) px-4 py-2.5 text-sm
                  placeholder:text-(--ui-text-dimmed) focus:outline-none focus:ring-2 focus:ring-(--ui-primary)
-                 disabled:opacity-50"
+                 disabled:opacity-50 transition-shadow duration-(--duration-fast)"
           :class="isSending ? 'cursor-not-allowed' : ''"
           @keydown="handleKeydown"
         />

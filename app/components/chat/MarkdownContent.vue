@@ -35,7 +35,7 @@ function handleClick(e: MouseEvent) {
   navigator.clipboard.writeText(decoded).then(() => {
     toast.add({
       title: '已复制到剪贴板',
-      color: 'success',
+      color: 'primary',
       icon: 'i-lucide-check'
     })
   }).catch(() => {

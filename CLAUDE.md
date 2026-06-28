@@ -59,7 +59,7 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 ## 当前进度
 
-Phase 1 核心基础已完成。Phase 1.5 第一轮（工程基础 1.8–1.15）全部完成。第二轮：1.16 错误反馈体系已完成，1.19 复制+重新生成已完成，1.20 代码高亮已完成，1.21 防重复创建+骨架屏已完成（搜索+折叠待做），1.17 SSE 重连推迟，1.28 增量写入 + 1.29 切换清理 + 1.30 后台流保持已完成（三项合并为流式架构 V2 升级，详见 [stream-architecture-v2](docs/dev-log/2026-06-27-stream-architecture-v2.md)）。下一批优先：1.23 设计规范、1.27 TS strict。1.19 编辑重发、1.25 键盘快捷键已推迟（任务清单 + 状态见 @.claude/plan/roadmap.md）
+Phase 1 核心基础已完成。Phase 1.5 第一轮（工程基础 1.8–1.15）全部完成。第二轮：1.16 错误反馈体系已完成，1.19 复制+重新生成已完成，1.20 代码高亮已完成，1.21 防重复创建+骨架屏已完成（搜索+折叠待做），1.17 SSE 重连推迟，1.28 增量写入 + 1.29 切换清理 + 1.30 后台流保持已完成（三项合并为流式架构 V2 升级，详见 [stream-architecture-v2](docs/dev-log/2026-06-27-stream-architecture-v2.md)）。1.23 设计规范体系已完成 — token 层（CSS 变量 + 动效 + 暗黑覆写）＋ 组件改造（圆角 token 化、错误态语义色、消息入场动画），详见 [ADR-011](docs/decisions/011-design-specification.md)。下一批优先：1.27 TS strict。1.19 编辑重发、1.25 键盘快捷键已推迟（任务清单 + 状态见 @.claude/plan/roadmap.md）
 
 ## 自定义命令
 
