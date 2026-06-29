@@ -184,10 +184,19 @@
 }
 
 /* ---- 焦点（仅键盘导航可见） ---- */
+/* 排除原生表单元素 — Nuxt UI 组件自带 focus ring，全局 outline 会叠加导致双边框 */
 *:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
   border-radius: var(--radius-xs);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role='textbox']:focus-visible,
+[contenteditable]:focus-visible {
+  outline: none;
 }
 
 /* ===================================================================

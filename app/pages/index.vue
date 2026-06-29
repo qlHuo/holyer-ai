@@ -14,6 +14,12 @@ const sidebarCollapsed = useCookie('sidebar-collapsed', {
   watch: true
 })
 
+// 移动端检测（< 768px，匹配 Tailwind md 断点）
+const isMobile = useMediaQuery('(max-width: 767px)')
+
+/** 工具栏搜索入口：移动端始终显示，桌面端仅在侧边折叠时显示 */
+const showToolbarSearch = computed(() => isMobile.value || sidebarCollapsed.value)
+
 /** 新建对话（顶部工具栏调用） */
 async function handleCreateChat() {
   try {
@@ -100,16 +106,23 @@ async function handleCreateChat() {
           </div>
         </div>
 
-        <!-- 右侧：暗黑模式切换 -->
-        <UButton
-          :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
-          variant="ghost"
-          size="sm"
-          color="neutral"
-          :aria-label="isDark ? '切换亮色模式' : '切换暗色模式'"
-          :title="isDark ? '切换亮色模式' : '切换暗色模式'"
-          @click="toggleMode"
-        />
+        <!-- 右侧：搜索 + 暗黑模式切换 -->
+        <div class="flex items-center gap-1">
+          <SearchModal
+            v-if="showToolbarSearch"
+            size="sm"
+            title="搜索消息 (Ctrl+K)"
+          />
+          <UButton
+            :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
+            variant="ghost"
+            size="sm"
+            color="neutral"
+            :aria-label="isDark ? '切换亮色模式' : '切换暗色模式'"
+            :title="isDark ? '切换亮色模式' : '切换暗色模式'"
+            @click="toggleMode"
+          />
+        </div>
       </div>
 
       <ChatPanel class="flex-1 min-h-0" />

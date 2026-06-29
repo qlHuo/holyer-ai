@@ -112,6 +112,13 @@ onMounted(() => {
       >
         新建对话
       </UButton>
+      <div class="pt-3 flex justify-between items-center">
+        <span class="text-xs text-dimmed">最近对话</span>
+        <SearchModal
+          size="xs"
+          title="搜索消息"
+        />
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════════ -->

@@ -94,6 +94,47 @@ export async function getHistory(conversationId: string): Promise<Message[]> {
  * 如果对话不存在，返回 null。
  * API 路由拿到 null 后抛 404。
  */
+/** 单条搜索结果 */
+export interface MessageSearchResult {
+  messageId: string
+  conversationId: string
+  conversationTitle: string
+  role: Message['role']
+  content: string
+  createdAt: string
+}
+
+/**
+ * @Description 跨对话搜索消息内容
+ * 使用 PostgreSQL ilike 进行大小写不敏感模糊匹配。
+ * 返回按时间倒序排列，上限 50 条防止响应膨胀。
+ */
+export async function searchMessages(query: string): Promise<MessageSearchResult[]> {
+  const rows = await db
+    .select({
+      messageId: messages.id,
+      conversationId: messages.conversationId,
+      conversationTitle: conversations.title,
+      role: messages.role,
+      content: messages.content,
+      createdAt: messages.createdAt
+    })
+    .from(messages)
+    .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+    .where(sql`${messages.content} ILIKE ${`%${query}%`}`)
+    .orderBy(desc(messages.createdAt))
+    .limit(50)
+
+  return rows.map(row => ({
+    messageId: row.messageId,
+    conversationId: row.conversationId,
+    conversationTitle: row.conversationTitle,
+    role: row.role as Message['role'],
+    content: row.content,
+    createdAt: row.createdAt.toISOString()
+  }))
+}
+
 export async function getConversationDetail(id: string): Promise<ConversationDetail | null> {
   // getConversation 和 getHistory 互不依赖，并行查询
   const [conversation, messageList] = await Promise.all([
