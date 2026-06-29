@@ -107,6 +107,7 @@ Phase 1 核心基础已完成。Phase 1.5 第一轮（工程基础 1.8–1.15）
 | [stream-interruption-protection](docs/dev-log/2026-06-23-stream-interruption-protection.md) | **流式中断保护方案** — SSE 重连推迟、两步走策略（第一步 35 行消灾难、第二步后台流保持）、核心洞察"流是独立后台任务，UI 只是观察窗口" |
 | [stream-leakage-root-cause](docs/dev-log/2026-06-25-stream-leakage-root-cause.md) | **流式串话根因深度分析** — `messages` 全局单数组与对话无绑定（核心缺陷）、`useChat()` 三次独立实例化（放大缺陷）、两道防线修复（`streamingConvId` 校验 + watch abort）、后端双层 ReadableStream 分析 |
 | [stream-architecture-v2](docs/dev-log/2026-06-27-stream-architecture-v2.md) | **流式架构 V2 完整实现** — 模块级单例 `useChat()`、`streamSessions` Map 管理多路并行流、`switchConversation` 切换保留后台流 + 切回恢复、服务端 `AbortSignal` 完整取消链、SSE 事件按 `conversationId` 路由、三层防线、META re-key |
+| [ssr-state-hydration](docs/dev-log/2026-06-29-ssr-state-hydration.md) | **SSR 安全的状态持久化** — `useCookie` vs `localStorage`、水合机制、预渲染 vs SSR 取舍 |
 | [ADR-008](docs/decisions/008-vercel-ai-sdk.md) | Vercel AI SDK 不集成，自建 Provider 抽象层 |
 | [ADR-009](docs/decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略 |
 | [ADR-010](docs/decisions/010-eslint-over-prettier.md) | ESLint stylistic rules 替代 Prettier |

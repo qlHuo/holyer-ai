@@ -8,19 +8,11 @@ const toast = useToast()
 const sidebarOpen = ref(false)
 
 // 桌面端侧边栏折叠偏好
-const sidebarCollapsed = ref(false)
-
-// onMounted(() => {
-//   // 获取侧边栏折叠偏好
-//   sidebarCollapsed.value = localStorage.getItem('sidebar-collapsed') === 'true'
-// })
-
-// watch(
-//   () => sidebarCollapsed.value,
-//   (value) => {
-//     localStorage.setItem('sidebar-collapsed', value ? 'true' : 'false')
-//   }
-// )
+// useCookie 在 setup() 阶段同步读取 cookie，消除 SSR/预渲染闪烁
+const sidebarCollapsed = useCookie('sidebar-collapsed', {
+  default: () => false,
+  watch: true
+})
 
 /** 新建对话（顶部工具栏调用） */
 async function handleCreateChat() {
