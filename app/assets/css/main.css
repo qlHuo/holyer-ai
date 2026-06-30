@@ -381,6 +381,21 @@ select:focus-visible,
   background-color: color-mix(in srgb, var(--ui-text-dimmed) 15%, transparent);
 }
 
+.code-copy-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
 .code-block-wrapper pre {
   margin: 0;
   padding: 0.75em 1em;
@@ -391,4 +406,38 @@ select:focus-visible,
   font-size: 0.8125rem;
   line-height: 1.6;
   font-family: var(--font-mono);
+}
+
+/* ---- Mermaid 图表 ---- */
+
+/*
+ * 流式输出期间，mermaid 尚未被 mermaid 处理，显示为代码块样式。
+ * 渲染后 .mermaid 被替换为 SVG（mermaid 自动添加 data-processed 属性）。
+ *
+ * 使用 <pre> 而非 <div> 是因为 mermaid 11.x 通过 innerHTML 读取源码，
+ * <pre> 保留换行/缩进空白符，<div> 会规范化导致语法解析失败。
+ */
+.mermaid:not([data-processed]) {
+  margin: 0.75em 0;
+  padding: 0.75em 1em;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--code-block-bg);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  color: var(--ui-text);
+}
+
+/* 已渲染的 mermaid SVG 容器 */
+.mermaid[data-processed] {
+  margin: 0.75em 0;
+  display: flex;
+  justify-content: center;
+}
+
+.mermaid[data-processed] svg {
+  max-width: 100%;
+  height: auto;
 }

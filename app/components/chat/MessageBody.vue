@@ -41,6 +41,7 @@ const chatStore = useChatStore()
       <ChatMarkdownContent
         v-if="role === 'assistant'"
         :content="content"
+        :is-streaming="isStreaming ?? false"
       />
 
       <!-- ===== 用户消息纯文本 ===== -->

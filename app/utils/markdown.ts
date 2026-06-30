@@ -27,7 +27,8 @@ let _md: MarkdownIt | null = null
  * - highlight       → 代码块语法高亮
  * - link_open       → 外部链接添加 target="_blank" 和安全属性
  * - image           → 图片懒加载
- * - fence           → 代码块包裹在 .code-block-wrapper 中，预留语言标签和复制按钮
+ * - fence           → 代码块包裹在 .code-block-wrapper 中，预留语言标签和复制按钮；
+ *                     mermaid 特殊处理为 .mermaid 容器，前端流式结束后渲染 SVG
  */
 export function getMarkdownParser(): MarkdownIt {
   if (_md) return _md
@@ -99,6 +100,7 @@ export function getMarkdownParser(): MarkdownIt {
   }
 
   // 围栏代码块：包裹在 .code-block-wrapper 中，添加语言标签和复制按钮占位
+  // mermaid 特殊处理：输出 .mermaid 容器，前端在流式结束后通过 mermaid.run() 渲染 SVG
   const defaultFence
     = _md.renderer.rules.fence
       ?? function (tokens, idx, options, _env, self) {
@@ -111,6 +113,16 @@ export function getMarkdownParser(): MarkdownIt {
 
     const lang = token.info?.trim().split(/\s+/)[0] || 'text'
     const rawCode = token.content
+
+    // mermaid 图表：输出原始代码到 .mermaid 容器。
+    // 前端在流式结束后通过 mermaid.run() 渲染为 SVG；
+    // 流式期间 .mermaid 尚未被 mermaid 处理，CSS 将其显示为代码块样式。
+    if (lang === 'mermaid') {
+      // 使用 <pre> 而非 <div>：mermaid 11.x 通过 innerHTML 读取图表源码，
+      // <pre> 保留换行和缩进空白符，<div> 会规范化空白导致语法解析失败。
+      const escapedMermaid = _md!.utils.escapeHtml(rawCode)
+      return `<pre class="mermaid">${escapedMermaid}</pre>`
+    }
 
     // 获取高亮后的 HTML（调用 markdown-it 的 highlight 回调）
     const highlighted = options.highlight
@@ -125,7 +137,7 @@ export function getMarkdownParser(): MarkdownIt {
       '<div class="code-block-header">',
       `<span class="code-lang">${_md!.utils.escapeHtml(lang)}</span>`,
       `<button class="code-copy-btn" data-code="${escapedCode}" title="复制代码">`,
-      '<span class="code-copy-icon i-lucide-copy w-3.5 h-3.5"></span>',
+      '<span class="code-copy-icon"></span>',
       '</button>',
       '</div>',
       `<pre><code class="hljs${lang ? ` language-${_md!.utils.escapeHtml(lang)}` : ''}">${highlighted}</code></pre>`,

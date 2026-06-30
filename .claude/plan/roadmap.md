@@ -50,7 +50,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 1.18 | ChatInput 优化 | contenteditable div 替代 textarea + 粘贴处理（超长截断、图片提示） | ⬜ |
 | 1.19 | 消息操作按钮 | 复制纯文本（✅）、重新生成（✅）、编辑重发（⏸️） | ✅ |
 | 1.20 | 代码高亮主题 | highlight.js CSS 引入（亮暗双模式） | ✅ |
-| 1.21 | 侧边栏完善 | 防重复创建（✅）、骨架屏（✅）、搜索（⬜）、折叠（⬜） | 🔄 |
+| 1.21 | 侧边栏完善 | 防重复创建（✅）、骨架屏（✅）、搜索（✅）、折叠（✅） | ✅ |
 | 1.22 | ~~前端动态模型列表~~ | `/api/models` 接口替代 providers.ts 硬编码 — **不做**（7 个模型不需要动态化，推迟到 Phase 2 Agent 按 skill 推荐模型时再做） | ❌ |
 | 1.28 | 流式增量写入 DB | 后端 /api/chat 在 LLM 流开始前 INSERT 空占位 → 每 200 字符 UPDATE content → 流结束最终 UPDATE。解决用户刷新/切走页面时内容全部丢失的痛点（详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md) · [根因分析](../../docs/dev-log/2026-06-25-stream-leakage-root-cause.md)） | ✅ |
 | 1.29 | 切换对话自动 abort | useChat watch currentConvId → 变更时 abort 旧请求 + Store 层 `streamingConvId` 校验兜底。解决流式输出中切换对话，旧内容泄漏到新对话的竞态 bug（详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md) · [根因分析](../../docs/dev-log/2026-06-25-stream-leakage-root-cause.md)） | ✅ |
@@ -63,7 +63,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 1.23 | 设计规范体系 | 配色/字体/间距/圆角/阴影/动效/滚动条定制 — token 层 + 组件改造（详见 [ADR-011](../../docs/decisions/011-design-specification.md)） | ✅ |
 | 1.24 | 页面初始化 | 骨架屏 + 欢迎页优化（参考 DeepSeek 风格） | ⬜ |
 | 1.25 | 键盘快捷键 | Ctrl+N/Enter、Esc、Ctrl+/（Ctrl+K 命令面板需搜索功能先落地） | ⏸️ |
-| 1.26 | Mermaid 渲染 | markdown-it fence 识别 mermaid 语言 | ⬜ |
+| 1.26 | Mermaid 渲染 | markdown-it fence 识别 mermaid 语言，流式结束后客户端渲染 SVG（详见 [实现文档](../../docs/dev-log/2026-07-01-markdown-mermaid-implementation.md)） | ✅ |
 | 1.27 | TS strict | TypeScript strict:true + noUncheckedIndexedAccess 等（Nuxt 4 默认开启，当前 typecheck 零错误） | ✅ |
 | 1.31 | API 单元测试 | vitest + conversations CRUD 测试 | ⏸️ |
 
