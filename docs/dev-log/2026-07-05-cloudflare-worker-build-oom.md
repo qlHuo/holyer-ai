@@ -77,22 +77,28 @@ Nitro 知道目标环境是 Worker 后：
 - **客户端代码自然分离**：`mermaid`、`highlight.js` 仅在 `.vue` 组件中使用，不进入 Worker bundle
 - **精确打包**：只打包服务端实际 `import` 链上的代码
 
-| Preset | 打包范围 | 构建内存 |
-|--------|---------|:--:|
-| `node-server` | 整个 `node_modules` | ~2GB OOM |
-| `cloudflare-module` | 仅服务端引用链 | <500MB |
+| Preset | Nitro 服务端打包 | Vite 客户端打包 | 总构建内存 |
+|--------|---------|---------|:--:|
+| `node-server` | 整个 `node_modules` | 正常（mermaid 80MB + hljs 5MB） | 4GB+ OOM |
+| `cloudflare-module` | 仅服务端引用链，~500MB | 同上，preset 不影响 | ~3–4GB，仍需堆调整 |
 
 ---
 
-## 不需要的"修复"
+## 仍然需要的堆调整
 
-讨论过程中出现了两个不需要的方案：
+### ⚠️ `NODE_OPTIONS` 仍需设置，但原因变了
 
-### ❌ `NODE_OPTIONS="--max-old-space-size=8192"`
+`cloudflare-module` 修了 Nitro 服务端打包，但 **Vite 客户端构建是独立管线**（见下方补充章节），它仍然处理 `mermaid`（80MB 源码）和 `highlight.js`（5MB），这些才是剩余的内存压力来源。
 
-增加堆内存是治标。`node-server` 打包方式本身就是错误的——即使用 8GB 勉强构建成功，产物也无法部署到 Cloudflare Workers。正确的 preset 下 4GB 默认堆完全够用。
+| 场景 | Nitro 压力 | Vite 压力 | 需要堆大小 |
+|------|:--:|:--:|:--:|
+| `node-server` + 无堆调整 | 🔴 复制整个 node_modules | 🟡 处理 mermaid/hljs | **OOM**（双重压力） |
+| `cloudflare-module` + 无堆调整 | 🟢 仅 server 引用链 | 🟡 处理 mermaid/hljs | **OOM**（Vite 单方面 ~3GB+） |
+| `cloudflare-module` + 中等堆 | 🟢 仅 server 引用链 | 🟡 处理 mermaid/hljs | **✅** 约 4–6GB |
 
-### ❌ 项目根 `wrangler.jsonc`
+结论：堆调整从"治标"变成了"治本的一部分"——不是弥补 preset 错误，而是为 Vite 处理重型前端依赖提供合理内存。**不需要 8GB，4–6GB 应该够用。**
+
+### ❌ 项目根 `wrangler.jsonc`（仍然不需要）
 
 `cloudflare-module` preset 构建时会在 `dist/` 中自动生成 `wrangler.json`，不需要在项目根手动维护。项目根 `wrangler.jsonc` 只在需要声明 **Cloudflare 绑定**（KV、R2、D1、Queue 等）时才有意义，本项目使用 Neon PostgreSQL 作为外部数据库，不依赖这些绑定。
 
@@ -171,8 +177,20 @@ nuxt build
 
 | 文件 | 改动 | 说明 |
 |------|------|------|
-| `nuxt.config.ts` | 新增 `preset: 'cloudflare-module'` | 唯一需要的修改 |
-| `package.json` | build 脚本保持 `nuxt build` | 不需要 `NODE_OPTIONS` 堆调整 |
+| `nuxt.config.ts` | 新增 `preset: 'cloudflare-module'` | 修复 Nitro 服务端打包（治本之一） |
+| `package.json` | build 脚本建议改回 `nuxt build` | 堆调整放到构建命令或 CI 环境变量中更合适 |
+
+### 推荐的 build 命令
+
+```bash
+# 本地构建（Windows Git Bash）：
+NODE_OPTIONS="--max-old-space-size=6144" npx nuxi build
+
+# 或在 package.json 中：
+"build": "NODE_OPTIONS=\"--max-old-space-size=6144\" nuxt build"
+```
+
+4GB 不够、8GB 多余，6GB 是一个合理的中间值。如果后续优化了 mermaid 的加载方式（如 CDN 外部化），可以进一步降低或去掉堆调整。
 
 ---
 
