@@ -110,6 +110,7 @@ Phase 1 核心基础已完成。Phase 1.5 第一轮（工程基础 1.8–1.15）
 | [ssr-state-hydration](docs/dev-log/2026-06-29-ssr-state-hydration.md) | **SSR 安全的状态持久化** — `useCookie` vs `localStorage`、水合机制、预渲染 vs SSR 取舍 |
 | [markdown-mermaid](docs/dev-log/2026-07-01-markdown-mermaid-implementation.md) | **Markdown 渲染与 Mermaid 图表完整实现** — markdown-it 管线、Mermaid 双触发器、三个 Bug 根因与修复、v-html 图标方案、未来扩展 |
 | [chatinput-welcome](docs/dev-log/2026-07-03-chatinput-welcome-redesign.md) | **ChatInput 双区域重构 + 欢迎页快速操作** — textarea vs contenteditable 决策、统一卡片方案（`focus-within` + 条件分隔线）、`nextTick` 高度还原 Bug、6 个静态引导卡片、移动端适配 |
+| [cloudflare-worker-build-oom](docs/dev-log/2026-07-05-cloudflare-worker-build-oom.md) | **Cloudflare Worker 构建 OOM 修复** — 缺失 `nitro.preset` 导致默认 `node-server` 全量打包 node_modules 引发堆内存溢出，一行 `cloudflare-module` 解决；附 Nuxt 双管线（Vite + Nitro）构建架构解析 |
 | [ADR-008](docs/decisions/008-vercel-ai-sdk.md) | Vercel AI SDK 不集成，自建 Provider 抽象层 |
 | [ADR-009](docs/decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略 |
 | [ADR-010](docs/decisions/010-eslint-over-prettier.md) | ESLint stylistic rules 替代 Prettier |

@@ -35,7 +35,9 @@ Cloudflare Pages (Nuxt 4 SSR + API Routes)
 |------|------|
 | SSE 心跳 | 每 30s 发送 `event: ping`，防 100s 空闲超时 |
 | 压缩禁用 | `/api/chat` 需在 Dashboard 关闭 Brotli/Gzip |
-| 部署命令 | `npx nuxi build`（`nitro.preset: 'cloudflare-pages'`） |
+| 部署命令 | `npx nuxi build`（`nitro.preset: 'cloudflare-module'`） |
+
+> **2026-07-05 更新**：实际部署目标调整为 **Cloudflare Workers**（独立 Worker），preset 相应改为 `cloudflare-module`。Worker 直接处理 SSR + API 路由，不依赖 Pages 的静态资源 CDN。详见 [构建 OOM 修复](../dev-log/2026-07-05-cloudflare-worker-build-oom.md)。
 | DB 连接 | Neon HTTP 连接池化 URL（含 `-pooler.`） |
 
 ## 成本
