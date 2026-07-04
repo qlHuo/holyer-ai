@@ -47,7 +47,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 |------|------|------|:--:|
 | 1.16 | 错误反馈体系 | Toast 补齐 + 消息气泡错误态（变红+重试按钮）+ 空状态错误变体（加载失败→重试）。~~ErrorBanner~~（简化：仅 ChatPanel 顶部网络状态条，不做独立全局组件） | ✅ |
 | 1.17 | ~~SSE 重连~~ | 指数退避重连，断点续传 — **推迟**（网络闪断场景极少、无法实现真重连只能从头生成，收益抵不上复杂度。详见 [流式中断保护方案](../../docs/dev-log/2026-06-23-stream-interruption-protection.md)） | ⏸️ |
-| 1.18 | ChatInput 优化 | contenteditable div 替代 textarea + 粘贴处理（超长截断、图片提示） | ⬜ |
+| 1.18 | ChatInput 优化 | textarea 双区域重构 → 统一卡片方案（textarea + 工具栏共用一个边框 + `focus-within` 焦点环），粘贴处理（超长截断、图片提示），`nextTick` 高度还原。~~contenteditable~~ 否决（详见 [设计文档](../../docs/dev-log/2026-07-03-chatinput-welcome-redesign.md)） | ✅ |
 | 1.19 | 消息操作按钮 | 复制纯文本（✅）、重新生成（✅）、编辑重发（⏸️） | ✅ |
 | 1.20 | 代码高亮主题 | highlight.js CSS 引入（亮暗双模式） | ✅ |
 | 1.21 | 侧边栏完善 | 防重复创建（✅）、骨架屏（✅）、搜索（✅）、折叠（✅） | ✅ |
@@ -61,7 +61,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
 | 1.23 | 设计规范体系 | 配色/字体/间距/圆角/阴影/动效/滚动条定制 — token 层 + 组件改造（详见 [ADR-011](../../docs/decisions/011-design-specification.md)） | ✅ |
-| 1.24 | 页面初始化 | 骨架屏 + 欢迎页优化（参考 DeepSeek 风格） | ⬜ |
+| 1.24 | 页面初始化 | 欢迎页快速操作增强 — 6 个静态提示词卡片（桌面 3 列/移动 2 列），点击填入输入框。复用现有 ChatPanel 欢迎区，不创建独立页面（详见 [设计文档](../../docs/dev-log/2026-07-03-chatinput-welcome-redesign.md)） | ✅ |
 | 1.25 | 键盘快捷键 | Ctrl+N/Enter、Esc、Ctrl+/（Ctrl+K 命令面板需搜索功能先落地） | ⏸️ |
 | 1.26 | Mermaid 渲染 | markdown-it fence 识别 mermaid 语言，流式结束后客户端渲染 SVG（详见 [实现文档](../../docs/dev-log/2026-07-01-markdown-mermaid-implementation.md)） | ✅ |
 | 1.27 | TS strict | TypeScript strict:true + noUncheckedIndexedAccess 等（Nuxt 4 默认开启，当前 typecheck 零错误） | ✅ |

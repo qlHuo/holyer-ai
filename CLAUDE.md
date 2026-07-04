@@ -59,7 +59,7 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 ## 当前进度
 
-Phase 1 核心基础已完成。Phase 1.5 第一轮（工程基础 1.8–1.15）全部完成。第二轮：1.16 错误反馈体系已完成，1.19 复制+重新生成已完成，1.20 代码高亮已完成，1.21 防重复创建+骨架屏已完成（搜索+折叠待做），1.17 SSE 重连推迟，1.28 增量写入 + 1.29 切换清理 + 1.30 后台流保持已完成（三项合并为流式架构 V2 升级，详见 [stream-architecture-v2](docs/dev-log/2026-06-27-stream-architecture-v2.md)）。1.23 设计规范体系已完成 — token 层（CSS 变量 + 动效 + 暗黑覆写）＋ 组件改造（圆角 token 化、错误态语义色、消息入场动画），详见 [ADR-011](docs/decisions/011-design-specification.md)。1.27 TS strict 已完成（Nuxt 4 默认 strict:true，typecheck 零错误）。1.31 API 单元测试推迟到 Phase 2。1.19 编辑重发、1.25 键盘快捷键已推迟（任务清单 + 状态见 @.claude/plan/roadmap.md）
+Phase 1 核心基础已完成。Phase 1.5 第一轮（工程基础 1.8–1.15）全部完成。第二轮全部完成：1.16 错误反馈体系、1.18 ChatInput 统一卡片重构（[设计文档](docs/dev-log/2026-07-03-chatinput-welcome-redesign.md)）、1.19 复制+重新生成、1.20 代码高亮、1.21 侧边栏完善（搜索+折叠+防重复+骨架屏）、1.24 欢迎页快速操作卡片、1.28 增量写入 + 1.29 切换清理 + 1.30 后台流保持（合并为流式架构 V2，详见 [stream-architecture-v2](docs/dev-log/2026-06-27-stream-architecture-v2.md)）。第三轮：1.23 设计规范体系（[ADR-011](docs/decisions/011-design-specification.md)）、1.26 Mermaid 渲染（[实现文档](docs/dev-log/2026-07-01-markdown-mermaid-implementation.md)）、1.27 TS strict 已完成。Phase 1.5 全部完成 ✅。推迟：1.17 SSE 重连、1.19 编辑重发、1.25 键盘快捷键、1.31 API 单元测试（详见 [roadmap](.claude/plan/roadmap.md)）
 
 ## 自定义命令
 
@@ -109,6 +109,7 @@ Phase 1 核心基础已完成。Phase 1.5 第一轮（工程基础 1.8–1.15）
 | [stream-architecture-v2](docs/dev-log/2026-06-27-stream-architecture-v2.md) | **流式架构 V2 完整实现** — 模块级单例 `useChat()`、`streamSessions` Map 管理多路并行流、`switchConversation` 切换保留后台流 + 切回恢复、服务端 `AbortSignal` 完整取消链、SSE 事件按 `conversationId` 路由、三层防线、META re-key |
 | [ssr-state-hydration](docs/dev-log/2026-06-29-ssr-state-hydration.md) | **SSR 安全的状态持久化** — `useCookie` vs `localStorage`、水合机制、预渲染 vs SSR 取舍 |
 | [markdown-mermaid](docs/dev-log/2026-07-01-markdown-mermaid-implementation.md) | **Markdown 渲染与 Mermaid 图表完整实现** — markdown-it 管线、Mermaid 双触发器、三个 Bug 根因与修复、v-html 图标方案、未来扩展 |
+| [chatinput-welcome](docs/dev-log/2026-07-03-chatinput-welcome-redesign.md) | **ChatInput 双区域重构 + 欢迎页快速操作** — textarea vs contenteditable 决策、统一卡片方案（`focus-within` + 条件分隔线）、`nextTick` 高度还原 Bug、6 个静态引导卡片、移动端适配 |
 | [ADR-008](docs/decisions/008-vercel-ai-sdk.md) | Vercel AI SDK 不集成，自建 Provider 抽象层 |
 | [ADR-009](docs/decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略 |
 | [ADR-010](docs/decisions/010-eslint-over-prettier.md) | ESLint stylistic rules 替代 Prettier |

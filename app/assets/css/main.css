@@ -441,3 +441,45 @@ select:focus-visible,
   max-width: 100%;
   height: auto;
 }
+
+/* ===================================================================
+   欢迎页 — 快速操作卡片
+   =================================================================== */
+
+.welcome-suggestions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .welcome-suggestions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.welcome-suggestion-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  background: var(--ui-bg);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast),
+    transform var(--duration-fast);
+  text-align: start;
+}
+
+.welcome-suggestion-card:hover {
+  border-color: var(--ui-primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.welcome-suggestion-card:active {
+  transform: translateY(0);
+}
