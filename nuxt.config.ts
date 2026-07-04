@@ -31,9 +31,11 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2025-01-15',
 
-  // Nitro server bundle 默认 target es2019 不支持 top-level await，
-  // 设为 es2022 以支持 server/db/index.ts 中的编译时双驱动分支
+  // Nitro 配置
   nitro: {
+    preset: 'cloudflare-module',
+
+    // top-level await 需要 es2022（server/db/index.ts 编译时双驱动分支）
     esbuild: {
       options: {
         target: 'es2022'
