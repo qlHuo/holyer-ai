@@ -1,5 +1,7 @@
 # Claude Code Hook 指南
 
+> 相关文档：[进阶功能实战指南](advanced-features-guide.md) · [permissions-guide](permissions-guide.md)
+
 ---
 
 ## Hook 类型

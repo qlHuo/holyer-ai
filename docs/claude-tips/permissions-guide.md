@@ -1,5 +1,7 @@
 # Claude Code 权限配置指南
 
+> 相关文档：[进阶功能实战指南](advanced-features-guide.md) · [hooks-guide](hooks-guide.md)
+
 ---
 
 ## 核心机制
