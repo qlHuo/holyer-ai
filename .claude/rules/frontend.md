@@ -1,9 +1,18 @@
 ---
 paths:
   - "app/**"
+description: 前端开发规范 — Nuxt UI v4 组件用法、暗黑模式、路径别名、Tailwind CSS v4、Pinia 状态管理
 ---
 
 # 前端规则
+
+## 何时应用此规则
+
+- 在 `app/` 下新增或修改 Vue 组件、页面、composable、store 时
+- 使用 UI 组件时（确认用的是 Nuxt UI v4 API 而非 v3）
+- 处理样式时（确认用 Tailwind CSS v4 的 CSS 驱动配置而非 v3 的 JS 配置）
+- 新增状态管理时（确认 Pinia 已注册、使用 Setup Store 语法）
+- 处理暗黑模式时（使用 `useColorMode()` 而非手动 class 切换）
 
 ## UI 组件库
 

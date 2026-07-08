@@ -2,9 +2,18 @@
 paths:
   - "server/db/**"
   - "drizzle.config.ts"
+description: 数据库硬约束 — 驱动选择（neon-http vs pg）、导入方式、连接字符串、查询模式、迁移流程
 ---
 
 # 数据库规则
+
+## 何时应用此规则
+
+- 在 `server/db/` 下新增或修改 Schema、查询、迁移文件时
+- 在 `server/` 任何地方写数据库查询时（即使不在 `server/db/` 下）
+- 安装数据库相关依赖时（`pg`、`postgres`、`node-postgres` 等是陷阱包）
+- 修改 `drizzle.config.ts` 或数据库连接方式时
+- 看到 `import { db } from` 以外的数据库连接代码时
 
 ## 驱动
 

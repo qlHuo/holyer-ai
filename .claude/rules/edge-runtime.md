@@ -1,9 +1,18 @@
 ---
 paths:
   - "server/**"
+description: Cloudflare Workers Edge Runtime 约束 — Node.js API 禁用清单与新依赖兼容性检查
 ---
 
 # Edge Runtime 约束
+
+## 何时应用此规则
+
+- 在 `server/` 下**新增或修改**任何文件时
+- **引入新 npm 依赖**时（`npm install` / `pnpm add`）
+- 代码中出现了 `fs`、`path`、`child_process`、`net`、`__dirname` 等 Node.js API
+- 需要做文件读写、进程管理、TCP 连接等操作时
+- 不确定某个 API 是否 Edge 兼容时
 
 Cloudflare Workers 生产环境不提供 Node.js 运行时，以下 API **不可用**：
 

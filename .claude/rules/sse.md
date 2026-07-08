@@ -3,9 +3,18 @@ paths:
   - "server/api/chat/**"
   - "server/api/agent/**"
   - "server/utils/sse.ts"
+description: SSE 流式响应规范 — 心跳机制、响应头、数据格式、部署压缩禁用
 ---
 
 # SSE 流式响应规则
+
+## 何时应用此规则
+
+- 新增或修改 SSE 端点（`/api/chat`、`/api/agent` 等流式路由）
+- 修改 `server/utils/sse.ts` 工具函数
+- 流式响应出现"中途断开""无响应""响应卡住"等问题
+- 部署后流式输出不实时（可能是压缩未关闭）
+- 前端 SSE 连接不稳定时需要排查
 
 ## 心跳机制（必须实现）
 

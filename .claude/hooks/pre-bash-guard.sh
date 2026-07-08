@@ -19,6 +19,8 @@ deny_patterns=(
   'curl.*\|\s*(ba)?sh'     # curl pipe shell
   'wget.*\|\s*(ba)?sh'     # wget pipe shell
   'chmod\s+777\s+\/'       # 危险权限提升
+  'eval\s+'                 # eval 执行动态命令
+  '\.\s*\/.*\|\s*(ba)?sh'  # 本地脚本 pipe shell
 )
 
 for pattern in "${deny_patterns[@]}"; do
