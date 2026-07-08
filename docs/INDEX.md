@@ -1,6 +1,6 @@
 # 文档索引
 
-> 41 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 43 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -13,7 +13,7 @@
 | ADR-001 | [001-nuxt4-fullstack](decisions/001-nuxt4-fullstack.md) | Nuxt 4 全栈方案 |
 | ADR-002 | [002-nuxt-ui-v4](decisions/002-nuxt-ui-v4.md) | Nuxt UI v4 组件库 |
 | ADR-003 | [003-neon-drizzle](decisions/003-neon-drizzle.md) | Neon PostgreSQL + Drizzle ORM |
-| ADR-004 | [004-cloudflare-pages](decisions/004-cloudflare-pages.md) | Cloudflare Pages 部署 |
+| ADR-004 | [004-cloudflare-pages](decisions/004-cloudflare-pages.md) | Cloudflare Workers 部署 |
 | ADR-005 | [005-document-naming](decisions/005-document-naming.md) | 项目文档英文命名 |
 | ADR-006 | [006-docs-directory](decisions/006-docs-directory.md) | docs/ 目录结构与 .claude/ 分离 |
 | ADR-007 | [007-claude-rules-structure](decisions/007-claude-rules-structure.md) | .claude/rules/ 按技术域分层 |

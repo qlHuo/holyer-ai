@@ -26,7 +26,7 @@
 1. **本项目 AI 调用均为外部 API**（OpenAI / Anthropic / DeepSeek），不涉及本地模型推理或 LangChain 复杂编排
 2. **Nitro 服务端能力足够**：SSE 原生支持、文件系统路由、中间件体系
 3. **单一语言/项目降低复杂度**：个人开发场景，维护两套代码成本过高
-4. **Cloudflare Pages 部署**：Nuxt 4 的 `cloudflare-pages` preset 一键适配
+4. **Cloudflare Workers 部署**：Nuxt 4 的 `cloudflare-module` preset 一键适配（免费计划）
 
 ## 代价
 

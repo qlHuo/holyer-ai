@@ -8,42 +8,47 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   Cloudflare Pages                       │
+│                   Cloudflare Workers                     │
 │                                                          │
 │  ┌───────────────────  Nuxt 4 ──────────────────────┐   │
 │  │                                                    │   │
 │  │  Frontend (Vue 3)           Server (Nitro/Worker)  │   │
 │  │  ┌──────────────────┐    ┌──────────────────────┐ │   │
-│  │  │ Nuxt UI v4       │    │ /api/chat    (SSE)   │ │   │
-│  │  │ ├ ChatMessages   │    │ /api/agent/run       │ │   │
-│  │  │ ├ ChatPrompt    │    │ /api/skills          │ │   │
-│  │  │ ├ ChatReasoning │    │ /api/mcp/*           │ │   │
-│  │  │ └ ChatTool      │    │ /api/rag/*           │ │   │
-│  │  └──────────────────┘    │ /api/conversations   │ │   │
+│  │  │ Nuxt UI v4       │    │ /api/chat    (SSE) ✅ │ │   │
+│  │  │ ├ ChatMessages   │    │ /api/agent/run   ⬜P2 │ │   │
+│  │  │ ├ ChatPrompt    │    │ /api/skills      ⬜P2 │ │   │
+│  │  │ ├ ChatReasoning │    │ /api/mcp/*       ⬜P3 │ │   │
+│  │  │ └ ChatTool      │    │ /api/rag/*       ⬜P4 │ │   │
+│  │  └──────────────────┘    │ /api/conversations ✅ │ │   │
 │  │                           └──────────┬───────────┘ │   │
 │  │                                      │              │   │
 │  │                      ┌───────────────▼───────────┐ │   │
 │  │                      │      Services Layer       │ │   │
-│  │                      │  LLM / Agent / Skills     │ │   │
-│  │                      │  MCP   / RAG              │ │   │
+│  │                      │  LLM ✅ / Agent ⬜P2       │ │   │
+│  │                      │  Skills ⬜P2 / MCP ⬜P3    │ │   │
+│  │                      │  RAG ⬜P4                  │ │   │
 │  │                      └───────────────┬───────────┘ │   │
 │  │                                      │              │   │
 │  │                      ┌───────────────▼───────────┐ │   │
-│  │                      │  Drizzle ORM (neon-http)  │ │   │
+│  │                      │  Drizzle ORM (neon-http)✅ │ │   │
 │  │                      └───────────────┬───────────┘ │   │
 │  └──────────────────────────────────────┼──────────────┘   │
 │                                         │                   │
 └─────────────────────────────────────────┼───────────────────┘
                                           │ HTTP
                               ┌───────────▼───────────┐
-                              │   Neon PostgreSQL      │
+                              │   Neon PostgreSQL  ✅  │
                               │   + pgvector           │
                               └───────────────────────┘
 ```
 
+> ✅ 已实现（Phase 1/1.5） · ⬜ P2/P3/P4 计划中
+
 ---
 
 ## 2. 目录结构
+
+> 图例：✅ 已实现（Phase 1/1.5） · ⬜ P2/P3/P4 计划中 · 无标记 = 已实现
 
 ```
 holyer-ai/
@@ -54,94 +59,112 @@ holyer-ai/
 │   ├── components/               # Vue 组件
 │   │   ├── chat/
 │   │   │   ├── ChatPanel.vue     # 聊天主面板
-│   │   │   ├── ConversationList.vue  # 对话列表
-│   │   │   └── ModelSelector.vue # 模型选择器
-│   │   ├── agent/
-│   │   │   ├── AgentPanel.vue    # Agent 状态面板
-│   │   │   └── ToolCallCard.vue  # 工具调用卡片
-│   │   ├── skills/
+│   │   │   ├── ChatInput.vue     # 输入框（textarea 双区域 → 统一卡片）
+│   │   │   ├── ChatMessage.vue   # 消息气泡（含入场动画）
+│   │   │   ├── ChatMessageActions.vue  # 消息操作（复制、重新生成）
+│   │   │   ├── MessageBody.vue   # 消息正文渲染
+│   │   │   ├── MarkdownContent.vue  # Markdown + Mermaid 渲染
+│   │   │   └── ChatModelSelector.vue # 模型选择器
+│   │   ├── agent/                # ⬜ P2
+│   │   │   ├── AgentPanel.vue
+│   │   │   └── ToolCallCard.vue
+│   │   ├── skills/               # ⬜ P2
 │   │   │   └── SkillsManager.vue
-│   │   ├── rag/
+│   │   ├── rag/                  # ⬜ P4
 │   │   │   ├── DocumentUpload.vue
 │   │   │   └── KnowledgeBase.vue
-│   │   └── layout/
-│   │       ├── AppSidebar.vue
-│   │       └── AppHeader.vue
+│   │   ├── layout/
+│   │   │   └── LayoutSidebar.vue # 侧边栏（对话列表 + 搜索 + 折叠）
+│   │   └── search/
+│   │       └── SearchModal.vue   # 全局搜索（Ctrl+K）
 │   ├── composables/              # 组合式函数
-│   │   ├── useChat.ts            # SSE 流式聊天
-│   │   ├── useAgent.ts           # Agent 状态
+│   │   ├── useChat.ts            # SSE 流式聊天（V2 架构：按对话隔离）
+│   │   ├── useAgent.ts           # Agent 状态 ⬜ P2
 │   │   └── useTheme.ts           # 暗黑模式
-│   └── stores/                   # Pinia 状态
-│       ├── chat.store.ts
-│       └── settings.store.ts
+│   ├── stores/                   # Pinia 状态
+│   │   └── chat.store.ts
+│   └── api/                      # 前端 API 封装层
+│       ├── index.ts
+│       ├── request.ts            # $fetch 统一封装
+│       ├── chat.ts
+│       ├── conversations.ts
+│       └── search.ts
 │
 ├── server/                       # Nitro 服务端
 │   ├── api/                      # API 路由
 │   │   ├── chat/
-│   │   │   └── index.post.ts     # SSE 流式对话
+│   │   │   ├── index.post.ts     # SSE 流式对话
+│   │   │   └── schema.ts         # Zod 验证
 │   │   ├── conversations/
 │   │   │   ├── index.get.ts
 │   │   │   ├── index.post.ts
-│   │   │   └── [id].delete.ts
-│   │   ├── agent/
+│   │   │   ├── [id].get.ts
+│   │   │   ├── [id].delete.ts
+│   │   │   └── schema.ts
+│   │   ├── search.get.ts         # 对话搜索
+│   │   ├── agent/                # ⬜ P2
 │   │   │   └── run.post.ts
-│   │   ├── skills/
+│   │   ├── skills/               # ⬜ P2
 │   │   │   ├── index.get.ts
 │   │   │   └── [name].get.ts
-│   │   ├── mcp/
+│   │   ├── mcp/                  # ⬜ P3
 │   │   │   ├── servers.get.ts
 │   │   │   └── tools.get.ts
-│   │   └── rag/
+│   │   └── rag/                  # ⬜ P4
 │   │       ├── documents/
 │   │       │   ├── index.get.ts
 │   │       │   └── index.post.ts
 │   │       └── search.post.ts
 │   │
-│   ├── services/                 # 业务逻辑层
+│   ├── service/                  # 业务逻辑层
 │   │   ├── llm/
 │   │   │   ├── types.ts          # LLMProvider 接口
 │   │   │   ├── factory.ts        # Provider 工厂
 │   │   │   ├── openai.ts
 │   │   │   ├── anthropic.ts
 │   │   │   └── deepseek.ts
-│   │   ├── agent/
+│   │   ├── conversation/         # 对话 Service 层
+│   │   │   ├── index.ts
+│   │   │   ├── queries.ts
+│   │   │   ├── mutations.ts
+│   │   │   └── types.ts
+│   │   ├── agent/                # ⬜ P2
 │   │   │   ├── runtime.ts        # ReAct 循环
 │   │   │   ├── tools.ts          # 内置工具注册
 │   │   │   └── memory.ts         # 上下文管理
-│   │   ├── skills/
+│   │   ├── skills/               # ⬜ P2
 │   │   │   ├── registry.ts       # 技能注册中心
 │   │   │   └── loader.ts         # Markdown 解析
-│   │   ├── mcp/
+│   │   ├── mcp/                  # ⬜ P3
 │   │   │   └── client.ts         # MCP HTTP/SSE 客户端
-│   │   └── rag/
+│   │   └── rag/                  # ⬜ P4
 │   │       ├── chunker.ts        # 文档分块
 │   │       ├── embeddings.ts     # 嵌入生成
 │   │       └── retriever.ts      # 检索策略
 │   │
 │   ├── db/
-│   │   ├── index.ts              # Drizzle + Neon HTTP
+│   │   ├── index.ts              # Drizzle + Neon HTTP（编译时双驱动分支）
 │   │   └── schema.ts             # 数据表定义
 │   │
 │   └── utils/
 │       ├── sse.ts                # SSE 心跳工具
-│       └── auth.ts               # API Key 校验
+│       ├── response.ts           # 统一响应格式（successResponse/errorResponse）
+│       ├── system-prompt.ts      # System Prompt 抽取
+│       └── auth.ts               # API Key 校验 ⬜ P3（extensibility 文档已规划）
 │
-├── skills/                       # 内置技能（Markdown 文件）
+├── skills/                       # 内置技能（Markdown 文件）⬜ P2
 │   ├── code-review.md
 │   └── translator.md
 │
 ├── shared/                       # 前后端共享类型
 │   └── types/
-│       ├── chat.ts
-│       ├── agent.ts
-│       ├── skill.ts
-│       ├── mcp.ts
-│       └── provider.ts
+│       ├── provider.ts           # LLM Provider 类型
+│       ├── sse.ts                # SSE 事件类型枚举
+│       ├── response.ts           # API 响应格式类型
+│       └── conversation.ts       # 对话/消息类型
 │
 ├── nuxt.config.ts                # Nuxt 4 配置
-├── wrangler.jsonc                # Cloudflare 绑定
 ├── drizzle.config.ts             # Drizzle 配置
-├── tailwind.config.ts            # Tailwind CSS v4
 ├── tsconfig.json
 └── package.json
 ```
@@ -153,7 +176,7 @@ holyer-ai/
 ### 3.1 LLM Provider 抽象层
 
 ```ts
-// server/services/llm/types.ts
+// server/service/llm/types.ts
 interface LLMProvider {
   id: string
   chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>>
@@ -200,7 +223,7 @@ interface ChatOptions {
 name: code-review
 description: 代码审查专家
 tools: [read-file, search-code]
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 ---
 
 # Role
@@ -295,7 +318,7 @@ function createSSEStream(request: H3Event) {
 | 语言 | TypeScript | ^5.8 |
 | 数据库 | Neon PostgreSQL + pgvector | - |
 | ORM | Drizzle ORM (neon-http) | ^0.44 |
-| 部署 | Cloudflare Pages + Workers | 付费计划 |
+| 部署 | Cloudflare Workers（免费计划，DNS 托管于 Cloudflare） | — |
 | AI SDK | 自定义 Provider 抽象（Edge 兼容） | - |
 | 认证 | 简单 API Key（初期） | - |
 

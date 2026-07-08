@@ -182,7 +182,7 @@ chunk 3: input_json_delta = '{"name":"张三"}'
 ### 接口定义
 
 ```ts
-// server/services/llm/types.ts
+// server/service/llm/types.ts
 interface LLMProvider {
   id: string
   chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>>
@@ -201,7 +201,7 @@ interface ChatOptions {
 ### 实现文件与覆盖范围
 
 ```
-server/services/llm/
+server/service/llm/
 ├── types.ts          ← LLMProvider 接口 + ChatOptions + ToolDefinition
 ├── factory.ts        ← 按 provider ID 返回实例（一行配置接入新模型）
 ├── openai.ts         ← OpenAI 格式适配器 → 覆盖 90% 国内模型

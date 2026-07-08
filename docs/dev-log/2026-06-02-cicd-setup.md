@@ -112,7 +112,7 @@ lint                  lint                      lint
 typecheck             typecheck                 typecheck
                       test (vitest)             build
                                                 test
-                                                deploy → Cloudflare Pages
+                                                deploy → Cloudflare Workers
 ```
 
 扩展时关注：
@@ -172,6 +172,6 @@ runtimeConfig: {
 ## 相关文档
 
 - [项目初始化完整指南](2026-05-31-scaffold-guide.md) — 项目脚手架搭建
-- [架构设计](../../.claude/plan/architecture.md) — 部署架构（Cloudflare Pages）
+- [架构设计](../../.claude/plan/architecture.md) — 部署架构（Cloudflare Workers）
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 进度
 - [Nuxt 4 学习笔记](../../docs/learning-notes/nuxt4-notes.md) — runtimeConfig 类型安全

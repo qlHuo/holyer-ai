@@ -6,7 +6,7 @@
 
 ## 背景
 
-项目初期评估是否应集成 Vercel AI SDK（`ai` + `@ai-sdk/openai` + `@ai-sdk/anthropic` + `@ai-sdk/vue`）来加速 Phase 1 开发。SDK 覆盖的功能与本项目 `server/services/llm/`、`server/services/agent/`、`app/composables/useChat.ts` 高度重叠。
+项目初期评估是否应集成 Vercel AI SDK（`ai` + `@ai-sdk/openai` + `@ai-sdk/anthropic` + `@ai-sdk/vue`）来加速 Phase 1 开发。SDK 覆盖的功能与本项目 `server/service/llm/`、`server/service/agent/`、`app/composables/useChat.ts` 高度重叠。
 
 同时，本项目的核心目标之一是"**通过该项目实现从前端开发向 AI Agent 开发的转型**"——手写核心模块本身就是学习目标，不能为了省时间而跳过理解过程。
 
@@ -19,10 +19,10 @@
 ```
 Vercel AI SDK 能力                     本项目对应模块
 ─────────────────────────────────     ──────────────────────
-@ai-sdk/openai / @ai-sdk/anthropic    server/services/llm/ (Provider 层)
+@ai-sdk/openai / @ai-sdk/anthropic    server/service/llm/ (Provider 层)
 统一 Provider 接口 + 流式输出         LLMProvider 接口
 
-ai (core) — generateText/streamText   server/services/agent/ (Agent 层)
+ai (core) — generateText/streamText   server/service/agent/ (Agent 层)
 工具调用 + 结构化输出                 ReAct 循环 + 内置工具
 
 @ai-sdk/vue — useChat composable      app/composables/useChat.ts

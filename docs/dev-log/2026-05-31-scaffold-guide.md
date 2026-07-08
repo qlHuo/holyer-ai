@@ -87,7 +87,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: 'cloudflare-pages',
+    preset: 'cloudflare-module',
   },
   ui: {
     colors: {
@@ -98,23 +98,6 @@ export default defineNuxtConfig({
 ```
 
 > ⚠️ `runtimeConfig` 中的 key 采用 camelCase，Nitro 会自动映射到大写下划线环境变量（如 `databaseUrl` ↔ `NUXT_DATABASE_URL`）。但如果像上面这样在 `nuxt.config.ts` 中手动赋值 `process.env.XXX`，则变量名不受前缀限制——可以用 `DATABASE_URL` 而非 `NUXT_DATABASE_URL`。服务端代码中通过 `useRuntimeConfig().databaseUrl` 获取值，避免 `process.env` 的类型问题。
-
-### 步骤 5：配置 Drizzle ORM
-
-`drizzle.config.ts`：
-
-```ts
-import { defineConfig } from 'drizzle-kit'
-
-export default defineConfig({
-  schema: './server/db/schema.ts',
-  out: './server/db/migrations',
-  dialect: 'postgresql',
-  dbCredentials: {
-    url: process.env.DATABASE_URL!,
-  },
-})
-```
 
 ### 步骤 5：配置 Drizzle ORM
 
@@ -144,8 +127,8 @@ mkdir -p app/composables app/stores app/assets/css app/pages
 # 服务端
 mkdir -p server/api/chat server/api/conversations server/api/agent
 mkdir -p server/api/skills server/api/mcp server/api/rag/documents
-mkdir -p server/services/llm server/services/agent
-mkdir -p server/services/skills server/services/mcp server/services/rag
+mkdir -p server/service/llm server/service/agent
+mkdir -p server/service/skills server/service/mcp server/service/rag
 mkdir -p server/db/migrations server/utils
 
 # 共享类型
@@ -226,11 +209,11 @@ npx drizzle-kit push     # 推送 Schema 到 Neon
 **文件顺序**（类型先行）：
 
 1. **`shared/types/provider.ts`** — `Message`、`ChatOptions`、`ToolDefinition` 前后端共享类型
-2. **`server/services/llm/types.ts`** — `LLMProvider` 接口，`chat()` 返回 `ReadableStream<string>`
-3. **`server/services/llm/openai.ts`** — OpenAI Provider 实现
-4. **`server/services/llm/anthropic.ts`** — Anthropic Provider（SSE 格式与 OpenAI 不同，需适配）
-5. **`server/services/llm/deepseek.ts`** — DeepSeek Provider（OpenAI 兼容接口，工具调用有差异）
-6. **`server/services/llm/factory.ts`** — 工厂函数，按 provider ID 返回对应实例
+2. **`server/service/llm/types.ts`** — `LLMProvider` 接口，`chat()` 返回 `ReadableStream<string>`
+3. **`server/service/llm/openai.ts`** — OpenAI Provider 实现
+4. **`server/service/llm/anthropic.ts`** — Anthropic Provider（SSE 格式与 OpenAI 不同，需适配）
+5. **`server/service/llm/deepseek.ts`** — DeepSeek Provider（OpenAI 兼容接口，工具调用有差异）
+6. **`server/service/llm/factory.ts`** — 工厂函数，按 provider ID 返回对应实例
 
 > 💡 **已调研**：国内模型（千问、GLM、Kimi、MiniMax 等）几乎全部兼容 OpenAI 格式，复用 `openai.ts` 适配器即可。详见 [ADR-009: 国内模型 API 兼容性调研](../decisions/009-model-compatibility.md)。不集成 Vercel AI SDK，决定自建 Provider 抽象层以深入理解 LLM 调用细节，详见 [ADR-008: Vercel AI SDK 不集成决策](../decisions/008-vercel-ai-sdk.md)。
 
@@ -241,7 +224,7 @@ npx drizzle-kit push     # 推送 Schema 到 Neon
 | Provider | SDK | Edge 兼容 |
 |----------|-----|:---:|
 | OpenAI | `openai` v4+（内置 `fetch`） | ✅ |
-| Anthropic | `@anthropic-ai/sdk`（使用 `fetch`） | ⚠️ 需在 `wrangler pages dev` 验证 |
+| Anthropic | `@anthropic-ai/sdk`（使用 `fetch`） | ⚠️ 需在 `npx nuxi dev` 中验证 |
 | DeepSeek | 直接用 `fetch` 调 OpenAI 兼容端点 | ✅ |
 
 **`models` 构造参数 — OpenAI 格式复用的关键设计**：

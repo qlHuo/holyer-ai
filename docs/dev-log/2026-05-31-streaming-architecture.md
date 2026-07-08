@@ -106,7 +106,7 @@ const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
 | RAG | 向量数据库连接、Embeddings API 调用、文档解析 → 全部服务端 |
 | 对话持久化 | 数据库连接 + CRUD |
 
-**核心结论**：流式渲染只是传输方式，和项目的核心价值没有关系。真正的价值全部在 `server/services/` 里——那是 AI 的手、眼睛和记忆。前端只是这双手面对用户的"脸"。
+**核心结论**：流式渲染只是传输方式，和项目的核心价值没有关系。真正的价值全部在 `server/service/` 里——那是 AI 的手、眼睛和记忆。前端只是这双手面对用户的"脸"。
 
 ---
 
@@ -120,7 +120,7 @@ DeepSeek 服务器                 你的 Nitro Server                       浏
   data:{"choices":             chat(): ReadableStream            fetch + reader
   [{"delta":{"content":         把不同格式统一为                   逐块读 → 手动解析
   "你"}}]}                      纯文本 token 流                   SSE → 渲染到 UI
-                                (server/services/llm/)
+                                (server/service/llm/)
                                         │
                                         ▼
                                ③ /api/chat 端点
@@ -160,7 +160,7 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text
 
 ### 第二段：Provider 抽象层
 
-**这是 `server/services/llm/` 做的事——把不同的流统一成一种流**：
+**这是 `server/service/llm/` 做的事——把不同的流统一成一种流**：
 
 ```
       OpenAI 原始 SSE                         Anthropic 原始 SSE
@@ -287,7 +287,7 @@ const messages = [
 | Embeddings 生成 | Embeddings API | API Key 不能暴露在前端 |
 | 混合检索 | 服务端全文+语义融合逻辑 | 数据库查询只能在服务端 |
 
-知识库的本质是：**把用户的知识变成 LLM 可检索的上下文**。每一步都需要服务端。对应 Phase 4 的 `server/services/rag/`（chunker → embeddings → retriever）。
+知识库的本质是：**把用户的知识变成 LLM 可检索的上下文**。每一步都需要服务端。对应 Phase 4 的 `server/service/rag/`（chunker → embeddings → retriever）。
 
 ### 场景 3：传统项目管理系统 + AI
 

@@ -69,14 +69,24 @@ modules: [
 - 使用 Setup Store 语法（`defineStore('name', () => { ... })`）
 - 文件名 `xxx.store.ts`
 
-## Composable 模式（待创建）
+## VueUse 工具库
 
-以下 composable 将在开发中逐步创建：
+项目已注册 `@vueuse/nuxt` 模块，所有 VueUse composable 自动导入，常用：
 
-| Composable | 用途 | 文件位置 |
-|------------|------|----------|
-| `useChat()` | SSE 连接、消息流、重连逻辑 | `app/composables/useChat.ts` |
-| `useAgent()` | Agent 运行时状态、工具调用展示 | `app/composables/useAgent.ts` |
-| `useTheme()` | 封装 `useColorMode()` + 持久化偏好 | `app/composables/useTheme.ts` |
+| Composable | 用途 |
+|------------|------|
+| `useStorage()` | localStorage 响应式绑定 |
+| `useDebounceFn()` | 防抖（搜索输入等） |
+| `useEventListener()` | 事件监听（自动清理） |
+| `useMediaQuery()` | 响应式媒体查询 |
+| `useClipboard()` | 剪贴板操作 |
 
-所有 composable 放在 `app/composables/`，Nuxt 自动导入。
+> 完整列表见 [VueUse 文档](https://vueuse.org/)。无需手动 import，直接用。
+
+## Composable 模式
+
+| Composable | 用途 | 状态 |
+|------------|------|:--:|
+| `useChat()` | SSE 流式聊天、消息状态管理（V2 架构） | ✅ |
+| `useTheme()` | 封装 `useColorMode()` + 持久化偏好 | ✅ |
+| `useAgent()` | Agent 运行时状态、工具调用展示 | ⬜ P2 |

@@ -123,7 +123,7 @@ Nitro（Nuxt 4 内置服务端框架）能支撑完整 AI Agent 后端：
 
 ## 4. Cloudflare 部署方案
 
-**结论：可行，需付费计划 + 心跳机制，无需额外部署服务。**
+**结论：可行，Cloudflare Workers 免费计划 + 心跳机制，无需额外部署服务。**（域名 DNS 托管于 Cloudflare）
 
 ### 4.1 部署架构
 
@@ -131,34 +131,29 @@ Nitro（Nuxt 4 内置服务端框架）能支撑完整 AI Agent 后端：
 用户浏览器
     │
     ▼
-Cloudflare Pages (Nuxt 4 SSR + API Routes)
+Cloudflare Workers (Nitro API — Nuxt 4 SSR + API Routes)
     │
-    ├──► Cloudflare Worker (Nitro API)
-    │       │
-    │       ├──► OpenAI / Anthropic / DeepSeek API (外部)
-    │       ├──► Neon PostgreSQL (HTTP 连接)
-    │       └──► SSE 流式响应 → 用户浏览器
-    │
-    └──► 静态资源 (CDN 边缘缓存)
+    ├──► OpenAI / Anthropic / DeepSeek API (外部)
+    ├──► Neon PostgreSQL (HTTP 连接)
+    └──► SSE 流式响应 → 用户浏览器
 ```
 
 ### 4.2 成本估算
 
 | 资源 | 免费层 | 付费层 | 预估月费 |
 |------|--------|--------|---------|
-| Cloudflare Workers | 10万请求/天 | $0.30/百万请求 | ~$5 |
-| Cloudflare Pages | 500次构建/月 | 超出按量 | $0 |
+| Cloudflare Workers | 10万请求/天 | $0.30/百万请求 | $0 初期 |
 | Neon PostgreSQL | 0.5GB 存储 | 1GB ~$19 | $0 初期 |
-| **总计** | | | **~$5/月** |
+| **总计** | | | **$0/月**（初期） |
 
 ### 4.3 关键技术细节
 
 | 事项 | 说明 |
 |------|------|
 | **SSE 心跳** | 每 30s 发送 `event: ping`，防止 Cloudflare 100s 空闲超时断开连接 |
-| **CPU 时间** | Workers 付费计划默认 30s CPU，可配置至 5 分钟。AI 请求主要是 I/O 等待，不消耗大量 CPU |
+| **CPU 时间** | Workers 免费计划 10ms CPU/请求。AI 请求主要是 I/O 等待，不消耗 CPU |
 | **压缩禁用** | SSE 端点需禁用 Cloudflare 自动压缩（Brotli/Gzip 会缓冲数据破坏实时流） |
-| **部署命令** | `npx nuxi build`（配置 `nitro.preset: 'cloudflare-pages'`） |
+| **部署命令** | `npx nuxi build`（配置 `nitro.preset: 'cloudflare-module'`） |
 | **数据库连接** | Neon 连接池化 URL（含 `-pooler.`），HTTP 驱动不需要 TCP |
 
 ### 4.4 不需要额外服务的理由
