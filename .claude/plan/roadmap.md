@@ -6,7 +6,7 @@
 
 > 状态说明：⬜ 待开始 · 🔄 进行中 · ✅ 已完成 · ⏸️ 推迟（已废弃，改用 [todo.md](todo.md)）
 
-## Phase 1：核心基础（预计 3-4 天）
+## Phase 1：核心基础（预计 3-4 天）✅ 已完成（2026-06 中旬）
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
@@ -22,7 +22,7 @@
 
 ---
 
-## Phase 1.5：Phase 1 完善（预计 5-7 天）
+## Phase 1.5：Phase 1 完善（预计 5-7 天）✅ 已完成（2026-07-05）
 
 > 关联：[Phase 1 审查报告](../../docs/dev-log/2026-06-18-phase1-review.md)
 
@@ -87,6 +87,21 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 2.3 | Agent API | `/api/agent/run` 端点 | ⬜ |
 | 2.4 | Skills 系统 | Loader + Registry（开发期 skill：.claude/skills/） | ⬜ |
 | 2.5 | Agent UI | 工具调用可视化、推理过程展示 | ⬜ |
+| 2.6 | Agent 可观测性 | 工具调用日志 + ReAct 循环追踪 + Token 消耗统计（详见[提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md)） | ⬜ |
+| 2.7 | 安全护栏 | 工具权限分级（只读/读写/危险）+ 敏感操作二次确认 | ⬜ |
+
+---
+
+## 横切关注点（随 Phase 推进持续迭代）
+
+> 这些不是独立 Phase 任务，而是贯穿 Phase 2–4 的开发实践。详见[提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md)。
+
+| 编号 | 关注点 | 内容 | 介入时机 |
+|------|--------|------|---------|
+| X1 | 提示词工程 | ReAct 指令模板、工具描述调优、`PromptSegment` 抽象层（`server/service/prompt/`）、上下文预算管理、评估集驱动迭代 | Phase 2–4 |
+| X2 | 可观测性 | 工具调用日志、ReAct 循环追踪、Token 消耗统计 | Phase 2–3 |
+| X3 | 安全护栏 | 工具权限分级（只读/读写/危险）、危险操作确认、输出过滤 | Phase 2 |
+| X4 | 行为评估 | Agent 用例测试集、工具调用正确性验证 | Phase 2–4 |
 
 ---
 

@@ -1,6 +1,6 @@
 # 文档索引
 
-> 43 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 45 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -24,7 +24,7 @@
 
 ---
 
-## 开发日志（25 篇）
+## 开发日志（26 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -32,6 +32,8 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 07-10 | [ai-sdk-decision-and-learning-path](dev-log/2026-07-10-ai-sdk-decision-and-learning-path.md) | **AI SDK 引入决策 + ReAct 循环学习路径** — 混合架构、手写→切换两阶段、Provider 层不动 |
+| 07-09 | [prompt-engineering-and-phase2-planning](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) | **提示词工程认知澄清与 Phase 2 前规划 review** — PromptSegment 抽象、Agent 可观测性、安全护栏 |
 | 07-05 | [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) | **CF Worker 构建 OOM 修复** — 缺失 `nitro.preset` 导致全量打包、双管线构建架构解析 |
 | 07-03 | [chatinput-welcome-redesign](dev-log/2026-07-03-chatinput-welcome-redesign.md) | **ChatInput 双区域重构 + 欢迎页快速操作** — textarea vs contenteditable 决策、统一卡片方案 |
 | 07-01 | [markdown-mermaid-implementation](dev-log/2026-07-01-markdown-mermaid-implementation.md) | **Markdown 渲染与 Mermaid 图表实现** — markdown-it 管线、三个 Bug 根因与修复 |
@@ -120,4 +122,5 @@
 | **性能与构建** | [perf-neon-latency](dev-log/2026-06-16-perf-neon-latency.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) |
+| **Agent 开发** | [prompt-engineering-and-phase2-planning](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

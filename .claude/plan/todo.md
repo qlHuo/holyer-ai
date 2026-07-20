@@ -13,3 +13,8 @@
 
 - [ ] **API 单元测试** (来自 roadmap 1.31) — vitest + conversations CRUD 测试。推迟原因：conversations CRUD 无复杂业务逻辑，vitest + Nitro/Edge Runtime 集成成本高、个人项目无 CI 回归拦截需求。推迟到 Phase 2 Agent Runtime 有复杂逻辑（ReAct 循环、工具调用状态机）时再引入
 - [ ] **部署构建优化** 目前使用Cloudflare Workers，可能没有处理静态资源的CDN，后续考虑优化。
+
+## 🔮 远期规划
+
+- [ ] **长期记忆系统** — 用户偏好记忆（跨对话提取偏好为结构化 profile）、长期记忆检索与上下文注入、记忆管理 UI。当前对话量少，Phase 2 先跑通 Agent 再说
+- [ ] **用户自定义 Agent（GPTs-like）** — 管理页面配置 System Prompt + 选模型 → 生成限定领域对话 Agent。前置依赖：Phase 2 Agent Runtime
