@@ -1,10 +1,10 @@
 # 文档索引
 
-> 45 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 48 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
-## 架构决策记录（11 篇）
+## 架构决策记录（14 篇）
 
 `docs/decisions/` — 涉及"选了 A 而不是 B"的不可逆技术决策。
 
@@ -21,6 +21,9 @@
 | ADR-009 | [009-model-compatibility](decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略 |
 | ADR-010 | [010-eslint-over-prettier](decisions/010-eslint-over-prettier.md) | ESLint stylistic rules 替代 Prettier |
 | ADR-011 | [011-design-specification](decisions/011-design-specification.md) | 设计规范体系（配色/字体/间距/圆角/阴影/动效） |
+| ADR-012 | [012-llm-stream-chunk-type](decisions/012-llm-stream-chunk-type.md) | `chat()` 返回类型升级为 `ReadableStream<LLMStreamChunk>` |
+| ADR-013 | [013-prompt-naming](decisions/013-prompt-naming.md) | 统一命名为 Prompt（自定义提示词模板），Phase 2 第一步实现 |
+| ADR-014 | [014-agent-streaming-db-write](decisions/014-agent-streaming-db-write.md) | Agent 流式 DB 写入策略（一次性写入，已知让步） |
 
 ---
 
@@ -106,6 +109,7 @@
 | [requirements.md](../.claude/plan/requirements.md) | 需求分析 — 痛点、功能分层、不做的事 |
 | [architecture.md](../.claude/plan/architecture.md) | 架构设计 — 目录结构、核心模块、扩展性 |
 | [roadmap.md](../.claude/plan/roadmap.md) | 实施路线图 — Phase 1-4 任务分解与状态 |
+| [phase2-agent-design.md](../.claude/plan/phase2-agent-design.md) | **Phase 2 Agent 系统设计方案** — 6 个架构决策、Provider 精简、ReAct 循环、Prompt 系统、学习路径 |
 
 ---
 
@@ -122,5 +126,5 @@
 | **性能与构建** | [perf-neon-latency](dev-log/2026-06-16-perf-neon-latency.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) |
-| **Agent 开发** | [prompt-engineering-and-phase2-planning](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) |
+| **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

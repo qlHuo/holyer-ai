@@ -78,17 +78,33 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 2：Agent + Skills（预计 2-3 天）
+## Phase 2：自定义提示词管理 + Agent Runtime（预计 4-6 天）🔄 设计完成，实现待启动
+
+> 方案：[Phase 2 Agent 系统设计方案](phase2-agent-design.md)（含 6 个架构决策 + 10 个实现步骤） · [ADR-012 LLMStreamChunk](../../docs/decisions/012-llm-stream-chunk-type.md) · [ADR-013 Prompt 命名](../../docs/decisions/013-prompt-naming.md) · [ADR-014 Agent 流式 DB 写入](../../docs/decisions/014-agent-streaming-db-write.md) · [提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md)
+>
+> **Phase 2 分两步走**：第一步先做自定义提示词管理（Prompt CRUD，独立交付，让用户通过提示词创建"简易 Agent"），第二步再做 Agent Runtime + 核心工具（让 Agent 真正能干事情）。Provider 层精简（删除 Anthropic、DeepSeek 复用 OpenAIProvider）是时间从 5-7 天缩短到 4-6 天的主要原因。
+
+### 第一步：自定义提示词管理（简易 Agent）
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 2.1 | Agent Runtime | ReAct 循环 + 上下文管理 | ⬜ |
-| 2.2 | 内置工具 | 搜索、计算器、时间等 | ⬜ |
-| 2.3 | Agent API | `/api/agent/run` 端点 | ⬜ |
-| 2.4 | Skills 系统 | Loader + Registry（开发期 skill：.claude/skills/） | ⬜ |
-| 2.5 | Agent UI | 工具调用可视化、推理过程展示 | ⬜ |
-| 2.6 | Agent 可观测性 | 工具调用日志 + ReAct 循环追踪 + Token 消耗统计（详见[提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md)） | ⬜ |
+| 2.0 | 自定义提示词管理 | DB Schema + CRUD Service + 5 个 REST API + 对话级 Prompt 选择 | ⬜ |
+
+> 用户创建的自定义提示词 = "简易 Agent"（OpenAI Custom GPTs 机制）。无需 ReAct 循环即可体验 Agent 行为定制。此步骤零依赖（DB + API 模式已在 Phase 1 就绪），可立即独立交付。详见 [ADR-013](../../docs/decisions/013-prompt-naming.md)。
+
+### 第二步：Agent Runtime + 核心工具
+
+| 编号 | 任务 | 内容 | 状态 |
+|------|------|------|:--:|
+| 2.1 | Agent Runtime | ReAct 循环 + 上下文管理 + Prompt Segment 系统 | ⬜ |
+| 2.2 | 内置工具 | 计算器、时间、搜索、网页抓取等 | ⬜ |
+| 2.3 | Provider 升级 + 精简 | chat() → `ReadableStream<LLMStreamChunk>`、tool call delta 累积、删除 Anthropic、DeepSeek 复用 OpenAIProvider | ⬜ |
+| 2.4 | Agent API | `/api/agent/run` 端点 + Prompt 注入管线 | ⬜ |
+| 2.5 | Agent UI | 工具调用可视化（ToolCallCard）、推理过程展示 | ⬜ |
+| 2.6 | Agent 可观测性 | 工具调用日志 + ReAct 循环追踪 + Token 消耗统计 | ⬜ |
 | 2.7 | 安全护栏 | 工具权限分级（只读/读写/危险）+ 敏感操作二次确认 | ⬜ |
+
+> **Prompt + Agent 协同**：第二步 Agent Runtime 完工后，第一步创建的所有 Prompt 自动获得工具调用能力。LLM 看到 Prompt 提示词 + 工具列表，自然按提示词引导调用工具。Prompt 的能力上限由平台可用工具决定。
 
 ---
 

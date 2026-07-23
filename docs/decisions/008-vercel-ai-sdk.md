@@ -79,3 +79,5 @@ factory.ts (注册表)                 一行配置接入新模型
 - [ADR-009: 国内模型 API 兼容性调研与统一策略](009-model-compatibility.md)
 - [2026-05-31 流式架构深层讨论](../dev-log/2026-05-31-streaming-architecture.md)
 - [2026-05-31 LangChain.js 评估](../dev-log/2026-05-31-discussion.md) — 同样的"先自建再评估"策略
+- [Phase 2 Agent 系统设计方案](../../.claude/plan/phase2-agent-design.md) — 2026-07-23 确认：Phase 2 仍不使用 AI SDK，且进一步精简为仅 OpenAI 兼容格式
+- [2026-07-10 AI SDK 学习路径讨论](../dev-log/2026-07-10-ai-sdk-decision-and-learning-path.md) — 曾考虑引入 AI SDK，后于 2026-07-23 否决

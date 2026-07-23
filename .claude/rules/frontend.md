@@ -89,4 +89,4 @@ modules: [
 |------------|------|:--:|
 | `useChat()` | SSE 流式聊天、消息状态管理（V2 架构） | ✅ |
 | `useTheme()` | 封装 `useColorMode()` + 持久化偏好 | ✅ |
-| `useAgent()` | Agent 运行时状态、工具调用展示 | ⬜ P2 |
+| `useChat()` 扩展 | `sendAgentMessage()`、`agentToolCalls`、`agentCurrentRound` 等 Agent 状态集成在 `useChat` 中（无需独立 composable） | ⬜ P2 |

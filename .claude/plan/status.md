@@ -1,32 +1,41 @@
 # 项目进度快照
 
-> 更新于 2026-07-09
+> 更新于 2026-07-23
 
 ## 当前状态
 
-**Phase 1 + 1.5 全部完成** — Phase 2 待启动，完成度约 0%
+**Phase 2 设计阶段完成** — 实现待启动，完成度约 0%
 
 ## 近期完成
 
-- [1.30] 流式架构 V2（后台流保持 + 切回续显，合并 1.28/1.29/1.30）
-- [1.18] ChatInput 优化（统一卡片方案 + 欢迎页快速操作）
-- [1.26] Mermaid 渲染（markdown-it fence 识别 + 流式后客户端 SVG）
-- [1.23] 设计规范体系（sky+zinc 主题、圆角/阴影/动效 token 化、组件改造）
-- [—] CF 构建 OOM 修复（补 nitro.preset、双管线构建架构）
+- [设计] Phase 2 Agent 系统完整方案（6 个架构决策 + 10 个实现步骤）
+- [ADR-012] `chat()` 返回类型升级为 `ReadableStream<LLMStreamChunk>`（2026-07-21）
+- [ADR-013] Prompt 统一命名 + Phase 2 第一步实现顺序确定（2026-07-23）
+- [ADR-014] Agent 流式 DB 一次性写入策略（2026-07-21）
+- [设计] Provider 层精简：删除 Anthropic，DeepSeek 复用 OpenAIProvider
 
-## 下一步
+## 下一步（按优先级）
 
-1. **[P0] Phase 2 启动** — Agent Runtime（ReAct 循环 + 上下文管理）
-2. **[P0] 内置工具** — 搜索、计算器、时间等基础工具
-3. **[P1] Agent API** — `/api/agent/run` 端点
-4. **[P1] Skills 系统** — Loader + Registry（开发期 skill 框架）
-5. **[P2] Agent UI** — 工具调用可视化、推理过程展示
+1. **[P0] Prompt CRUD** — DB Schema（`prompts` 表）→ Service → 5 个 REST API，零依赖，独立交付
+2. **[P0] 共享类型扩展** — `LLMStreamChunk`、`ToolCall`、`ToolDefinition`，Phase 2 所有模块的基石
+3. **[P1] 工具系统** — ToolRegistry + 2 个内置工具（calculator、current-time），可离线验证
+4. **[P1] Provider 升级** — `openai.ts` tool call delta 累积 + 删除 `anthropic.ts`
+5. **[P1] Agent Runtime** — ReAct 循环 + `/api/agent/run` 端点
+
+## 怎样开始（Prompt CRUD 三步走）
+
+1. **创建 DB Schema**（`server/db/schema.ts` 新增 `prompts` 表 → `drizzle-kit push`）
+2. **编写 Service 层**（`server/service/prompts/` → types + CRUD 方法）
+3. **创建 5 个 API 端点**（`server/api/prompts/` → GET/POST index + GET/PUT/DELETE [id]）
+
+> 预计 2 小时，curl 验证。DB + API 模式已在 Phase 1 充分验证，无意外风险。
+> 详细步骤参考 [phase2-agent-design.md](phase2-agent-design.md) 第 12.4 节步骤 1。
 
 ## 阻塞 / 风险
 
-- Phase 2 涉及 LLM 工具调用，DeepSeek 原生不支持，需以 OpenAI/Anthropic 为先验证
+- 删除 Anthropic Provider 后短期无法使用 Claude 模型（已知取舍，git 历史保留原实现）
 - 当前无紧急阻塞项
 
 ## 推迟项
 
-todo.md 中有 5 项待办，详见 [todo.md](todo.md)
+todo.md 中有 7 项待办，详见 [todo.md](todo.md)

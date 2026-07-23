@@ -1,5 +1,7 @@
 # 2026-07-10 — AI SDK 引入决策 + ReAct 循环学习路径
 
+> ⚠️ **已过时**：2026-07-23 讨论决定不使用 AI SDK，统一使用 OpenAI SDK + 手写完整 ReAct 循环。详见 [Phase 2 Agent 系统设计方案](../../.claude/plan/phase2-agent-design.md)。本文档保留作为决策演变记录。
+
 > 这是 Phase 2 启动前最重要的架构决策。核心矛盾：要不要引入 AI SDK 处理 Agent 工具调用？引入的话，ReAct 循环还能学到吗？
 
 ---
@@ -58,5 +60,5 @@ Phase 1 手写了三个 Provider（OpenAI + Anthropic + DeepSeek），理解了 
 ## 相关文档
 
 - [ADR-008: Vercel AI SDK](../decisions/008-vercel-ai-sdk.md) — Phase 1-2 不集成的原始决策，现已调整：chat 层保持自建，agent 层引入
-- [Phase 2 实施方案](../../.claude/plans/radiant-toasting-gizmo.md) — 完整方案，第七节为学习路径说明
+- [Phase 2 Agent 系统设计方案](../../.claude/plan/phase2-agent-design.md) — **最新方案**（2026-07-23），不引入 AI SDK，统一使用 OpenAI SDK
 - [2026-07-09 提示词工程与 Phase 2 规划](2026-07-09-prompt-engineering-and-phase2-planning.md) — 前一天讨论：PromptSegment 抽象、可观测性、安全护栏
