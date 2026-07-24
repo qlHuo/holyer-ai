@@ -25,3 +25,13 @@ export const messages = pgTable('messages', {
   conversationIdx: index('idx_messages_conversation_id').on(table.conversationId),
   createdAtIdx: index('idx_messages_created_at').on(table.createdAt)
 }))
+
+// 自定义提示词模板
+export const prompts = pgTable('prompts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description').notNull().default(''),
+  prompt: text('prompt').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})

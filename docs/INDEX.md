@@ -1,6 +1,6 @@
 # 文档索引
 
-> 48 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 50 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -88,7 +88,7 @@
 
 ---
 
-## 学习笔记（3 篇）
+## 学习笔记（6 篇）
 
 `docs/learning-notes/` — 新技术知识点梳理。
 
@@ -97,6 +97,9 @@
 | [nuxt4-notes](learning-notes/nuxt4-notes.md) | Nuxt 4 学习笔记 |
 | [cloudflare-edge-notes](learning-notes/cloudflare-edge-notes.md) | Cloudflare Workers Edge Runtime 限制与应对 |
 | [web-streams-api](learning-notes/web-streams-api.md) | **Web Streams API 详解** — ReadableStream、TextEncoder、Response |
+| [drizzle-kit](learning-notes/drizzle-kit.md) | **Drizzle Kit CLI 工具笔记** — 配置、push/generate/migrate/studio 命令、本地/生产工作流 |
+| [drizzle-orm](learning-notes/drizzle-orm.md) | **Drizzle ORM API 笔记** — Schema 定义、CRUD 操作、`.returning()`、双驱动、分层架构（以 prompts 为例） |
+| [zod](learning-notes/zod.md) | **Zod 校验库笔记** — Schema 定义、`.parse()` vs `.safeParse()`、全局错误处理、三种数据来源校验 |
 
 ---
 
@@ -124,7 +127,8 @@
 | **对话持久化** | [conversation-persistence-design](dev-log/2026-06-03-conversation-persistence-design.md) · [code-review-conversation](dev-log/2026-06-05-code-review-conversation.md) · [regenerate-design](dev-log/2026-06-22-regenerate-design.md) |
 | **前端架构** | [frontend-dev-plan](dev-log/2026-06-08-frontend-dev-plan.md) · [chatinput-welcome](dev-log/2026-07-03-chatinput-welcome-redesign.md) · [markdown-mermaid](dev-log/2026-07-01-markdown-mermaid-implementation.md) · [ssr-state-hydration](dev-log/2026-06-29-ssr-state-hydration.md) |
 | **性能与构建** | [perf-neon-latency](dev-log/2026-06-16-perf-neon-latency.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |
+| **数据库** | [ADR-003](decisions/003-neon-drizzle.md) · [drizzle-kit](learning-notes/drizzle-kit.md) · [drizzle-orm](learning-notes/drizzle-orm.md) · [database-rules](../.claude/rules/database.md) |
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
-| **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) |
+| **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

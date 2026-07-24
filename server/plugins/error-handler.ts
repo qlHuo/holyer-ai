@@ -1,23 +1,16 @@
 /**
- * 全局错误处理插件, 统一错误响应流
+ * 全局错误处理插件，统一错误响应流
  *
  * 通过 Nitro error hook 统一拦截所有 API handler 抛出的错误，
  * 确保始终返回 JSON 格式的错误响应，而非 HTML 错误页。
+ *
+ * 重要：h3 的 toNodeListener 会把所有非 H3Error 的异常用 createError() 包一层，
+ * 原始错误存在 error.cause 里，所以处理前需要先解包。
  *
  * 三层错误分类：
  * - ZodError       → 400 + 字段级校验详情
  * - H3Error        → 保持原 statusCode + 统一格式
  * - 未知 Error      → 500 + 通用内部错误消息（生产环境不泄露细节）
- *
- *
- * GET /api/conversations/not-a-uuid
-  → [id].get.ts: z.string().uuid().parse("not-a-uuid")
-  → 抛出 ZodError (未捕获，向上穿透)
-  → Nitro 捕获未处理异常
-  → 触发 error hook
-  → error-handler.ts: handleZodError()
-  → setResponseStatus(400)
-  → send(event, { success: false, error: { code: 'VALIDATION_ERROR', ... } })
  */
 import { ZodError } from 'zod'
 import type { H3Error } from 'h3'
@@ -34,9 +27,12 @@ export default defineNitroPlugin((nitroApp) => {
     // 用 H3 的响应方法写 header 和 body
     setResponseHeader(event, 'Content-Type', 'application/json; charset=utf-8')
 
-    //  按错误类型分发 —— ZodError 是 Zod 抛的，H3Error 是 H3 抛的
-    if (error instanceof ZodError) {
-      handleZodError(error, event)
+    // 解包：h3 会把所有非 H3Error 用 createError() 包一层，原始错误在 .cause 里
+    const unwrapped = isError(error) ? error.cause : error
+
+    // 按错误类型分发 —— ZodError 是 Zod 抛的，H3Error 是 H3 抛的
+    if (unwrapped instanceof ZodError) {
+      handleZodError(unwrapped, event)
     } else if (isError(error)) {
       handleH3Error(error, event)
     } else {
