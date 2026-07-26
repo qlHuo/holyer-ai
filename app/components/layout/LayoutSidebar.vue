@@ -238,19 +238,8 @@ function handleToPrompts() {
     <!-- ═══════════════════════════════════════════ -->
     <!-- 底部：Provider 信息（设置功能预留）         -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="border-t border-(--ui-border) shrink-0 px-3 py-2">
-      <p
-        v-if="chatStore.currentConversation"
-        class="text-xs text-(--ui-text-dimmed) truncate"
-      >
-        {{ chatStore.currentConversation.provider }} / {{ chatStore.currentConversation.model }}
-      </p>
-      <p
-        v-else
-        class="text-xs text-(--ui-text-dimmed)"
-      >
-        未选择模型
-      </p>
+    <div class="border-t border-(--ui-border) shrink-0 px-3 py-2 text-sm text-(--ui-text-dimmed)">
+      AI 生成，注意甄别
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
