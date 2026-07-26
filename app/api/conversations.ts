@@ -22,7 +22,7 @@ export default {
    * 创建新对话
    * 后端: POST /api/conversations → { success: true, data: ConversationDetail }
    */
-  create(params: { title?: string, model: string, provider: string }) {
+  create(params: { title?: string, model: string }) {
     return request<ConversationDetail>('/api/conversations', {
       method: 'POST',
       body: params

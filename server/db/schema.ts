@@ -5,7 +5,6 @@ export const conversations = pgTable('conversations', {
   id: uuid('id').defaultRandom().primaryKey(),
   title: varchar('title', { length: 255 }).notNull().default('新对话'),
   model: varchar('model', { length: 100 }).notNull(),
-  provider: varchar('provider', { length: 50 }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 })

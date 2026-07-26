@@ -1,6 +1,6 @@
 # 文档索引
 
-> 50 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 51 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -18,7 +18,7 @@
 | ADR-006 | [006-docs-directory](decisions/006-docs-directory.md) | docs/ 目录结构与 .claude/ 分离 |
 | ADR-007 | [007-claude-rules-structure](decisions/007-claude-rules-structure.md) | .claude/rules/ 按技术域分层 |
 | ADR-008 | [008-vercel-ai-sdk](decisions/008-vercel-ai-sdk.md) | Vercel AI SDK — 不集成，自建 Provider 抽象层 |
-| ADR-009 | [009-model-compatibility](decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略 |
+| ADR-009 | [009-model-compatibility](decisions/009-model-compatibility.md) | 国内模型 API 兼容性调研与统一策略（2026-07-26 更新：双适配器→单适配器演进） |
 | ADR-010 | [010-eslint-over-prettier](decisions/010-eslint-over-prettier.md) | ESLint stylistic rules 替代 Prettier |
 | ADR-011 | [011-design-specification](decisions/011-design-specification.md) | 设计规范体系（配色/字体/间距/圆角/阴影/动效） |
 | ADR-012 | [012-llm-stream-chunk-type](decisions/012-llm-stream-chunk-type.md) | `chat()` 返回类型升级为 `ReadableStream<LLMStreamChunk>` |
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（26 篇）
+## 开发日志（27 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +35,7 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 07-26 | [provider-simplification](dev-log/2026-07-26-provider-simplification.md) | **Provider 维度移除全栈实施** — 双适配器→单适配器、21 文件净删 259 行、provider 全链路移除 |
 | 07-10 | [ai-sdk-decision-and-learning-path](dev-log/2026-07-10-ai-sdk-decision-and-learning-path.md) | **AI SDK 引入决策 + ReAct 循环学习路径** — 混合架构、手写→切换两阶段、Provider 层不动 |
 | 07-09 | [prompt-engineering-and-phase2-planning](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) | **提示词工程认知澄清与 Phase 2 前规划 review** — PromptSegment 抽象、Agent 可观测性、安全护栏 |
 | 07-05 | [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) | **CF Worker 构建 OOM 修复** — 缺失 `nitro.preset` 导致全量打包、双管线构建架构解析 |
@@ -122,7 +123,7 @@
 
 | 主题 | 相关文档 |
 |------|---------|
-| **LLM Provider 层** | [ADR-008](decisions/008-vercel-ai-sdk.md) · [ADR-009](decisions/009-model-compatibility.md) · [provider-implementation](dev-log/2026-06-01-provider-implementation.md) · [type-safety-review](dev-log/2026-06-02-type-safety-review.md) · [provider-review-round2](dev-log/2026-06-02-provider-review-round2.md) |
+| **LLM Provider 层** | [ADR-008](decisions/008-vercel-ai-sdk.md) · [ADR-009](decisions/009-model-compatibility.md) · [provider-implementation](dev-log/2026-06-01-provider-implementation.md) · [type-safety-review](dev-log/2026-06-02-type-safety-review.md) · [provider-review-round2](dev-log/2026-06-02-provider-review-round2.md) · [provider-simplification](dev-log/2026-07-26-provider-simplification.md) |
 | **SSE 流式架构** | [streaming-architecture](dev-log/2026-05-31-streaming-architecture.md) · [sse-implementation](dev-log/2026-06-03-sse-implementation.md) · [stream-leakage-root-cause](dev-log/2026-06-25-stream-leakage-root-cause.md) · [stream-interruption-protection](dev-log/2026-06-23-stream-interruption-protection.md) · [stream-architecture-v2](dev-log/2026-06-27-stream-architecture-v2.md) |
 | **对话持久化** | [conversation-persistence-design](dev-log/2026-06-03-conversation-persistence-design.md) · [code-review-conversation](dev-log/2026-06-05-code-review-conversation.md) · [regenerate-design](dev-log/2026-06-22-regenerate-design.md) |
 | **前端架构** | [frontend-dev-plan](dev-log/2026-06-08-frontend-dev-plan.md) · [chatinput-welcome](dev-log/2026-07-03-chatinput-welcome-redesign.md) · [markdown-mermaid](dev-log/2026-07-01-markdown-mermaid-implementation.md) · [ssr-state-hydration](dev-log/2026-06-29-ssr-state-hydration.md) |

@@ -12,18 +12,8 @@ import { extractSystemPrompt } from '~~/server/utils/system-prompt'
 interface OpenAIConfig {
   apiKey: string
   baseUrl?: string // 可选的 API 基础 URL，默认为 OpenAI 官方地址
-  models?: ModelInfo[] // 可选的模型列表，默认为预定义的 SUPPORTED_MODELS
+  models?: ModelInfo[] // 可选的模型列表
 }
-
-// 定义支持的模型列表，包含模型 ID、名称以及是否支持视觉输入和工具调用
-const SUPPORTED_MODELS: ModelInfo[] = [
-  { id: 'gpt-4.1', name: 'GPT-4.1', supportsVision: true, supportsTools: true },
-  { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', supportsVision: true, supportsTools: true },
-  { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano', supportsVision: true, supportsTools: true },
-  { id: 'gpt-4o', name: 'GPT-4o', supportsVision: true, supportsTools: true },
-  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', supportsVision: true, supportsTools: true },
-  { id: 'o4-mini', name: 'o4 Mini', supportsVision: true, supportsTools: true }
-]
 
 export class OpenAIProvider implements LLMProvider {
   readonly id = 'openai'
@@ -35,7 +25,7 @@ export class OpenAIProvider implements LLMProvider {
       apiKey: config.apiKey,
       baseURL: config.baseUrl || 'https://api.openai.com/v1'
     })
-    this.modelsList = config.models || SUPPORTED_MODELS
+    this.modelsList = config.models || []
   }
 
   async chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>> {

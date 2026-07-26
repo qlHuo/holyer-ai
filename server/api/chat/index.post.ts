@@ -24,7 +24,6 @@ import { SSE_EVENT } from '~~/shared/types/sse'
 export default defineEventHandler(async (event) => {
   const body = ChatBodySchema.parse(await readBody(event))
   const {
-    provider,
     model,
     message,
     regenerate,
@@ -38,7 +37,7 @@ export default defineEventHandler(async (event) => {
   // 1. 获取/创建对话
   let conv: ConversationDetail
   try {
-    conv = await getOrCreateConversation(conversationId, { model, provider })
+    conv = await getOrCreateConversation(conversationId, { model })
   } catch (error: any) {
     if (error?.message === 'NOT FOUND') {
       throw createError({ statusCode: 404, message: '会话不存在' })
@@ -72,7 +71,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 4. 创建 LLM Provider
-  const llmProvider = createLLMProvider(provider)
+  const llmProvider = createLLMProvider()
 
   // 创建 AbortController — 用于取消底层 LLM API 调用
   // 当客户端断开连接时，req.on('close') 触发 → abort() → signal 传给 Provider

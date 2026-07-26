@@ -14,7 +14,6 @@ import type { ConversationDetail, ConversationListItem, MessageDetail } from '~~
 export interface CreateConversationInput {
   title?: string
   model: string
-  provider: string
 }
 
 // 添加消息的输入

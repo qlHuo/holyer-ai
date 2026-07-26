@@ -252,8 +252,60 @@ case 'glm':
 
 ---
 
+---
+
+## 6. 2026-07-26 更新：从双适配器到单适配器
+
+### 实际演进
+
+原方案（2026-05-31）设计了两个适配器——`openai.ts` 覆盖 90% 国内模型，`anthropic.ts` 覆盖 Claude 全系。实施后发现：
+
+1. **Anthropic 适配器实际不可用**：Anthropic 的 tool_use 协议、SSE 格式、system prompt 位置均与 OpenAI 完全不同，适配成本高且学习收益低。已在 [Phase 2 设计方案](../../.claude/plan/phase2-agent-design.md) 中决策删除。
+2. **DeepSeek 手动 SSE 解析无必要**：`deepseek.ts` 是练习性质的手动 fetch + SSE 解析实现，而 DeepSeek API 100% 兼容 OpenAI 格式。用 `OpenAIProvider` + DeepSeek baseURL 即可覆盖，代码量减少 100+ 行。
+3. **`provider` 维度本身多余**：既然所有模型都走同一适配器，DB 中存 `provider` 列、API 中传 `provider` 参数、前端维护 Provider 选择器——全是无谓复杂度。
+
+### 最终架构
+
+```
+之前：Provider → Model 二级选择
+  createLLMProvider('deepseek')  →  DeepSeekProvider
+  createLLMProvider('openai')    →  OpenAIProvider
+  createLLMProvider('anthropic') →  AnthropicProvider
+
+之后：统一 OpenAIProvider，按 baseURL 区分
+  createLLMProvider() → new OpenAIProvider({ apiKey, baseUrl })
+  // baseUrl 由 NUXT_MODEL_BASE_URL 环境变量统一控制
+  // 切换模型厂商 = 改一个环境变量
+```
+
+### 全栈改动范围
+
+| 层级 | 改动 |
+|------|------|
+| 环境变量 | 6 个 per-provider → 2 个统一 (`NUXT_MODEL_API_KEY`, `NUXT_MODEL_BASE_URL`) |
+| Factory | `createLLMProvider(providerId)` → `createLLMProvider()` 无参 |
+| DB Schema | `conversations.provider` 列删除 |
+| API Schema | Zod 校验中 `provider: z.enum([...])` 移除 |
+| Service 层 | `CreateConversationInput` 等类型删除 `provider` 字段 |
+| 前端 Store | `selectedProvider`、`setProvider()` 移除 |
+| 前端 UI | Provider 下拉选择器删除，只保留模型选择器 |
+| 前端常量 | `providers.ts`（Provider→Model 分组）→ `models.ts`（扁平模型列表） |
+
+### 关键取舍
+
+- **短期无法使用 Claude 模型**：Anthropic 的原生 API 与 OpenAI 格式不兼容，统一走 OpenAIProvider 后无法直接调用 Claude。如需恢复，git 历史中保留了 `anthropic.ts` 和 `deepseek.ts` 原实现。
+- **配置文件是切换入口**：`.env` 中的 `NUXT_MODEL_BASE_URL` 决定实际调用哪个厂商。DeepSeek → `https://api.deepseek.com/v1`，OpenAI → `https://api.openai.com/v1`，其他兼容厂商同理。
+
+### 实施记录
+
+详见 [2026-07-26 Provider 维度移除全栈实施](../dev-log/2026-07-26-provider-simplification.md)。
+
+---
+
 ## 相关文档
 
 - [ADR-008: Vercel AI SDK 不集成决策](008-vercel-ai-sdk.md)
 - [2026-05-31 流式架构深层讨论](../dev-log/2026-05-31-streaming-architecture.md)
+- [2026-07-26 Provider 维度移除全栈实施](../dev-log/2026-07-26-provider-simplification.md)
+- [Phase 2 Agent 系统设计方案](../../.claude/plan/phase2-agent-design.md) — 三、Provider 层精简
 - [架构设计](../../.claude/plan/architecture.md) — 3.1 LLM Provider 抽象层

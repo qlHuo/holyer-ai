@@ -13,7 +13,6 @@ const MessageSchema = z.object({
 
 // 聊天请求体
 export const ChatBodySchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'deepseek']),
   model: z.string().min(1, 'model 不能为空'),
   message: z.array(MessageSchema),
   regenerate: z.boolean().optional(),

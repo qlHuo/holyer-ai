@@ -7,7 +7,6 @@
 import type { Message } from '~~/shared/types/provider'
 
 export interface ChatRequest {
-  provider: string
   model: string
   message: Message[]
   regenerate?: boolean

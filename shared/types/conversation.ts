@@ -8,7 +8,6 @@ export interface ConversationListItem {
   id: string
   title: string
   model: string
-  provider: string
   messageCount: number
   // 最后一条消息的预览数据截取50字
   lastPreview: string | null
@@ -21,7 +20,6 @@ export interface ConversationDetail {
   id: string
   title: string
   model: string
-  provider: string
   messages: Message[]
   createdAt: string
   updatedAt: string
@@ -31,7 +29,6 @@ export interface ConversationDetail {
 export interface ConversationInput {
   title?: string
   model: string
-  provider: string
 }
 
 // Messgae 详情

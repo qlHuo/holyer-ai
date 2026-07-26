@@ -28,7 +28,6 @@ export async function getConversationList(): Promise<ConversationListItem[]> {
     id: conversations.id,
     title: conversations.title,
     model: conversations.model,
-    provider: conversations.provider,
     createdAt: conversations.createdAt,
     updatedAt: conversations.updatedAt,
     messageCount: sql<number>`(
@@ -50,7 +49,6 @@ export async function getConversationList(): Promise<ConversationListItem[]> {
     id: row.id,
     title: row.title,
     model: row.model,
-    provider: row.provider,
     messageCount: row.messageCount,
     lastPreview: row.lastPreview ? row.lastPreview.slice(0, 50) : null,
     createdAt: row.createdAt.toISOString(),
@@ -147,7 +145,6 @@ export async function getConversationDetail(id: string): Promise<ConversationDet
     id: conversation.id,
     title: conversation.title,
     model: conversation.model,
-    provider: conversation.provider,
     messages: messageList,
     createdAt: conversation.createdAt.toISOString(),
     updatedAt: conversation.updatedAt.toISOString()

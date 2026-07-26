@@ -9,7 +9,7 @@ import { successResponse } from '~~/server/utils/response'
 
 export default defineEventHandler(async (event): Promise<ApiSuccess<ConversationDetail>> => {
   const body = CreateConversationSchema.parse(await readBody(event))
-  const { title, model, provider } = body
-  const data = await createConversation({ title, model, provider })
+  const { title, model } = body
+  const data = await createConversation({ title, model })
   return successResponse(data)
 })

@@ -83,7 +83,6 @@ export function useChat() {
     try {
       const response = await ChatApi.sendChatMessage(
         {
-          provider: chatStore.selectedProvider,
           model: chatStore.selectedModel,
           message: [userMessage],
           conversationId: chatStore.currentConvId,
@@ -130,7 +129,6 @@ export function useChat() {
 
     try {
       const response = await ChatApi.sendChatMessage({
-        provider: chatStore.selectedProvider,
         model: chatStore.selectedModel,
         message: [],
         conversationId: chatStore.currentConvId,
@@ -342,7 +340,6 @@ export function useChat() {
     chatStore.selectConversation(convId, {
       skipLoad: true,
       presetMessages: msgs,
-      presetProvider: data.provider,
       presetModel: data.model
     })
 

@@ -17,12 +17,8 @@ export default defineNuxtConfig({
   // 私有变量（仅服务端可访问，不会暴露给前端）
   runtimeConfig: {
     databaseUrl: '',
-    openaiApiKey: '',
-    openaiBaseUrl: '',
-    anthropicApiKey: '',
-    anthropicBaseUrl: '',
-    deepseekApiKey: '',
-    deepseekBaseUrl: ''
+    modelApiKey: '',
+    modelBaseUrl: ''
   },
 
   routeRules: {

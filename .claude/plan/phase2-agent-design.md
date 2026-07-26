@@ -127,6 +127,8 @@ Agent 的 ReAct 循环期间不做增量 DB 写入。循环结束后一次性保
 | `shared/types/provider.ts` | **扩展** — 新增 `LLMStreamChunk`、`ToolCall`、`ToolResult`、`ToolDefinition` | ~30 行 |
 | `server/api/chat/index.post.ts` | **适配** — 消费 `LLMStreamChunk`，过滤非 text 事件 | ~5 行 |
 
+> **2026-07-26 更新**：实际实施中，Provider 精简的连锁反应超出上表。`provider` 字段被从 DB Schema (`conversations.provider` 列)、Zod 校验、共享类型、前端 Store、前端 UI（Provider 选择器）全链路移除，共涉及 21 个文件，净删 259 行。环境变量从 6 个 per-provider 统一为 2 个。详见 [2026-07-26 Provider 维度移除全栈实施](../../docs/dev-log/2026-07-26-provider-simplification.md)。
+
 ### 3.2 tool call delta 累积机制
 
 这是 Provider 升级中唯一需要手写的逻辑。OpenAI 的流式 tool calling 数据是**分片到达**的：
@@ -146,7 +148,7 @@ chunk 5:  delta.tool_calls[0] = { index: 0, function: { arguments: "\"2+3\"}" } 
 ### 3.3 Factory 简化
 
 ```ts
-// 伪代码
+// 伪代码（设计阶段）
 function createLLMProvider(providerId: string): LLMProvider {
   switch (providerId) {
     case 'openai':   return new OpenAIProvider({ apiKey: ..., baseUrl: 'https://api.openai.com/v1' })
@@ -156,6 +158,8 @@ function createLLMProvider(providerId: string): LLMProvider {
   }
 }
 ```
+
+> **2026-07-26 更新**：实际实施比设计更进一步——`createLLMProvider()` 改为无参，不再接受 `providerId`。环境变量从 6 个 per-provider 统一为 `NUXT_MODEL_API_KEY` + `NUXT_MODEL_BASE_URL`。同时 `provider` 字段从 DB Schema、API、前端 Store/UI 全链路移除。详见 [2026-07-26 Provider 维度移除全栈实施](../../docs/dev-log/2026-07-26-provider-simplification.md)。
 
 所有 case 返回的都是 `OpenAIProvider` 实例，区别仅在于 `baseURL` 和 `apiKey`。
 
@@ -717,6 +721,8 @@ curl -X DELETE http://localhost:3000/api/prompts/<id>
 ---
 
 #### 步骤 5：Provider 升级 + Factory 精简（1 天）⚠️ 核心变化
+
+> **2026-07-26 更新**：Provider 精简（删除 Anthropic、统一环境变量、Factory 无参化、全链路移除 `provider` 字段）已提前实施，共 21 个文件，净删 259 行。`chat()` 返回类型升级（→ `ReadableStream<LLMStreamChunk>`）和 tool call delta 累积尚未实施。详见 [2026-07-26 Provider 维度移除全栈实施](../../docs/dev-log/2026-07-26-provider-simplification.md)。
 
 **内容**：
 - **升级 `openai.ts`**：`chat()` 返回 `ReadableStream<LLMStreamChunk>`，新增 tool call delta 累积逻辑

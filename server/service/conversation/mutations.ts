@@ -16,8 +16,7 @@ export async function createConversation(input: CreateConversationInput): Promis
     .insert(conversations)
     .values({
       title: input.title || '新对话',
-      model: input.model,
-      provider: input.provider
+      model: input.model
     })
     .returning()
 
@@ -26,7 +25,6 @@ export async function createConversation(input: CreateConversationInput): Promis
     id: row!.id,
     title: row!.title,
     model: row!.model,
-    provider: row!.provider,
     messages: [],
     createdAt: row!.createdAt.toISOString(),
     updatedAt: row!.updatedAt.toISOString()
@@ -58,11 +56,11 @@ export async function deleteConversation(id: string): Promise<boolean> {
  * 为什么合并？chat 端点里"查或建"是一个原子语义，
  * 拆成两个函数调用会让 handler 里有 if/else 分叉。
  * 合并后 handler 变成一行：
- *   const conv = await getOrCreateConversation(conversationId, { model, provider })
+ *   const conv = await getOrCreateConversation(conversationId, { model })
 */
 export async function getOrCreateConversation(
   conversationId: string | undefined | null,
-  defaults: { model: string, provider: string }
+  defaults: { model: string }
 ): Promise<ConversationDetail> {
   // 有id,加载已有对话
   if (conversationId) {
@@ -77,8 +75,7 @@ export async function getOrCreateConversation(
   // 无ID，创建新对话
   return createConversation({
     title: '新对话',
-    model: defaults.model,
-    provider: defaults.provider
+    model: defaults.model
   })
 }
 
@@ -185,13 +182,13 @@ export async function deleteLastAssistantMessage(conversationId: string): Promis
 /**
  * 更新对话信息
  *
- * - 只允许更新 title / model / provider
+ * - 只允许更新 title / model
  * - id 和 createdAt 不可变
  * - updatedAt 自动刷新
  */
 export async function updateConversationById(
   id: string,
-  data: { title?: string, model?: string, provider?: string }
+  data: { title?: string, model?: string }
 ): Promise<void> {
   await db
     .update(conversations)

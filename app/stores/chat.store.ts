@@ -23,8 +23,6 @@ interface SelectConversationOptions {
   skipLoad?: boolean
   /** 预设消息列表（skipLoad 为 true 时使用） */
   presetMessages?: Message[]
-  /** 预设 provider（skipLoad 为 true 时使用） */
-  presetProvider?: string
   /** 预设 model（skipLoad 为 true 时使用） */
   presetModel?: string
 }
@@ -53,7 +51,6 @@ export const useChatStore = defineStore('chat', () => {
   const streamingConvId = ref<string | null>(null)
 
   // ==================== 模型选择 ====================
-  const selectedProvider = ref('deepseek')
   const selectedModel = ref('deepseek-v4-flash')
 
   /** 当前流式请求的错误信息（null = 无错误） */
@@ -86,7 +83,7 @@ export const useChatStore = defineStore('chat', () => {
    * @param opts            可选参数（后台流恢复场景使用）
    *   - skipLoad: true 时跳过 DB 加载，直接使用 presetMessages
    *   - presetMessages: 预设消息列表
-   *   - presetProvider / presetModel: 预设模型信息
+   *   - presetModel: 预设模型信息
    */
   async function selectConversation(
     id: string,
@@ -102,7 +99,6 @@ export const useChatStore = defineStore('chat', () => {
     if (opts?.skipLoad && opts.presetMessages) {
       // 后台流恢复场景：跳过 DB 加载，直接注入消息
       messages.value = opts.presetMessages
-      if (opts.presetProvider) selectedProvider.value = opts.presetProvider
       if (opts.presetModel) selectedModel.value = opts.presetModel
       // 恢复流式状态
       isStreaming.value = true
@@ -117,7 +113,6 @@ export const useChatStore = defineStore('chat', () => {
         // 快速切换竞态防护：只有仍在加载同一对话时才应用结果
         if (currentConvId.value !== loadingConvId) return
         messages.value = data.messages
-        selectedProvider.value = data.provider
         selectedModel.value = data.model
       } finally {
         // 只有仍在加载同一对话时才清除 loading（防止覆盖新对话的 loading）
@@ -129,17 +124,15 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /** 创建新对话 */
-  async function createConversation(provider?: string, model?: string) {
-    const p = provider || selectedProvider.value
+  async function createConversation(model?: string) {
     const m = model || selectedModel.value
 
-    const data = await ConversationApi.create({ model: m, provider: p })
+    const data = await ConversationApi.create({ model: m })
 
     conversations.value.unshift({
       id: data.id,
       title: data.title,
       model: data.model,
-      provider: data.provider,
       messageCount: 0,
       lastPreview: null,
       createdAt: data.createdAt,
@@ -150,7 +143,6 @@ export const useChatStore = defineStore('chat', () => {
     currentConvId.value = data.id
     messages.value = []
     streamContent.value = ''
-    selectedProvider.value = p
     selectedModel.value = m
     isInitializing.value = false
   }
@@ -250,7 +242,6 @@ export const useChatStore = defineStore('chat', () => {
         id,
         title: title || '新对话',
         model: selectedModel.value,
-        provider: selectedProvider.value,
         messageCount: 0,
         lastPreview: null,
         createdAt: new Date().toISOString(),
@@ -271,10 +262,6 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   // ==================== Provider/Model 选择 ====================
-
-  function setProvider(providerId: string) {
-    selectedProvider.value = providerId
-  }
 
   function setModel(modelId: string) {
     selectedModel.value = modelId
@@ -308,7 +295,6 @@ export const useChatStore = defineStore('chat', () => {
     isInitializing,
     streamContent,
     streamingConvId,
-    selectedProvider,
     selectedModel,
     currentConversation,
     hasMessages,
@@ -325,8 +311,6 @@ export const useChatStore = defineStore('chat', () => {
     finishStreaming,
     setCurrentConvId,
     updateConversationItem,
-    // 模型选择
-    setProvider,
     setModel,
     // 新对话
     startNewChat
