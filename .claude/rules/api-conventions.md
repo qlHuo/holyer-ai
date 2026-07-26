@@ -58,6 +58,20 @@ export const CreateConversationSchema = z.object({
 const body = CreateConversationSchema.parse(await readBody(event))
 ```
 
+**硬约束**：禁止手写 `if/typeof` 校验逻辑。Zod 已在项目 `package.json` 中安装，所有参数校验走 Zod，类型从 `z.infer<>` 推导。
+
+```ts
+// ❌ 错误：手写校验，而项目已安装 Zod
+function validate(data: unknown) {
+  if (typeof data !== 'object' || !data) throw createError({ statusCode: 400 })
+  if (!('title' in data) || typeof data.title !== 'string') throw createError({ statusCode: 400 })
+}
+
+// ✅ 正确：Zod Schema
+const schema = z.object({ title: z.string().max(100) })
+const { title } = schema.parse(await readBody(event))
+```
+
 **原因**：Schema 文件和路由文件分离，便于类型推导（`z.infer<>`）和复用（如 PUT 端点复用 GET 的 Schema 子集）。
 
 ## 响应格式

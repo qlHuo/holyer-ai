@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const emit = defineEmits(['close'])
+const route = useRoute()
 
 const { switchConversation } = useChat()
 const chatStore = useChatStore()
@@ -23,10 +24,12 @@ async function handleCreate() {
     const emptyConv = chatStore.conversations.find(conv => conv.messageCount === 0)
     if (emptyConv) {
       await switchConversation(emptyConv.id)
+      navigateTo('/')
       emit('close')
       return
     }
     await chatStore.createConversation()
+    navigateTo('/')
     emit('close')
   } catch (error: any) {
     toast.add({ title: error || '新建对话失败', color: 'error', icon: 'i-lucide-alert-circle' })
@@ -37,6 +40,7 @@ async function handleCreate() {
 async function handleSelect(id: string) {
   try {
     await switchConversation(id)
+    navigateTo('/')
     emit('close')
   } catch (error: any) {
     toast.add({ title: error || '切换对话失败', color: 'error', icon: 'i-lucide-alert-circle' })
@@ -49,6 +53,7 @@ async function handleDelete() {
   try {
     await chatStore.deleteConversation(deletingId.value)
     deletingId.value = null
+    toast.add({ title: '对话已删除', color: 'success', icon: 'i-lucide-check' })
   } catch (error: any) {
     toast.add({ title: error || '删除对话失败', color: 'error', icon: 'i-lucide-circle-alert' })
   }
@@ -83,6 +88,11 @@ async function retryLoad() {
 onMounted(() => {
   retryLoad()
 })
+function handleToPrompts() {
+  chatStore.currentConvId = null
+  navigateTo('/prompts')
+  emit('close')
+}
 </script>
 
 <template>
@@ -103,7 +113,7 @@ onMounted(() => {
     <!-- ═══════════════════════════════════════════ -->
     <!-- 新建对话按钮                                -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="p-3 border-b border-(--ui-border)">
+    <div class="p-3">
       <UButton
         block
         icon="bx:message-add"
@@ -112,13 +122,28 @@ onMounted(() => {
       >
         新建对话
       </UButton>
-      <div class="pt-3 flex justify-between items-center">
-        <span class="text-xs text-dimmed">最近对话</span>
-        <SearchModal
-          size="xs"
-          title="搜索消息"
+      <div
+        class="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg cursor-pointer
+               hover:bg-default text-dimmed transition-colors"
+        :class="{ 'bg-primary/10 text-primary!': route.path === '/prompts' }"
+        @click="handleToPrompts"
+      >
+        <UIcon
+          name="i-lucide-bookmark"
+          class="w-4 h-4 shrink-0"
         />
+        <span class="text-sm">提示词管理</span>
       </div>
+    </div>
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 最近对话标题                                -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="border-t border-(--ui-border) px-3 pt-3 pb-2 flex justify-between items-center">
+      <span class="text-xs text-dimmed">最近对话</span>
+      <SearchModal
+        size="xs"
+        title="搜索消息"
+      />
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
@@ -195,7 +220,7 @@ onMounted(() => {
               size="xs"
               color="error"
               class="shrink-0 hidden group-hover:block"
-              @click.stop="deletingId = conv.id"
+              @click.stop="() => { deletingId = conv.id }"
             />
           </div>
           <div class="flex items-center justify-between mt-1 gap-2">
@@ -245,7 +270,7 @@ onMounted(() => {
           <UButton
             color="neutral"
             variant="ghost"
-            @click="deletingId = null"
+            @click="() => { deletingId = null }"
           >
             取消
           </UButton>

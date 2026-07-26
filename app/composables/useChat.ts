@@ -35,7 +35,7 @@ const sendingConvIds = ref(new Set<string>())
 export function useChat() {
   // ★ 必须在 useChat() 内部获取 — 模块顶层时 Pinia 尚未初始化
   const chatStore = useChatStore()
-
+  const promptStore = usePromptStore()
   /**
    * isSending — 按对话计算，不再全局锁
    *
@@ -86,7 +86,8 @@ export function useChat() {
           provider: chatStore.selectedProvider,
           model: chatStore.selectedModel,
           message: [userMessage],
-          conversationId: chatStore.currentConvId
+          conversationId: chatStore.currentConvId,
+          systemPrompt: promptStore.getSelectedPromptContent()
         },
         abortCtrl.signal
       )
@@ -133,6 +134,7 @@ export function useChat() {
         model: chatStore.selectedModel,
         message: [],
         conversationId: chatStore.currentConvId,
+        systemPrompt: promptStore.getSelectedPromptContent(),
         regenerate: true
       }, abortCtrl.signal)
       await consumeSSEStream(response, session)

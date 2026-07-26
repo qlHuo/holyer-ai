@@ -22,6 +22,41 @@ description: 前端开发规范 — Nuxt UI v4 组件用法、暗黑模式、路
 - Chat 组件套件：`ChatMessages`, `ChatMessage`, `ChatPrompt`, `ChatReasoning`, `ChatTool`, `ChatShimmer`
 - 其它常用组件：`UButton`, `UInput`, `UModal`, `USlideover`, `UDropdownMenu`, `UAvatar`
 
+## 表单规范
+
+**硬约束**：表单必须用 Nuxt UI v4 的 `<UForm>` 组件 + Zod Schema 校验，**禁止手写 `<div>` + `<input>` + 手动 validate**。
+
+```vue
+<!-- ❌ 错误：手写表单，项目已安装 Nuxt UI v4 和 Zod -->
+<div class="flex flex-col gap-2">
+  <label>名称</label>
+  <input v-model="form.name" class="border rounded p-2" />
+  <p v-if="errors.name" class="text-red-500">{{ errors.name }}</p>
+</div>
+
+<!-- ✅ 正确：用 Nuxt UI v4 的 UForm + Zod -->
+<script setup>
+const schema = z.object({
+  name: z.string().min(1, '名称不能为空').max(100),
+  content: z.string().min(1, '内容不能为空'),
+})
+const form = reactive({ name: '', content: '' })
+</script>
+<template>
+  <UForm :schema="schema" :state="form" @submit="onSubmit">
+    <UFormField label="名称" name="name">
+      <UInput v-model="form.name" />
+    </UFormField>
+    <UFormField label="内容" name="content">
+      <UTextarea v-model="form.content" />
+    </UFormField>
+    <UButton type="submit">提交</UButton>
+  </UForm>
+</template>
+```
+
+> Zod 已在项目 `package.json` 中安装，前端直接用，不需要额外安装。
+
 ## 暗黑模式
 
 Nuxt UI v4 内置 color mode：

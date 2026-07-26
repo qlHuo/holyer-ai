@@ -140,6 +140,7 @@ function handleStop() {
           <!-- 左侧：模型选择 -->
           <div class="flex items-center gap-1">
             <ChatModelSelector />
+            <ChatPromptSelector />
           </div>
 
           <!-- 右侧：操作按钮 -->

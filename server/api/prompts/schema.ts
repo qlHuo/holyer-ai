@@ -15,7 +15,7 @@ export const updatePromptSchema = z.object({
 })
 
 // id 校验
-export const promptIdSchema = z.string().min(1, 'id 不能为空')
+export const promptIdSchema = z.string().uuid().min(1, 'id 不能为空')
 
 export type CreatePromptInput = z.infer<typeof createPromptSchema>
 export type UpdatePromptInput = z.infer<typeof updatePromptSchema>

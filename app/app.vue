@@ -32,6 +32,8 @@ const toaster = {
 
 <template>
   <UApp :toaster="toaster">
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </UApp>
 </template>

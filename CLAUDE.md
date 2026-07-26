@@ -47,6 +47,19 @@ npx nuxi typecheck              # TypeScript 类型检查
 - **Edge Runtime 无 Node API**：`fs`、`child_process`、`net` (TCP Socket) 在生产环境全部不可用，引入新依赖前检查
 - **MCP 仅 HTTP/SSE**：不支持 stdio 传输（无子进程）
 
+## 代码生成优先级
+
+生成任何代码时，按以下优先级选择实现方式。**禁止跳过前面的层级直接自己写**：
+
+1. **项目自身规范** — 先查 `.claude/rules/` 中对应领域的规则文件（前端/API/数据库/LLM），项目已有的同类文件/函数就是模板
+2. **已引入库的官方用法** — 安装了就要用，不要无视。例如：Nuxt UI v4 的 `<UForm>` + Zod 校验（而非手写 `<div>` + `<input>` + 自己写 validate）、Drizzle ORM 类型安全 API（而非原始 SQL）、Pinia Setup Store（而非 Option Store）
+3. **业界通用最佳实践** — TypeScript 严格类型、RESTful 语义、SSE 标准模式
+4. **自定义实现** — 仅在前 3 层都无法满足需求时才自己造
+
+**反例警示**：实现提示词管理时，表单直接用 `<div>` + `<input>` + `<textarea>` 手写，而项目已安装 Nuxt UI v4（内置 Form 组件）和 Zod（已在 API 端大量使用），这就是跳过了第 2 层。正确做法：`<UForm>` + `z.object({...})` + `useForm()`。
+
+详见 [代码生成优先级规则](.claude/rules/code-generation-priority.md)。
+
 ## 非做不可
 
 这些规则没有例外，违反会直接导致生产故障：

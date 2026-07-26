@@ -6,6 +6,7 @@ import type { PromptDetail } from '~~/shared/types/prompt'
 import type { ApiSuccess } from '~~/shared/types/response'
 import { promptIdSchema, updatePromptSchema } from './schema'
 import { updatePrompt } from '~~/server/service/prompts'
+import { successResponse } from '~~/server/utils/response'
 
 export default defineEventHandler(async (event): Promise<ApiSuccess<PromptDetail>> => {
   const id = promptIdSchema.parse(await getRouterParam(event, 'id'))
