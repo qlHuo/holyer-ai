@@ -30,6 +30,7 @@ export class DeepSeekProvider implements LLMProvider {
     this.modelsList = config.models || SUPPORTED_MODELS
   }
 
+  // @ts-expect-error - 忽略类型检查 废弃学习使用
   async chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>> {
     // 1. 提取并合并 system prompt
     const systemPrompt = extractSystemPrompt(messages, options.systemPrompt)

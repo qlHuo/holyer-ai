@@ -78,7 +78,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 2：自定义提示词管理 + Agent Runtime（预计 4-6 天）🔄 第一步完成，第二步待启动（完成度约 14%）
+## Phase 2：自定义提示词管理 + Agent Runtime（预计 4-6 天）🔄 第一步完成，第二步待启动（完成度约 19%）
 
 > 方案：[Phase 2 Agent 系统设计方案](phase2-agent-design.md)（含 6 个架构决策 + 10 个实现步骤） · [ADR-012 LLMStreamChunk](../../docs/decisions/012-llm-stream-chunk-type.md) · [ADR-013 Prompt 命名](../../docs/decisions/013-prompt-naming.md) · [ADR-014 Agent 流式 DB 写入](../../docs/decisions/014-agent-streaming-db-write.md) · [提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md)
 >
@@ -97,8 +97,8 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
 | 2.1 | Agent Runtime | ReAct 循环 + 上下文管理 + Prompt Segment 系统 | ⬜ |
-| 2.2 | 内置工具 | 计算器、时间、搜索、网页抓取等 | ⬜ |
-| 2.3 | Provider 升级 + 精简 | chat() → `ReadableStream<LLMStreamChunk>`、tool call delta 累积、删除 Anthropic、DeepSeek 复用 OpenAIProvider | 🔄 (2026-07-26: Provider 精简部分已完成，chat() 返回类型升级待实施) |
+| 2.2 | 内置工具 | 计算器、时间、搜索、网页抓取等 | 🔄 (2026-07-27: 方案定稿，与 2.3 合并实施，详见[方案文档](provider-upgrade-and-tool-system.md)) |
+| 2.3 | Provider 升级 + 精简 | chat() → `ReadableStream<LLMStreamChunk>`、tool call delta 累积、删除 Anthropic、DeepSeek 复用 OpenAIProvider | 🔄 (2026-07-26: 精简已完成；2026-07-27: 升级方案定稿，详见[方案文档](provider-upgrade-and-tool-system.md)) |
 | 2.4 | Agent API | `/api/agent/run` 端点 + Prompt 注入管线 | ⬜ |
 | 2.5 | Agent UI | 工具调用可视化（ToolCallCard）、推理过程展示 | ⬜ |
 | 2.6 | Agent 可观测性 | 工具调用日志 + ReAct 循环追踪 + Token 消耗统计 | ⬜ |

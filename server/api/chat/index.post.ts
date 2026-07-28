@@ -20,6 +20,8 @@ import type { ConversationDetail } from '~~/shared/types/conversation'
 import { createSSEResponse } from '~~/server/utils/sse'
 import { ChatBodySchema } from './schema'
 import { SSE_EVENT } from '~~/shared/types/sse'
+import { filterTextChunks } from '~~/server/utils/stream'
+import { runAgentLoop } from '~~/server/service/agent/runner'
 
 export default defineEventHandler(async (event) => {
   const body = ChatBodySchema.parse(await readBody(event))
@@ -109,14 +111,26 @@ export default defineEventHandler(async (event) => {
         // 插入空消息
         const newMsg = await insertMessage(conv.id, { role: 'assistant', content: '' })
 
-        const llmStream = await llmProvider.chat(allMessages, {
+        // const llmStream = filterTextChunks(await llmProvider.chat(allMessages, {
+        //   model,
+        //   tools,
+        //   systemPrompt,
+        //   temperature,
+        //   maxTokens,
+        //   signal: llmAbortController.signal
+        // }))
+        const chatOptions = {
           model,
           tools,
           systemPrompt,
           temperature,
           maxTokens,
           signal: llmAbortController.signal
-        })
+        }
+
+        const rawStream = tools?.length ? await runAgentLoop(llmProvider, allMessages, chatOptions) : await llmProvider.chat(allMessages, chatOptions)
+
+        const llmStream = filterTextChunks(rawStream)
 
         const reader = llmStream.getReader()
         let contentBuffer = ''

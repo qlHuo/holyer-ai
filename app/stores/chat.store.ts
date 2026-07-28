@@ -51,7 +51,7 @@ export const useChatStore = defineStore('chat', () => {
   const streamingConvId = ref<string | null>(null)
 
   // ==================== 模型选择 ====================
-  const selectedModel = ref('deepseek-v4-flash')
+  const selectedModel = ref('deepseek-v4-pro')
 
   /** 当前流式请求的错误信息（null = 无错误） */
   const streamError = ref<string | null>(null)

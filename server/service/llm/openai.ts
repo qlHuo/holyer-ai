@@ -4,7 +4,7 @@
  * */
 
 import OpenAI from 'openai'
-import type { Message, ChatOptions } from '~~/shared/types/provider'
+import type { Message, ChatOptions, LLMStreamChunk } from '~~/shared/types/provider'
 import type { LLMProvider, ModelInfo } from './types'
 import { extractSystemPrompt } from '~~/server/utils/system-prompt'
 
@@ -23,12 +23,12 @@ export class OpenAIProvider implements LLMProvider {
   constructor(config: OpenAIConfig) {
     this.client = new OpenAI({
       apiKey: config.apiKey,
-      baseURL: config.baseUrl || 'https://api.openai.com/v1'
+      baseURL: config.baseUrl
     })
     this.modelsList = config.models || []
   }
 
-  async chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<string>> {
+  async chat(messages: Message[], options: ChatOptions): Promise<ReadableStream<LLMStreamChunk>> {
     // ① 提取并合并 system prompt
     const systemPrompt = extractSystemPrompt(messages, options.systemPrompt)
 
@@ -42,8 +42,25 @@ export class OpenAIProvider implements LLMProvider {
     for (const msg of messages) {
       switch (msg.role) {
         case 'user':
-        case 'assistant':
           requestMessages.push({ role: msg.role, content: msg.content })
+          break
+        case 'assistant':
+          if (msg.toolCalls?.length) {
+            requestMessages.push({
+              role: 'assistant',
+              content: msg.content || null,
+              tool_calls: msg.toolCalls.map(tc => ({
+                id: tc.id,
+                type: 'function' as const,
+                function: {
+                  name: tc.name,
+                  arguments: tc.arguments
+                }
+              }))
+            })
+          } else {
+            requestMessages.push({ role: msg.role, content: msg.content })
+          }
           break
         case 'system':
           // 已通过 options.systemPrompt 处理，跳过
@@ -62,22 +79,54 @@ export class OpenAIProvider implements LLMProvider {
     const stream = await this.client.chat.completions.create({
       model: options.model,
       messages: requestMessages,
+      stream: true,
       temperature: options.temperature,
       max_tokens: options.maxTokens,
-      stream: true
-      // TODO: tools 支持
+      ...(options.tools?.length
+        ? {
+            tools: options.tools.map(t => ({
+              type: 'function' as const,
+              function: { name: t.name, description: t.description, parameters: t.parameters }
+            }))
+          }
+        : {})
     })
 
     // ③ 将 OpenAI 的流式响应转换为 ReadableStream<string>
-    return new ReadableStream({
+    return new ReadableStream<LLMStreamChunk>({
       async start(controller) {
         try {
+          // Map<index, { id, name, arguments }> 按 index 聚拢分片到达的 tool call delta
+          const toolCallAccumulator = new Map<number, { id: string, name: string, arguments: string }>()
+
           for await (const chunk of stream) {
             const delta = chunk.choices?.[0]?.delta
+            if (delta?.content) {
+              controller.enqueue({ type: 'text', content: delta.content })
+            }
 
-            if (!delta?.content) continue // 只处理文本内容，忽略工具调用等其他信息
-            controller.enqueue(delta.content)
+            // 工具调用 delta → 累积（不即时发出，arguments 是不完整 JSON 片段）
+            if (delta?.tool_calls) {
+              for (const tc of delta.tool_calls) {
+                const existing = toolCallAccumulator.get(tc.index) ?? { id: '', name: '', arguments: '' }
+                if (tc.id) existing.id = tc.id
+                if (tc.function?.name) existing.name += tc.function.name
+                if (tc.function?.arguments) existing.arguments += tc.function.arguments
+                toolCallAccumulator.set(tc.index, existing)
+              }
+            }
           }
+
+          // 累积的 tool call delta 转为完整 ToolCall 列表
+          if (toolCallAccumulator.size) {
+            const toolCalls = Array.from(toolCallAccumulator.values()).map(tc => ({
+              id: tc.id,
+              name: tc.name,
+              arguments: tc.arguments
+            }))
+            controller.enqueue({ type: 'tool_calls', toolCalls })
+          }
+          controller.enqueue({ type: 'done' })
           controller.close()
         } catch (error) {
           controller.error(error)

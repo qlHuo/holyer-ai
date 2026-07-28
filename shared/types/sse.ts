@@ -10,6 +10,7 @@
 export const SSE_EVENT = {
   META: 'meta',
   TEXT: 'text',
+  TOOL_CALLS: 'tool_calls',
   DONE: 'done',
   ERROR: 'error',
   PING: 'ping'

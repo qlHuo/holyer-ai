@@ -23,7 +23,7 @@ export interface Message {
 export interface ToolDefinition {
   name: string
   description: string
-  parameters: object
+  parameters: Record<string, any>
 }
 
 /**
@@ -55,3 +55,22 @@ export interface ChatOptions {
   /** AbortSignal — Provider 实现层用它取消底层的 LLM API 调用 */
   signal?: AbortSignal
 }
+
+// LLM 响应流接口，表示 LLM 生成的文本流，包含文本内容
+export interface LLMStreamTextChunk {
+  type: 'text'
+  content: string
+}
+
+// 工具调用流接口，表示 LLM 发出的工具调用结果，包含工具调用列表
+export interface LLMStreamToolCallsChunk {
+  type: 'tool_calls'
+  toolCalls: ToolCall[]
+}
+
+// LLM 响应完成接口，表示 LLM 生成的文本生成完毕
+export interface LLMStreamDoneChunk {
+  type: 'done'
+}
+
+export type LLMStreamChunk = LLMStreamTextChunk | LLMStreamToolCallsChunk | LLMStreamDoneChunk
