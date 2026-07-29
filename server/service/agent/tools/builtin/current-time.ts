@@ -5,17 +5,24 @@ export class CurrentTimeTool implements ExecutableTool {
   readonly name = 'current_time'
   readonly description = '获取当前日期和时间。可指定时区（如 Asia/Shanghai、America/New_York），不指定则返回本地时间。'
   readonly permission: ToolPermission = 'readonly'
+  // 参数定义格式
   readonly parameters: Record<string, any> = {
+    // 告诉 LLM：参数是个对象
     type: 'object',
+    // 告诉 LLM: 对象里有以下这些字段
     properties: {
       timezone: {
+        // 告诉 LLM：这个字段必须是字符串
         type: 'string',
+        // 告诉 LLM：这个字段的含义
         description: 'IANA 时区标识符，例如 "Asia/Shanghai"、"America/New_York"、"Europe/London"。不传则使用系统本地时区。'
       }
-    }
+    },
+    required: ['timezone']
   }
 
   execute(args: Record<string, unknown>): string {
+    console.log('args.timezone', args.timezone)
     const timezone = typeof args.timezone === 'string' ? args.timezone : undefined
     const now = new Date()
 

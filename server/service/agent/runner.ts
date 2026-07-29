@@ -5,6 +5,8 @@
  *
  * 返回 ReadableStream<LLMStreamChunk> 与 provider.chat() 返回的流一致，直接对接 filterTextChunks
  *
+ * Agent 工具系统实现详解梳理：docs\dev-log\2026-07-29-agent-tool-system-implementation.md
+ *
 */
 
 import type { Message, ToolCall, LLMStreamChunk, ChatOptions } from '~~/shared/types/provider'

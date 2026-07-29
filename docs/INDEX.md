@@ -1,6 +1,6 @@
 # 文档索引
 
-> 51 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 53 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（27 篇）
+## 开发日志（29 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +35,8 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 07-29 | [agent-tool-system-implementation](dev-log/2026-07-29-agent-tool-system-implementation.md) | **Agent 工具系统实现详解** — 完整链路、JSON Schema 参数设计、常见疑点速查、前端定义迁移 |
+| 07-28 | [agent-tool-system-p0-analysis](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) | **Agent 工具调用系统 P0 分析与方案** — 当前缺口、立即修复方案、文件变更清单 |
 | 07-26 | [provider-simplification](dev-log/2026-07-26-provider-simplification.md) | **Provider 维度移除全栈实施** — 双适配器→单适配器、21 文件净删 259 行、provider 全链路移除 |
 | 07-10 | [ai-sdk-decision-and-learning-path](dev-log/2026-07-10-ai-sdk-decision-and-learning-path.md) | **AI SDK 引入决策 + ReAct 循环学习路径** — 混合架构、手写→切换两阶段、Provider 层不动 |
 | 07-09 | [prompt-engineering-and-phase2-planning](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) | **提示词工程认知澄清与 Phase 2 前规划 review** — PromptSegment 抽象、Agent 可观测性、安全护栏 |
@@ -131,5 +133,5 @@
 | **数据库** | [ADR-003](decisions/003-neon-drizzle.md) · [drizzle-kit](learning-notes/drizzle-kit.md) · [drizzle-orm](learning-notes/drizzle-orm.md) · [database-rules](../.claude/rules/database.md) |
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) |
-| **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) |
+| **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

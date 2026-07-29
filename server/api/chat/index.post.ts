@@ -22,6 +22,7 @@ import { ChatBodySchema } from './schema'
 import { SSE_EVENT } from '~~/shared/types/sse'
 import { filterTextChunks } from '~~/server/utils/stream'
 import { runAgentLoop } from '~~/server/service/agent/runner'
+import { toolRegistry } from '~~/server/service/agent/tools'
 
 export default defineEventHandler(async (event) => {
   const body = ChatBodySchema.parse(await readBody(event))
@@ -119,16 +120,23 @@ export default defineEventHandler(async (event) => {
         //   maxTokens,
         //   signal: llmAbortController.signal
         // }))
+        // 将前端传来的工具名解析为完整的 ToolDefinition（LLM 需要 name + description + parameters）
+        const toolDefinitions = tools?.length
+          ? toolRegistry.getDefinitions().filter(t => tools.includes(t.name))
+          : undefined
+
         const chatOptions = {
           model,
-          tools,
+          tools: toolDefinitions,
           systemPrompt,
           temperature,
           maxTokens,
           signal: llmAbortController.signal
         }
 
-        const rawStream = tools?.length ? await runAgentLoop(llmProvider, allMessages, chatOptions) : await llmProvider.chat(allMessages, chatOptions)
+        const rawStream = toolDefinitions?.length
+          ? await runAgentLoop(llmProvider, allMessages, chatOptions)
+          : await llmProvider.chat(allMessages, chatOptions)
 
         const llmStream = filterTextChunks(rawStream)
 

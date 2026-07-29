@@ -70,6 +70,43 @@ Provider 外部（调用方）：
   // stream 就是纯文本 token 流，直接用
 ```
 
+### Tool Call Delta 分片聚拢
+
+当 `chatOptions.tools` 有值时，LLM 的 tool call 不会一次性到达——流式模式下被拆成多次 delta 推送。Provider 必须内部聚拢完整后才发出 `{ type: 'tool_calls' }` chunk。
+
+**核心模式**：使用 `Map<index, { id, name, arguments }>` 按 `index` 累积，`id` 用 `=` 赋值，`name` 和 `arguments` 用 `+=` 字符串拼接。
+
+**两个关键约束**：
+1. **中途不发出** tool call chunk——arguments 在任何中间状态都是不完整 JSON 片段，`JSON.parse()` 会报错
+2. **流结束后一把发出**——`for await` 循环跑完，确认所有 delta 都已到位，转成完整 `ToolCall[]` 后 `enqueue`
+
+```ts
+// 参考实现：server/service/llm/openai.ts:99-128
+const toolCallAccumulator = new Map<number, { id: string, name: string, arguments: string }>()
+for await (const chunk of stream) {
+  if (chunk.delta?.content) {
+    controller.enqueue({ type: 'text', content: chunk.delta.content }) // 文本即时发出
+  }
+  if (chunk.delta?.tool_calls) {
+    // tool call delta → 累积不发出
+    for (const tc of chunk.delta.tool_calls) {
+      const cur = toolCallAccumulator.get(tc.index) ?? { id: '', name: '', arguments: '' }
+      if (tc.id) cur.id = tc.id
+      if (tc.function?.name) cur.name += tc.function.name
+      if (tc.function?.arguments) cur.arguments += tc.function.arguments
+      toolCallAccumulator.set(tc.index, cur)
+    }
+  }
+}
+// 流结束，一把发出完整的 tool_calls
+if (toolCallAccumulator.size) {
+  controller.enqueue({ type: 'tool_calls', toolCalls: Array.from(toolCallAccumulator.values()) })
+}
+controller.enqueue({ type: 'done' })
+```
+
+**新增 Provider 时**，如果底层 API 的流式 tool call 格式与 OpenAI 不一致（如 Anthropic 的 `content_block_start` / `content_block_delta`），同样需要在 Provider 内部消化差异，对外输出统一的 `{ type: 'text' | 'tool_calls' | 'done' }` chunk 格式。
+
 ## 相关文档
 
 执行新增 Provider 的任务前，先检索以下文档了解背景：

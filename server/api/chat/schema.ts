@@ -17,11 +17,7 @@ export const ChatBodySchema = z.object({
   message: z.array(MessageSchema),
   regenerate: z.boolean().optional(),
   conversationId: z.string().uuid().nullish(),
-  tools: z.array(z.object({
-    name: z.string(),
-    description: z.string(),
-    parameters: z.record(z.string(), z.unknown())
-  })).optional(),
+  tools: z.array(z.string()).optional(),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().positive().optional()
