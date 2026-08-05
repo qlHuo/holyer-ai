@@ -285,6 +285,45 @@ export function useChat() {
         }
         break
 
+      case SSE_EVENT.ROUND_START:
+        // Agent 新一轮开始 → 清空上一轮中间文本，开启 loading 状态
+        if (eventConvId && eventConvId === chatStore.currentConvId) {
+          chatStore.streamContent = ''
+          const lastMsg = chatStore.messages[chatStore.messages.length - 1]
+          if (lastMsg && lastMsg.role === 'assistant') {
+            lastMsg.content = ''
+          }
+          chatStore.isInitializing = true
+        }
+        break
+
+      case SSE_EVENT.TOOL_START:
+        // Agent 工具调用开始 → 添加到 store（记录时间戳用于计算耗时）
+        if (eventConvId && eventConvId === chatStore.currentConvId) {
+          chatStore.addAgentToolCall({
+            id: payload.toolCallId as string,
+            name: payload.toolName as string,
+            args: payload.args as string,
+            status: 'running',
+            startedAt: Date.now()
+          })
+        }
+        break
+
+      case SSE_EVENT.TOOL_END:
+        // Agent 工具调用完成 → 更新 store（计算耗时 + 正确读取 success 状态）
+        if (eventConvId && eventConvId === chatStore.currentConvId) {
+          const toolCalls = chatStore.agentToolCalls
+          const tc = toolCalls.find(t => t.id === payload.toolCallId)
+          const durationMs = tc?.startedAt ? Date.now() - tc.startedAt : undefined
+          chatStore.updateAgentToolCall(payload.toolCallId as string, {
+            status: payload.success === false ? 'error' : 'done',
+            result: payload.result as string,
+            durationMs
+          })
+        }
+        break
+
       case SSE_EVENT.ERROR:
         // 只有当前前台对话才显示错误
         if (eventConvId === chatStore.currentConvId) {

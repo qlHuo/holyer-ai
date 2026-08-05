@@ -6,6 +6,8 @@ defineProps<{
   hasError?: boolean
   isInitializing?: boolean
   showRegenerate?: boolean
+  /** 是否在气泡内部展示工具调用步骤 */
+  showTools?: boolean
 }>()
 </script>
 
@@ -27,7 +29,7 @@ defineProps<{
         消息体容器
         - 用户消息：纯文本渲染
         - 助手消息：Markdown 渲染 + 流式光标
-        - Phase 2：toolCalls、reasoning 等内容段
+        - Agent 模式下通过 showTools prop 在气泡内渲染工具调用步骤
       -->
       <ChatMessageBody
         :content="content"
@@ -35,6 +37,7 @@ defineProps<{
         :is-streaming="isStreaming"
         :has-error="hasError"
         :is-initializing="isInitializing"
+        :show-tools="showTools"
       />
     </div>
     <div

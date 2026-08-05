@@ -299,7 +299,9 @@ parameters: {
 
 ## 相关文档
 
+- [Agent ReAct + 工具调用完整流程分析](2026-08-05-agent-react-full-flow.md) — 端到端 6 层架构数据流追踪、ReAct 循环全景
 - [Agent 工具调用 P0 分析与方案](2026-07-28-agent-tool-system-p0-analysis.md) — 实现前的方案设计
 - [ADR-014：Agent 流式 DB 写入策略](../decisions/014-agent-streaming-db-write.md) — 一次性写入的决策理由
 - [Phase 2 Agent 系统设计方案](../../.claude/plan/phase2-agent-design.md) — 整体架构决策
 - [Provider 升级与工具系统实施方案](../../.claude/plan/provider-upgrade-and-tool-system.md) — Provider 层工具转发
+- [网络搜索工具后端选型](2026-08-04-web-search-backend-selection.md) — web_search 工具从 Brave 到 Tavily 的完整踩坑

@@ -22,7 +22,6 @@ export class CurrentTimeTool implements ExecutableTool {
   }
 
   execute(args: Record<string, unknown>): string {
-    console.log('args.timezone', args.timezone)
     const timezone = typeof args.timezone === 'string' ? args.timezone : undefined
     const now = new Date()
 

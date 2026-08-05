@@ -17,6 +17,19 @@ import type { Message } from '#shared/types/provider'
 import type { ConversationListItem } from '#shared/types/conversation'
 import ConversationApi from '~/api/conversations'
 
+/** 工具调用 UI 状态 */
+export interface AgentToolCallState {
+  id: string
+  name: string
+  args: string
+  status: 'running' | 'done' | 'error'
+  result?: string
+  /** 前端记录的 TOOL_START 时间戳，用于计算耗时 */
+  startedAt?: number
+  /** 工具执行耗时（毫秒），TOOL_END 时计算 */
+  durationMs?: number
+}
+
 /** selectConversation 的可选参数 */
 interface SelectConversationOptions {
   /** 跳过 DB 加载（由调用方提供消息列表） */
@@ -55,6 +68,30 @@ export const useChatStore = defineStore('chat', () => {
 
   /** 当前流式请求的错误信息（null = 无错误） */
   const streamError = ref<string | null>(null)
+
+  // ==================== Agent 工具调用 ====================
+  /** 当前对话中的工具调用状态（新流开始时清空，流结束后保留以便查看） */
+  const agentToolCalls = ref<AgentToolCallState[]>([])
+
+  // ==================== Agent 工具调用操作 ====================
+
+  /** 工具调用开始（TOOL_START SSE 事件） */
+  function addAgentToolCall(tc: AgentToolCallState) {
+    agentToolCalls.value.push(tc)
+  }
+
+  /** 工具调用完成（TOOL_END SSE 事件） */
+  function updateAgentToolCall(id: string, updates: Partial<AgentToolCallState>) {
+    const index = agentToolCalls.value.findIndex(tc => tc.id === id)
+    if (index !== -1) {
+      agentToolCalls.value[index] = { ...agentToolCalls.value[index], ...updates } as AgentToolCallState
+    }
+  }
+
+  /** 清空当前对话的工具调用状态 */
+  function clearAgentToolCalls() {
+    agentToolCalls.value = []
+  }
 
   // ==================== 计算属性 ====================
   const currentConversation = computed(() =>
@@ -95,6 +132,7 @@ export const useChatStore = defineStore('chat', () => {
     streamContent.value = ''
     streamError.value = null
     isInitializing.value = false
+    agentToolCalls.value = []
 
     if (opts?.skipLoad && opts.presetMessages) {
       // 后台流恢复场景：跳过 DB 加载，直接注入消息
@@ -182,6 +220,7 @@ export const useChatStore = defineStore('chat', () => {
     streamContent.value = ''
     streamError.value = null
     streamingConvId.value = currentConvId.value
+    agentToolCalls.value = []
     messages.value.push({ role: 'assistant', content: '' })
     isInitializing.value = true
   }
@@ -219,6 +258,7 @@ export const useChatStore = defineStore('chat', () => {
     isStreaming.value = false
     streamContent.value = ''
     streamingConvId.value = null
+    // 注意：不在这里清空 agentToolCalls — 工具调用区在流结束后保留以便查看
   }
 
   /**
@@ -282,6 +322,7 @@ export const useChatStore = defineStore('chat', () => {
     isStreaming.value = false
     isInitializing.value = false
     streamingConvId.value = null
+    agentToolCalls.value = []
   }
 
   return {
@@ -299,6 +340,11 @@ export const useChatStore = defineStore('chat', () => {
     currentConversation,
     hasMessages,
     streamError,
+    agentToolCalls,
+    // Agent 工具调用
+    addAgentToolCall,
+    updateAgentToolCall,
+    clearAgentToolCalls,
     // 对话操作
     loadConversations,
     selectConversation,

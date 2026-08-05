@@ -77,18 +77,28 @@ Phase 2 的核心目标是**赋予 AI 使用工具的能力**。不走"引入 AI
 
 收益：升级一次工具调用逻辑，所有服务商全部获得能力。
 
-### 决策 4：Agent 独立端点 `/api/agent/run`
+### 决策 4：保持 `/api/chat` 单端点，Agent 是 Chat 的超集
 
-不复用 `/api/chat`，新建专用于 Agent 的 SSE 端点。
+**2026-07-30 修正**：原决策要求新建独立 `/api/agent/run` 端点，经分析后修正——不复用不是设计问题，Agent 就是 Chat 的超集（传了工具列表而已）。
 
-| 维度 | `/api/chat` | `/api/agent/run` |
-|------|-------------|-------------------|
-| 生命周期 | 单次 LLM 调用 | 多轮 ReAct 循环 |
-| 底层调用 | `provider.chat(messages)` | 同左，但在循环中多次调用 |
-| SSE 事件 | META → TEXT → DONE | META → ROUND_START → TEXT → TOOL_START/END → DONE |
-| 前端调用方 | `useChat.sendMessage()` | `useChat.sendAgentMessage()` |
+业界验证：OpenAI `/v1/chat/completions`、Anthropic `/v1/messages`、Gemini、DeepSeek——全部是单端点。没有人把 Agent 和 Chat 分成两个 API。
 
-底层的 `provider.chat()` 是同一个方法——Agent 只是在它之上包了一层循环。
+```ts
+// 路由逻辑：有注册工具就走 Agent 路径，否则纯聊天
+const toolDefinitions = toolRegistry.getDefinitions()  // 始终全量，前端不参与选择
+const rawStream = toolDefinitions.length > 0
+  ? await runAgentLoop(llmProvider, allMessages, chatOptions)
+  : await llmProvider.chat(allMessages, chatOptions)
+```
+
+| 维度 | 纯聊天路径 | Agent 路径 |
+|------|-----------|-----------|
+| 触发条件 | `toolRegistry.getDefinitions().length === 0` | 有注册工具时始终走 |
+| LLM 调用 | 单次 `provider.chat()` | ReAct 循环内多次调用 |
+| SSE 事件 | META → TEXT → DONE | META → ROUND_START → TOOL_START/END → TEXT → DONE |
+| 用户感知 | 无差异 | 无差异——Agent 能力透明，无需开关 |
+
+**不需要 Agent 开关**：ChatGPT、Claude、Gemini 都是自动判断，用户不需要选择"要不要启用工具"。LLM 看到"你好"不会去调计算器，看到"现在几点了"自然会调。
 
 ### 决策 5：`chat()` 返回类型升级为 `LLMStreamChunk`
 
@@ -185,18 +195,20 @@ function createLLMProvider(providerId: string): LLMProvider {
 │                                                     │
 │  ┌─ 调用 LLM（带上 tools 定义）                      │
 │  │   ↓                                               │
-│  │  读取 ReadableStream<LLMStreamChunk>              │
+│  │  读完 ReadableStream<LLMStreamChunk>              │
+│  │  分离 text 和 tool_calls                          │
 │  │   ↓                                               │
-│  ├── text chunks → 流式发送给前端 → 继续读取         │
+│  ├── 无 tool_calls → 最后一轮                        │
+│  │   │  发出 ROUND_START → emit text → DONE          │
+│  │   │  循环结束                                     │
 │  │   ↓                                               │
-│  ├── tool_calls chunk → 跳出读取循环                  │
+│  ├── 有 tool_calls → 中间轮                          │
+│  │   │  发出 ROUND_START                              │
+│  │   │  并发执行所有 tool call（Promise.allSettled）   │
+│  │   │  每次完成发出 TOOL_START → TOOL_END            │
+│  │   │  工具结果写入 AgentMemory                      │
+│  │   │  回到循环开头（下一轮 LLM 调用）                │
 │  │                                                     │
-│  ├─ 执行工具（并发执行所有 tool call）                │
-│  │   ↓                                               │
-│  ├─ 工具结果加入消息历史                              │
-│  │   ↓                                               │
-│  └─ 回到循环开头（下一轮 LLM 调用）                   │
-│                                                     │
 │  终止条件：                                          │
 │  - LLM 只输出文本，没有 tool call → 结束             │
 │  - 达到最大轮数 → 强制最后文本回复 → 结束             │
@@ -206,6 +218,12 @@ function createLLMProvider(providerId: string): LLMProvider {
   ▼
 SSE: DONE
 ```
+
+**关键设计**：
+
+- **中间轮次不发文本**：LLM 在中间轮说的"我来查一下"对用户无价值，只发 ROUND_START + TOOL_START/END
+- **最后一轮直接 emit 已读到的文本**：第一轮就读完了流，检测到无 tool_calls 后直接发出 text content。对于短回复（如"你好"→20 tokens）逐 token 流式无意义；长回复后续可用 `tee()` 优化
+- **工具并发**：LLM 一次返回 3 个 tool_calls 时并发执行，不等第一个完成再开始第二个
 
 ### 4.2 消息数组的演变
 
@@ -255,17 +273,22 @@ SSE: DONE
 
 ```
 server/service/agent/
-├── types.ts          # AgentRunConfig, AgentRound, AgentStatus
-├── memory.ts         # AgentMemory — 消息数组 + 裁剪
-├── runtime.ts        # runAgentLoop() — ReAct 循环主函数
+├── types.ts          # AgentEvent、AgentRunConfig
+├── memory.ts         # AgentMemory — 消息数组 + 裁剪 + token 估算
+├── runner.ts         # runAgentLoop() — AsyncGenerator<AgentEvent>
 └── tools/
     ├── types.ts      # ExecutableTool 接口（含 permission 字段）
     ├── registry.ts   # ToolRegistry — 注册、查询、列出定义
-    ├── executor.ts   # executeToolCalls() — 并发执行 + 错误隔离
-    ├── guard.ts      # sanitizeToolArgs() — 参数安全检查
+    ├── index.ts      # 模块初始化 + 自动注册所有内置工具
     └── builtin/
-        ├── calculator.ts    # 数学表达式计算（白名单运算符）
-        └── current-time.ts  # 当前日期时间
+        ├── calculator.ts      # 数学表达式计算
+        ├── current-time.ts    # 当前日期时间
+        ├── web-search.ts      # 互联网搜索（Brave Search API）
+        ├── web-fetch.ts       # 网页文本抓取
+        ├── date-calculator.ts # 日期偏移计算
+        ├── unit-converter.ts  # 单位换算
+        ├── text-stats.ts      # 文本统计
+        └── json-formatter.ts  # JSON 格式化/校验
 ```
 
 ---
@@ -284,34 +307,51 @@ PING         → 心跳
 
 // Agent 专属事件
 ROUND_START  → { type: 'round_start', round, conversationId }
-TOOL_START   → { type: 'tool_start', toolName, toolCallId, conversationId }
-TOOL_END     → { type: 'tool_end', toolName, toolCallId, content, conversationId }
-TOOL_ERROR   → { type: 'tool_error', toolName, toolCallId, error, conversationId }
-THINKING     → { type: 'thinking', content, conversationId }
+TOOL_START   → { type: 'tool_start', toolName, toolCallId, args, conversationId }
+TOOL_END     → { type: 'tool_end', toolName, toolCallId, result, conversationId }
+REASONING    → { type: 'reasoning', content, conversationId }  // 预留，Phase 3+
 ```
 
 ### 5.2 一次完整的 Agent SSE 流
 
 ```
-META        → { conversationId: "abc", title: "帮我算 235 × 17" }
-ROUND_START → { round: 1 }
-TOOL_START  → { toolName: "calculator", toolCallId: "call_1" }
-TOOL_END    → { toolName: "calculator", toolCallId: "call_1", content: "3995" }
-ROUND_START → { round: 2 }
-TEXT        → { content: "235" }
-TEXT        → { content: " × 17 = " }
-TEXT        → { content: "3995" }
-DONE        → { conversationId: "abc" }
+用户："帮我算 123 × 456，再告诉我现在几点"
+
+META          { conversationId: "abc", title: "..." }
+ROUND_START   { round: 1, conversationId: "abc" }
+TOOL_START    { toolName: "calculator", toolCallId: "c1", args: '{"expression":"123*456"}' }
+TOOL_END      { toolName: "calculator", toolCallId: "c1", result: "56088" }
+TOOL_START    { toolName: "current_time", toolCallId: "c2", args: '{"timezone":"Asia/Shanghai"}' }
+TOOL_END      { toolName: "current_time", toolCallId: "c2", result: "2026年7月30日 15:30 CST" }
+ROUND_START   { round: 2, conversationId: "abc" }
+TEXT          { content: "123 × 456 = 56088，现在是北京时间 2026年7月30日下午3点30分。" }
+DONE          { conversationId: "abc" }
 ```
 
-### 5.3 `/api/chat` 适配
+### 5.3 `/api/chat` 流消费
 
-`/api/chat` 底层调用同一个 `provider.chat()`，返回的 `LLMStreamChunk` 流中：
-- `text` chunks → 正常流式输出
-- `tool_calls` chunks → **忽略**（普通聊天不传 tools，LLM 不会返回）
-- `done` chunks → **忽略**（ReadableStream 自身的 done 信号已足够）
+`/api/chat` 始终将 `toolRegistry.getDefinitions()` 全量传给 LLM。Router 根据工具注册情况分路径：
 
-实际只需要在原 `reader.read()` 循环中加一个类型判断。零风险改动。
+**Agent 路径**（有注册工具时）：
+
+```ts
+const eventStream = runAgentLoop(llmProvider, allMessages, chatOptions)
+for await (const event of eventStream) {
+  switch (event.type) {
+    case 'round_start': controller.enqueue(...); break
+    case 'tool_start':  controller.enqueue(...); break
+    case 'tool_end':    controller.enqueue(...); break
+    case 'text':        // 最后一轮文本 → 增量写入 DB
+                        controller.enqueue(TEXT); updateMessage(...); break
+    case 'done':        break
+    case 'error':       controller.enqueue(ERROR); break
+  }
+}
+```
+
+**纯聊天路径**（零工具注册时）：现有逻辑不变——`filterTextChunks` → `while(true) read()` → TEXT 增量写入。
+
+**DB 写入策略**：最后一轮的 TEXT 走增量写入（同纯聊天），中间轮的 tool 消息在循环结束后批量写入。
 
 ---
 
@@ -353,36 +393,45 @@ priority: 30  → custom-prompt.ts "## 自定义提示词：代码审查专家\n
 
 ## 七、前端架构
 
-### 7.1 Agent 模式切换
+### 7.1 透明 Agent
 
-输入框旁新增 Agent 开关。状态存储在 `chatStore.isAgentMode`（localStorage 持久化）：
+Agent 能力对用户完全透明——不需要开关，不需要手动选择工具。LLM 自行判断是否调用工具。
 
 ```
-Agent 开关 OFF → sendMessage()     → /api/chat       (Phase 1)
-Agent 开关 ON  → sendAgentMessage() → /api/agent/run  (Phase 2)
+用户输入 "现在几点了" → 后端始终带工具 → LLM 自动调 current_time → 回复
+用户输入 "你好"       → 后端始终带工具 → LLM 判断不需要 → 直接回复
 ```
+
+前端不需要感知"这轮是 Agent 还是纯聊天"——SSE 事件流中可能出现 ROUND_START/TOOL_START/TOOL_END，也可能不出现。
 
 ### 7.2 流消费共用基础设施
 
-不新建独立 `useAgent` composable。在现有 `useChat` 的 `handleSSEEvent` 中新增 Agent 事件分支：
+不新建独立 composable。在现有 `useChat` 的 `handleSSEEvent` 中新增 Agent 事件分支：
 
 ```ts
 // 现有 switch 中新增
-case 'tool_start':  chatStore.addToolCall(payload)
-case 'tool_end':    chatStore.completeToolCall(payload)
-case 'round_start': // 仅 dev 日志
+case SSE_EVENT.ROUND_START:
+  chatStore.addAgentRound(payload.round)
+  break
+case SSE_EVENT.TOOL_START:
+  chatStore.addToolCall({ id: payload.toolCallId, name: payload.toolName, args: payload.args, status: 'running' })
+  break
+case SSE_EVENT.TOOL_END:
+  chatStore.completeToolCall(payload.toolCallId, { result: payload.result, status: 'done' })
+  break
 ```
 
 Agent 和 Chat 共用 `streamSessions`、`sendingConvIds`、`switchConversation`、`restoreStreamSession` 全套基础设施。
 
-### 7.3 新增组件
+### 7.3 新增/修改组件
 
-| 组件 | 用途 | 状态 |
-|------|------|------|
-| `ToolCallCard.vue` | 工具调用卡片 — 执行中（spinner）/ 完成（结果摘要）/ 失败（红色错误信息） | 新建 |
-| `PromptSelector.vue` | 提示词选择器 — 下拉列表，显示名称和描述 | 新建 |
-| `ChatInput.vue` | +Agent 开关按钮 | 修改 |
-| `ChatMessage.vue` | `role='tool'` 时渲染 ToolCallCard | 修改 |
+| 组件 | 操作 | 用途 |
+|------|:--:|------|
+| `ToolCallCard.vue` | 新建 | 工具调用卡片 — running (spinner) / done (结果摘要) / error (红色) |
+| `ChatMessage.vue` | 修改 | `role='tool'` 时渲染 ToolCallCard |
+| `chat.store.ts` | 修改 | 新增 `agentRounds`、`agentToolCalls` 状态 |
+
+**不改**：`ChatInput.vue`（无需开关）、`app/api/chat.ts`（无需 agentMode 参数）。
 
 ---
 
@@ -481,560 +530,336 @@ Phase 2 内置工具全部是 `read` 级别。
 
 ### 12.1 步骤概览
 
+> **2026-07-30 修正**：原方案有独立 `/api/agent/run` 端点（步骤 7），已合并到步骤 6+8。Agent 开关和前端 `tools` 参数已取消。
+
 | 步骤 | 内容 | 预计 | 依赖 |
 |:--:|------|:--:|------|
-| 1 | Prompt CRUD | 1 天 | 无（DB + API 模式已就绪） |
-| 2 | 共享类型扩展 | 0.5 天 | 无 |
-| 3 | Prompt Segment 系统 | 0.5 天 | 步骤 2 |
-| 4 | 工具系统 | 1 天 | 步骤 2 |
-| 5 | Provider 升级 + Factory 精简 | 1 天 | 步骤 2 |
-| 6 | Agent Runtime | 1 天 | 步骤 3, 4, 5 |
-| 7 | Agent API 端点 | 0.5 天 | 步骤 1, 6 |
-| 8 | `/api/chat` 适配 | 0.5 天 | 步骤 5 |
-| 9 | Agent UI | 1 天 | 步骤 7, 8 |
-| 10 | 可观测性 + 安全护栏 | 0.5 天 | 步骤 4, 6 |
+| 1 | Prompt CRUD | ✅ 已完成 | — |
+| 2 | 共享类型扩展 | ✅ 已完成 | — |
+| 3 | Prompt Segment 系统 | ⬜ 推迟 | 步骤 2 |
+| 4 | 工具系统扩展 | 0.5 天 | 步骤 2 |
+| 5 | Provider 升级 + Factory 精简 | ✅ 已完成 | — |
+| 6 | Agent Runtime 重写 | 1 天 | 步骤 4, 5 |
+| 7 | `/api/chat` 适配 | 0.5 天 | 步骤 6 |
+| 8 | Agent UI | 0.5 天 | 步骤 7 |
+| 9 | 端到端验证 + 文档 | 0.5 天 | 步骤 8 |
 
-> 总预计：4-6 天。Provider 层精简（删除 Anthropic、合并 DeepSeek 到 OpenAIProvider）是时间减少的主要原因。
+> 总预计：3 天（含已完成的步骤 1、2、5，实际剩余约 2 天工作）
 
 ### 12.2 依赖关系图
 
 ```
-步骤 1: Prompt CRUD ────────────────────────────┐
-    │ (零依赖，独立交付)                          │
-    │ 为步骤 7 提供 Prompt 注入管线               │
-    │                                             │
-    ▼                                             │
-步骤 2: 共享类型扩展 ───────────────────────────┐ │
-    │ (无依赖)                                    │ │
-    ▼                                             │ │
-步骤 3: Prompt Segment ──── 步骤 4: 工具系统 ───┤ │
-    │ (依赖步骤 2)              │ (依赖步骤 2)    │ │
-    ▼                           ▼                 │ │
-步骤 5: Provider 升级 + Factory 精简             │ │
-    │ (依赖步骤 2)                                │ │
-    │ (删除 anthropic.ts)                         │ │
-    ▼                                             │ │
-步骤 6: Agent Runtime ───────────────────────────┤ │
-    │ (依赖步骤 3, 4, 5)                          │ │
-    ▼                                             │ │
-步骤 7: Agent API ──── 步骤 8: /api/chat 适配 ──┤ │
-    │ (依赖步骤 1, 6)       (依赖步骤 5)          │ │
-    ▼                         ▼                   │ │
-步骤 9: Agent UI ────────────────────────────────┤ │
-    │ (依赖步骤 7, 8)                             │ │
-    ▼                                             │ │
-步骤 10: 可观测性 + 安全 ────────────────────────┘ │
-          (依赖步骤 4, 6 — 可最后做)
+步骤 1: Prompt CRUD ✅ ─────────────────────────────┐
+    │ (已完成)                                        │
+    │                                                 │
+    ▼                                                 │
+步骤 2: 共享类型扩展 ✅                               │
+    │ (已完成)                                        │
+    ▼                                                 │
+步骤 4: 工具系统扩展 ──── 步骤 5: Provider ✅ ───────┤
+    │ (P0+P1 共 6 个新工具)                           │
+    ▼                                                 │
+步骤 6: Agent Runtime 重写                            │
+    │ (AsyncGenerator + AgentMemory + 并发执行)        │
+    ▼                                                 │
+步骤 7: /api/chat 适配                                 │
+    │ (Agent 流消费分支 + DB 写入策略)                  │
+    ▼                                                 │
+步骤 8: Agent UI                                       │
+    │ (ToolCallCard + useChat + store)                 │
+    ▼                                                 │
+步骤 9: 端到端验证 + 文档                               │
+
+推迟：
+步骤 3: Prompt Segment 系统 → Phase 2 后续
 ```
 
-### 12.3 开发策略
-
-按四个阶段推进，每阶段结束有独立验证节点：
+### 12.3 当前进度与后续策略
 
 ```
-┌─ 阶段 A：自定义提示词管理 — 独立交付、零依赖 ─────────────────┐
-│ 步骤 1                                                          │
+已完成的步骤：
+✅ 步骤 1: Prompt CRUD（2026-07-26）
+✅ 步骤 2: 共享类型扩展（2026-07-29）
+✅ 步骤 5: Provider 升级 + Factory 精简（2026-07-26 + 2026-07-29）
+
+当前实施中的步骤：
+🔄 步骤 4: 工具系统扩展（P0: web_search + web_fetch）
+🔄 步骤 6: Agent Runtime 重写（AsyncGenerator + AgentMemory + 并发执行）
+
+推进策略：
+┌─ 阶段 A：工具扩展 + Runner 重写（可并行）─────────────────────┐
+│ 步骤 4 → 6                                                      │
 │                                                                  │
-│ 纯 CRUD：DB Schema → Service → 5 个 REST API 端点。              │
-│ 不涉及 Prompt Segment、Agent Runtime 或 Provider 改造。          │
+│ 4. 工具系统扩展 — P0 先做 web_search + web_fetch                │
+│    → Brave Search API 申请（免费）→ 配环境变量                   │
+│    → 实现 web-search.ts + web-fetch.ts + 注册                    │
+│    → P1 工具（date_calculator, unit_converter 等）可穿插进行     │
 │                                                                  │
-│ ★ 这一步跑通后，用户已经可以通过自定义提示词创建"简易 Agent"。  │
-│   不需要 ReAct 循环，不需要工具系统，就是 OpenAI Custom GPTs。   │
+│ 6. Agent Runtime 重写 — 修复所有已知问题                        │
+│    → 定义 AgentEvent 类型                                       │
+│    → AsyncGenerator<AgentEvent> 模式                            │
+│    → AgentMemory 消息裁剪                                        │
+│    → Promise.allSettled 并发工具执行                             │
+│    → 清理 console.log + 死代码                                   │
+│    → ★ Runner 不关心 SSE 编码，只产出结构化事件                  │
+│                                                                  │
+│ 阶段 A 验证：curl Agent 请求，SSE 流中能看到                     │
+│ ROUND_START → TOOL_START → TOOL_END → TEXT → DONE               │
 └──────────────────────────────────────────────────────────────────┘
 
-┌─ 阶段 B：纯后端基础设施 — 可离线开发 ──────────────────────────┐
-│ 步骤 2 → 3 → 4                                                   │
+┌─ 阶段 B：/api/chat 串通 + 前端 UI ────────────────────────────┐
+│ 步骤 7 → 8                                                      │
 │                                                                  │
-│ 不涉及 Provider 改造，也不涉及 HTTP 端点。                       │
-│ 写完即可用简单脚本验证：                                         │
+│ 7. /api/chat 适配                                                │
+│    → schema.ts 删除 tools 字段                                  │
+│    → shared/types/sse.ts 新增 3 个事件枚举                       │
+│    → index.post.ts Agent 流消费分支（for await...of）            │
+│    → DB 写入策略：最后一轮增量 + 循环结束批量写 tool 消息        │
+│    → ★ 纯聊天回归测试（改动前跑一次基线对话做对比）              │
 │                                                                  │
-│ 验证 1: buildPrompt([base, react, tools]) 输出正确               │
-│ 验证 2: toolRegistry.listDefinitions() 返回内置工具              │
-│ 验证 3: calculator.execute('{"expression":"2+3*4"}') → 14       │
-│ 验证 4: executeToolCalls([...]) 并发执行 + 错误隔离              │
+│ 8. Agent UI                                                      │
+│    → useChat.ts handleSSEEvent 新增 Agent 事件分支               │
+│    → chat.store.ts 新增 agentRounds + agentToolCalls             │
+│    → ToolCallCard.vue 组件（running / done / error 三态）        │
+│    → ChatMessage.vue role='tool' 渲染                            │
+│    → ★ 不改 ChatInput（无需开关）                                │
 │                                                                  │
-│ ★ 这个阶段不需要 LLM API Key，可以离线完成。                     │
-└──────────────────────────────────────────────────────────────────┘
-
-┌─ 阶段 C：Provider 改造 + Runtime 串通 ─────────────────────────┐
-│ 步骤 5 → 6 → 7 → 8                                               │
-│                                                                  │
-│ 核心阶段。推荐顺序：                                             │
-│                                                                  │
-│ 5a. 先改 OpenAI Provider（唯一的 Provider 实现类）               │
-│     → tool call delta 累积逻辑是本次唯一需要手写的部分           │
-│                                                                  │
-│ 5b. 精简 Factory + 删除 anthropic.ts                             │
-│     → DeepSeek case 改为返回 OpenAIProvider（仅 baseURL 不同）   │
-│                                                                  │
-│ 6.  写 Agent Runtime + API 端点                                  │
-│     → 用 OpenAI 模型验证 ReAct 循环跑通                          │
-│     → curl 测试：算数（触发 calculator 工具）                    │
-│     → ★ 此时步骤 1 的 Prompt 已可注入 Agent API（promptId 参数） │
-│                                                                  │
-│ 8.  最后改 /api/chat（步骤 8）                                   │
-│     → 改动 ~5 行（过滤 chunk.type）                              │
-│     → 改完后回归测试：普通聊天是否正常？                          │
-│                                                                  │
-│ ★ 关键风险点：                                                   │
-│ - OpenAI tool call delta 的 index 不一定连续（并行 tool call）    │
-│ - /api/chat 改完后务必回归测试纯文本流式对话                      │
-│ - 删除 anthropic.ts 后检查全项目无残留 import                     │
-└──────────────────────────────────────────────────────────────────┘
-
-┌─ 阶段 D：UI + 打磨 ────────────────────────────────────────────┐
-│ 步骤 9 → 10                                                      │
-│                                                                  │
-│ 9. Agent UI — 先做后端对接，再做视觉组件                         │
-│    → 9a: 新建 app/api/agent.ts（API 封装，同 chat.ts 模式）     │
-│    → 9b: 在 useChat.ts 的 handleSSEEvent 中加 Agent 事件分支     │
-│    → 9c: 加 sendAgentMessage 方法 + Agent 开关                   │
-│    → 9d: 最后写 ToolCallCard.vue + PromptSelector.vue 组件       │
-│                                                                  │
-│ 10. 可观测性 + 安全护栏 — 不影响功能，最后加                     │
-│     → logger.ts 写好就能用，纯 console.log，无外部依赖            │
-│     → guard.ts 在 executeToolCalls 中调用 sanitizeToolArgs        │
-│                                                                  │
-│ ★ 步骤 9 依赖步骤 8（/api/chat 适配后前端流类型逻辑才一致）      │
+│ 阶段 B 验证：浏览器中发 "算 3×5"，看到工具调用卡片 + 结果。      │
+│ 纯聊天行为与改动前完全一致。                                     │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ### 12.4 各步骤详细说明
 
-#### 步骤 1：Prompt CRUD（1 天）— 独立交付
+#### 步骤 4：工具系统扩展（0.5 天）
 
-**内容**：DB Schema → Service → 5 个 REST API 端点。用户可在 Web 页面创建/管理自定义提示词模板，对话时选择一个注入为系统上下文。
+**内容**：在现有 calculator + current_time 基础上，新增 6 个工具。
 
-**设计要点**：
-- Prompt 是纯提示词模板，不含工具白名单或模型推荐——工具是 Agent Runtime 的职责
-- Prompt + 工具列表 = Agent 能力。LLM 看到自定义提示词 + 工具列表，自然按提示词引导调用工具
-- 存储：Neon PostgreSQL `prompts` 表
+**P0 工具**（需外部服务）：
+
+| 工具 | 依赖 | 备注 |
+|------|------|------|
+| `web_search` | Brave Search API（免费 2000 次/月） | 需在 nuxt.config.ts 配置 `braveSearchApiKey` |
+| `web_fetch` | 无（仅 `fetch()`） | 正则提取 HTML 文本，10s 超时，Edge 兼容 |
+
+**P1 工具**（纯函数，零依赖）：
+
+| 工具 | 参数 | 核心逻辑 |
+|------|------|---------|
+| `date_calculator` | `date`, `offset`（"+30d""-2w"） | `new Date()` + 正则解析 offset |
+| `unit_converter` | `value`, `from`, `to` | 预置换算表查表乘除 |
+| `text_stats` | `text` | chars/words/lines/paragraphs 统计 |
+| `json_formatter` | `json`, `action`（format/validate/minify） | JSON.parse + JSON.stringify |
 
 **文件**：
 ```
 新建：
-  server/db/schema/prompts.ts              # DB Schema（id, name, description, prompt, created_at, updated_at）
-  server/service/prompts/types.ts           # Prompt 类型 + CreatePromptInput + UpdatePromptInput
-  server/service/prompts/service.ts         # CRUD Service（list/getById/create/update/delete）
-  server/api/prompts/index.get.ts           # GET  /api/prompts — 列表
-  server/api/prompts/index.post.ts          # POST /api/prompts — 创建
-  server/api/prompts/[id].get.ts            # GET  /api/prompts/:id — 详情
-  server/api/prompts/[id].put.ts            # PUT  /api/prompts/:id — 更新
-  server/api/prompts/[id].delete.ts         # DELETE /api/prompts/:id — 删除
+  server/service/agent/tools/builtin/web-search.ts
+  server/service/agent/tools/builtin/web-fetch.ts
+  server/service/agent/tools/builtin/date-calculator.ts
+  server/service/agent/tools/builtin/unit-converter.ts
+  server/service/agent/tools/builtin/text-stats.ts
+  server/service/agent/tools/builtin/json-formatter.ts
 
 修改：
-  server/db/schema/index.ts                # 导出 prompts 表
+  server/service/agent/tools/index.ts   # 注册新工具
+```
+
+**验证**：脚本调用 `webSearch.execute({ query: "今天天气" })` 返回搜索结果。
+
+---
+
+#### 步骤 6：Agent Runtime 重写（1 天）⭐ 核心改动
+
+**内容**：修复 runner.ts 的所有已知问题——非流式、串行执行、无内存管理、debug 代码。
+
+**改动清单**：
+
+| 问题 | 当前 | 修正 |
+|------|------|------|
+| 返回类型 | `ReadableStream<LLMStreamChunk>` | `AsyncGenerator<AgentEvent>` |
+| 最终答案 | `textStream(textParts.join(''))` 一次性 | 检测到无 tool_calls 后 emit text content |
+| 工具执行 | `for...of` 串行 | `Promise.allSettled` 并发 |
+| 内存管理 | 浅拷贝 | AgentMemory 裁剪（保留 system + 最近 40 条） |
+| 取消支持 | 仅循环开头检查 | 传递到工具执行层 |
+| 中间轮次 | 不发任何事件 | 发 ROUND_START + TOOL_START/END |
+
+**AgentEvent 类型**：
+
+```ts
+type AgentEvent =
+  | { type: 'round_start'; round: number }
+  | { type: 'tool_start'; toolName: string; toolCallId: string; args: string }
+  | { type: 'tool_end'; toolName: string; toolCallId: string; result: string }
+  | { type: 'text'; content: string }
+  | { type: 'done' }
+  | { type: 'error'; message: string }
+```
+
+**文件**：
+```
+新建：
+  server/service/agent/types.ts      # AgentEvent 类型
+  server/service/agent/memory.ts     # AgentMemory（消息裁剪 + token 估算）
+
+修改：
+  server/service/agent/runner.ts     # 重写 — async function* runAgentLoop()
 ```
 
 **验证**：
-```bash
-# 1. 创建 → 2. 列表 → 3. 详情 → 4. 更新 → 5. 删除
-curl -X POST http://localhost:3000/api/prompts -H 'Content-Type: application/json' \
-  -d '{"name":"代码审查专家","description":"审查代码","prompt":"你是资深代码审查专家..."}'
-curl http://localhost:3000/api/prompts
-curl http://localhost:3000/api/prompts/<id>
-curl -X PUT http://localhost:3000/api/prompts/<id> -H 'Content-Type: application/json' \
-  -d '{"name":"代码审查专家 V2"}'
-curl -X DELETE http://localhost:3000/api/prompts/<id>
-```
+- curl 请求 → SSE 流中 ROUND_START → TOOL_START → TOOL_END → TEXT → DONE
+- 纯聊天"你好" → LLM 第一轮无 tool_calls → 直接返回文本
+- 多工具"算 A 再算 B，再查时间" → 并发执行 → 多轮交互
+- 中途 abort → 循环终止，不残留
+
+**代码卫生**：
+- 删除 `current-time.ts:25` 的 `console.log`
+- 删除 `factory.ts:22-31` 注释掉的 DeepSeek case
 
 ---
 
-#### 步骤 2：共享类型扩展（0.5 天）
+#### 步骤 7：`/api/chat` 适配（0.5 天）
 
-**内容**：定义 Phase 2 所有模块依赖的核心类型。
+**内容**：对接新的 Runner，新增 SSE 事件类型，调整 DB 写入策略。
 
-**关键变化（vs 旧方案）**：不再需要 Anthropic 特有的类型（`content_block_start`/`content_block_delta` 等），因为 Anthropic Provider 会被删除。
+**改动点**：
 
-**文件**：
-```
-修改：
-  shared/types/provider.ts     # 新增 LLMStreamChunk、ToolCall、ToolResult、ToolDefinition、Message（扩展 toolCalls/toolCallId 字段）
-  shared/types/sse.ts           # 新增 ROUND_START、TOOL_START、TOOL_END、TOOL_ERROR、THINKING
-  server/service/llm/types.ts   # chat() 返回类型: ReadableStream<string> → ReadableStream<LLMStreamChunk>
-```
+1. **`shared/types/sse.ts`** — 新增 3 个事件枚举
+2. **`server/api/chat/schema.ts`** — 删除 `tools` 字段（前端不再传工具名）
+3. **`server/api/chat/index.post.ts`** — Agent 流消费分支
 
-**类型定义要点**：
-- `LLMStreamChunk = { type: 'text', content } | { type: 'tool_calls', toolCalls } | { type: 'done' }`
-- `ToolCall = { id, name, arguments }`（arguments 是 JSON 字符串）
-- `ToolResult = { toolCallId, name, content, error? }`
-- `ToolDefinition = { name, description, parameters }`（parameters 是 JSON Schema）
-- `Message` 新增 `toolCalls?: ToolCall[]` 和 `toolCallId?: string`
+```ts
+const toolDefinitions = toolRegistry.getDefinitions()  // 始终全量
 
-**验证**：`npx nuxi typecheck` 零错误。所有类型可正常 import。
-
----
-
-#### 步骤 3：Prompt Segment 系统（0.5 天）
-
-**内容**：`buildPrompt()` 按 priority 拼装多个 segment。每个模块只管自己的 segment，互不耦合。
-
-**文件**：
-```
-新建：
-  server/service/prompt/types.ts              # PromptSegment { id, priority, content }
-  server/service/prompt/builder.ts            # buildPrompt() + estimateTokens()
-  server/service/prompt/segments/base.ts      # 角色设定（priority=0）
-  server/service/prompt/segments/react.ts     # ReAct 指令（priority=10）
-  server/service/prompt/segments/tools.ts     # 工具列表描述（priority=20）
-  server/service/prompt/segments/custom-prompt.ts  # 用户 Prompt 注入（priority=30）
+if (toolDefinitions.length > 0) {
+  // Agent 路径
+  const eventStream = runAgentLoop(llmProvider, allMessages, chatOptions)
+  for await (const event of eventStream) {
+    switch (event.type) {
+      case 'round_start': controller.enqueue(ROUND_START); break
+      case 'tool_start':  controller.enqueue(TOOL_START); break
+      case 'tool_end':    controller.enqueue(TOOL_END); break
+      case 'text':        // 最后一轮 → 增量写入 DB
+                          contentBuffer += event.content
+                          controller.enqueue(TEXT)
+                          if (contentBuffer.length - lastFlushLength >= 200) {
+                            await updateMessage(...)
+                          }
+                          break
+      case 'error':       controller.enqueue(ERROR); break
+      case 'done':        break
+    }
+  }
+} else {
+  // 纯聊天路径（零工具注册时）— 现有逻辑不变
+}
 ```
 
-**priority 约定**：
-```
-0   — 基础角色设定
-10  — ReAct 指令
-20  — 工具列表
-30  — 用户自定义 Prompt 注入
-40  — 将来：RAG 检索结果
-50  — 将来：长期记忆/偏好
-```
+**DB 写入策略**：
 
-**验证**：调用 `buildPrompt([base, react, tools])` 输出顺序正确、segment 间空行分隔。
-
----
-
-#### 步骤 4：工具系统（1 天）
-
-**内容**：ToolRegistry 单例 + ExecutableTool 接口 + 并发执行器 + 两个内置工具。
-
-**设计要点**：
-- `ToolDefinition`（共享类型）描述工具的"样子"（给 LLM 看），`ExecutableTool` 包含实际执行函数（给 Runtime 用）
-- 工具权限分三级：`read`（自动执行）、`write`（自动执行+日志）、`danger`（需用户确认）。Phase 2 内置工具全部是 `read`
-- `executeToolCalls()` 使用 `Promise.allSettled` 并发执行，单个工具失败不阻塞其他工具
-
-**文件**：
-```
-新建：
-  server/service/agent/tools/types.ts           # ExecutableTool 接口（含 permission、requireConfirm、execute）
-  server/service/agent/tools/registry.ts        # ToolRegistry 单例（register/get/listDefinitions/listNames/has）
-  server/service/agent/tools/executor.ts        # executeToolCalls() — 并发执行 + 错误隔离
-  server/service/agent/tools/builtin/calculator.ts    # 数学表达式计算（白名单字符 + 关键字过滤 + Function 隔离）
-  server/service/agent/tools/builtin/current-time.ts  # 当前日期时间（支持 full/date/time 格式）
-```
-
-**验证**：
-- `calculator.execute('{"expression":"2+3*4"}')` → `"14"`
-- `currentTime.execute('{"format":"full"}')` → 当前日期时间字符串
-- `executeToolCalls([{name:"unknown",...}])` → `{ error: "未知工具：unknown" }`
-
----
-
-#### 步骤 5：Provider 升级 + Factory 精简（1 天）⚠️ 核心变化
-
-> **2026-07-26 更新**：Provider 精简（删除 Anthropic、统一环境变量、Factory 无参化、全链路移除 `provider` 字段）已提前实施，共 21 个文件，净删 259 行。`chat()` 返回类型升级（→ `ReadableStream<LLMStreamChunk>`）和 tool call delta 累积尚未实施。详见 [2026-07-26 Provider 维度移除全栈实施](../../docs/dev-log/2026-07-26-provider-simplification.md)。
-
-**内容**：
-- **升级 `openai.ts`**：`chat()` 返回 `ReadableStream<LLMStreamChunk>`，新增 tool call delta 累积逻辑
-- **删除 `anthropic.ts`**：Anthropic 的 tool_use 协议适配成本高、学习收益低
-- **不修改 `deepseek.ts`**：标注 `@deprecated`，保留为学习参考，不在生产路径使用
-- **精简 `factory.ts`**：删除 Anthropic case，DeepSeek case 返回 `OpenAIProvider`（仅 baseURL 不同）
-
-**tool call delta 累积机制**（唯一需要手写的部分）：
-
-OpenAI 流式 tool calling 数据分片到达——一个 tool call 的 `id`、`name`、`arguments` 分散在多个 chunk 中。累积策略：
-
-- 用 `Map<index, { id, name, arguments }>` 按 index 聚拢
-- `id` 用赋值（只在第一个 chunk 出现）、`name` 和 `arguments` 用字符串拼接
-- 流完全结束后，Map 中的每个 entry 即为一个完整的 `ToolCall`
-- 一次性 enqueue 为 `{ type: 'tool_calls', toolCalls: [...] }`
-
-**为什么不在流中间逐块发出**：arguments 是不完整的 JSON 片段，消费方无法安全 `JSON.parse`。Agent Runtime 拿到的一定是完整的、可执行的调用列表。
+| 事件 | 写入方式 |
+|------|---------|
+| ROUND_START / TOOL_START / TOOL_END | 不写 DB（瞬时状态） |
+| TEXT（最后一轮） | 增量写入（每 200 字符 UPDATE） |
+| DONE 前 | 批量写入中间轮的 assistant + tool 消息 |
 
 **文件**：
 ```
 修改：
-  server/service/llm/openai.ts      # ~30 行增量：tool call delta 累积（Map<index, {...}>）
-  server/service/llm/factory.ts     # 删除 Anthropic case；DeepSeek case → new OpenAIProvider({ baseUrl: 'https://api.deepseek.com/v1' })
-  server/service/llm/deepseek.ts    # 仅标注 @deprecated 注释，不改逻辑
-
-删除：
-  server/service/llm/anthropic.ts   # 删除整个文件
+  shared/types/sse.ts               # + ROUND_START, TOOL_START, TOOL_END
+  server/api/chat/schema.ts         # 删除 tools 字段
+  server/api/chat/index.post.ts     # Agent 流消费分支 + DB 写入策略
 ```
 
-**验证**：
-- 用 OpenAI 模型发带 tools 的请求，SSE 流中能看到 `tool_calls` chunk
-- 用 DeepSeek 模型（通过 OpenAIProvider + deepseek baseURL）发同样请求，行为一致
-- typecheck 零错误（删除 Anthropic 后无残留引用）
-- `grep -r "anthropic" server/` 仅 `deepseek.ts` 中可能有注释提及，无实际调用
+**验证**：纯聊天回归测试——行为与改动前完全一致。Agent 模式——工具调用正常，刷新后内容不丢。
 
 ---
 
-#### 步骤 6：Agent Runtime（1 天）⭐ 核心学习目标
+#### 步骤 8：Agent UI（0.5 天）
 
-**内容**：实现 ReAct 循环——Phase 2 的首要学习目标。
+**内容**：前端对接 Agent SSE 事件，新增 ToolCallCard 组件。不改 ChatInput（无需开关）。
 
-**ReAct 循环流程**：
-1. 通过 PromptSegment 拼装 system prompt（base + react + tools + custom prompt）
-2. 调用 LLM（带 tools 定义）
-3. 读取 `LLMStreamChunk` 流
-   - `text` chunks → 流式发送给前端 → 继续读取直到流结束
-   - `tool_calls` chunk（流结束后的一次性事件）→ 跳出读取循环
-4. 执行工具（并发执行所有 tool call）
-5. 工具结果加入消息历史（assistant + tool 消息配对）
-6. 回到步骤 2（下一轮 LLM 调用）
+**改动点**：
 
-**终止条件**：
-- LLM 只输出文本，没有 tool call → 自然结束
-- 达到 `maxRounds`（默认 10）→ 强制最后文本回复
-- AbortSignal 触发 → 中断
-
-**消息数组的演变**（核心学习内容）：
-```
-初始:
-  [system]  你是 AI 助手，有这些工具：calculator
-  [user]    帮我算 235 × 17 再加 10
-
-第 1 轮 LLM 调用 → LLM 返回 tool_calls: calculator("235 * 17")
-  + [assistant] { toolCalls: [{ name: "calculator", arguments: '{"expression":"235*17"}' }] }
-  + [tool]     { toolCallId: "...", content: "3995" }
-
-第 2 轮 LLM 调用 → LLM 看到结果 3995，还需要加 10 → tool_calls: calculator("3995 + 10")
-  + [assistant] { toolCalls: [{ name: "calculator", arguments: '{"expression":"3995+10"}' }] }
-  + [tool]     { toolCallId: "...", content: "4005" }
-
-第 3 轮 LLM 调用 → LLM 信息充足，返回纯文本
-  + [assistant] { content: "235 × 17 = 3995，再加 10 等于 4005" }
-  循环结束
-```
-
-**AgentMemory 裁剪策略**：
-- 按消息条数裁剪（默认保留 40 条）
-- system 消息不删除
-- 不拆散 tool call 和 tool result 的配对
-- Token 估算用简化公式（中文 ~1.5 chars/token，其他 ~4 chars/token），不做精确 tokenizer
+1. **`useChat.ts`** — `handleSSEEvent` switch 新增 ROUND_START、TOOL_START、TOOL_END
+2. **`chat.store.ts`** — 新增 `agentRounds`、`agentToolCalls` 状态
+3. **`ToolCallCard.vue`** — 新建，三态：running (spinner) / done (结果) / error (红色)
+4. **`ChatMessage.vue`** — `role='tool'` 消息渲染 ToolCallCard
 
 **文件**：
 ```
 新建：
-  server/service/agent/types.ts      # AgentRunConfig、AgentRound、AgentStatus
-  server/service/agent/memory.ts     # AgentMemory（消息存储 + 裁剪 + token 估算）
-  server/service/agent/runtime.ts    # runAgentLoop() — ReAct 循环主函数
-```
-
-**验证**：
-- 用 OpenAI 模型测试："算 3×5" → LLM 调用 calculator → 结果 15 → 文本回复
-- 测试多轮："先算 10+20，再把结果乘以 3" → 两轮工具调用 → 结果 90
-- 测试无工具场景："你好" → 纯文本回复，无工具调用
-
----
-
-#### 步骤 7：Agent API 端点（0.5 天）
-
-**内容**：独立的 `/api/agent/run` SSE 端点，不复用 `/api/chat`。
-
-**端点设计**：
-
-| 维度 | `/api/chat` | `/api/agent/run` |
-|------|-------------|-------------------|
-| 生命周期 | 单次 LLM 调用 | 多轮 ReAct 循环 |
-| 底层调用 | `provider.chat(messages)` | 同左，但在循环中多次调用 |
-| SSE 事件 | META → TEXT → DONE | META → ROUND_START → TEXT/TOOL_START/END → DONE |
-| 前端调用方 | `useChat.sendMessage()` | `useChat.sendAgentMessage()` |
-
-**请求体**（Zod 验证）：
-- `provider`：provider ID
-- `model`：模型名
-- `message`：用户消息数组
-- `conversationId`：可选，关联已有对话
-- `maxRounds`：可选，最大轮数（默认 10）
-- `promptId`：可选，用户选择的 Prompt ID
-- `systemPrompt`：可选，覆盖 prompt 的自定义 system prompt
-
-**已知让步**（ADR-014）：Agent 循环期间不做增量 DB 写入，流结束后一次性保存。ReAct 循环通常 2-3 轮、耗时短，中途刷新丢数据的概率远低于长文本流式场景。
-
-**文件**：
-```
-新建：
-  server/api/agent/schema.ts        # AgentRunSchema（Zod）
-  server/api/agent/run.post.ts      # SSE 端点：验证 → 创建对话 → 保存用户消息 → runAgentLoop → SSE 流
-```
-
-**验证**：
-```bash
-# 测试基本 Agent（计算器）
-curl -N -X POST http://localhost:3000/api/agent/run \
-  -H "Content-Type: application/json" \
-  -d '{"provider":"openai","model":"gpt-4o-mini","message":[{"role":"user","content":"算 345 × 678"}]}'
-
-# 测试纯对话（无工具）
-curl -N -X POST http://localhost:3000/api/agent/run \
-  -H "Content-Type: application/json" \
-  -d '{"provider":"openai","model":"gpt-4o-mini","message":[{"role":"user","content":"你好"}]}'
-
-# 测试 Prompt 注入
-curl -N -X POST http://localhost:3000/api/agent/run \
-  -H "Content-Type: application/json" \
-  -d '{"provider":"openai","model":"gpt-4o-mini","message":[{"role":"user","content":"审查这段代码"}],"promptId":"<id>"}'
-```
-
----
-
-#### 步骤 8：`/api/chat` 适配（0.5 天）
-
-**内容**：`/api/chat` 底层调用同一个 `provider.chat()`（返回 `ReadableStream<LLMStreamChunk>`），适配方式极简。
-
-**改动**：在 `reader.read()` 循环中加类型判断：
-- `chunk.type === 'text'` → 正常流式输出（原逻辑）
-- `chunk.type === 'tool_calls'` → 忽略（普通聊天不传 tools，LLM 不会返回）
-- `chunk.type === 'done'` → 忽略（ReadableStream 自身的 done 信号已足够）
-
-**改动量**：~5 行。
-
-**风险控制**：改动前先跑一次正常对话确认基线行为，改动后立即跑同样的对话对比。
-
-**验证**：浏览器中正常聊天，流式输出无中断、无类型错误。
-
----
-
-#### 步骤 9：Agent UI（1 天）
-
-**内容**：
-
-**① Agent 模式开关**：输入框旁新增开关，状态存入 `chatStore.isAgentMode`（localStorage 持久化）。
-- OFF → `sendMessage()` → `/api/chat`（Phase 1 行为）
-- ON → `sendAgentMessage()` → `/api/agent/run`（Phase 2 行为）
-
-**② 扩展 `useChat`**：不新建独立 composable。Agent 和 Chat 共用 `streamSessions`、`sendingConvIds`、`switchConversation`、`restoreStreamSession` 全套基础设施。新增：
-- `handleSSEEvent` 中新增 Agent 事件分支（ROUND_START、TOOL_START、TOOL_END、TOOL_ERROR、THINKING）
-- `sendAgentMessage()` 方法（同 `sendMessage` 模式，区别是调用 `/api/agent/run`）
-- 响应式状态：`agentCurrentRound`、`agentToolCalls`、`isAgentMode`
-
-**③ ToolCallCard 组件**：工具调用卡片，三种状态——执行中（spinner 动画）、完成（结果摘要）、失败（红色错误信息）
-
-**④ PromptSelector 组件**：提示词选择器下拉列表，显示名称和描述。选中后 `sendAgentMessage` 携带 `promptId`。`onMounted` 时调用 `GET /api/prompts` 获取列表
-
-**文件**：
-```
-新建：
-  app/api/agent.ts                       # AgentApi.run()（fetch 封装，同 app/api/chat.ts 模式）
-  app/components/agent/ToolCallCard.vue  # 工具调用卡片组件
-  app/components/agent/PromptSelector.vue # 提示词选择器组件
+  app/components/agent/ToolCallCard.vue
 
 修改：
-  app/composables/useChat.ts             # 新增 Agent 事件处理 + sendAgentMessage + Agent 状态
-  app/components/ChatInput.vue           # 新增 Agent 模式开关
-  app/components/ChatMessage.vue         # role='tool' 时渲染 ToolCallCard
+  app/composables/useChat.ts             # + Agent SSE 事件处理
+  app/stores/chat.store.ts               # + agentRounds, agentToolCalls
+  app/components/ChatMessage.vue         # role='tool' 渲染
 ```
 
-**验证**：
-- 浏览器中 Agent 开关 ON，发送 "算 3×5"，工具调用卡片出现在消息流中
-- 切换开关 OFF，发送普通消息，行为与 Phase 1 完全一致
-- 选择 Prompt 后发送 Agent 消息，回复风格符合 Prompt 设定
+**不改**：
+- `ChatInput.vue`（无需 Agent 开关）
+- `app/api/chat.ts`（无需 agentMode 参数，无需新建 agent.ts）
+
+**验证**：浏览器中发"算 3×5"，看到工具调用卡片 → 结果。纯聊天行为不变。
 
 ---
 
-#### 步骤 10：可观测性 + 安全护栏（0.5 天）
+#### 步骤 9：端到端验证 + 文档（0.5 天）
 
-**内容**：
+**验证清单**：
 
-**① AgentLogger**：记录每次 LLM 调用和工具执行的关键信息。
-- LLM 调用：轮次、provider、model、消息数、text 输出长度、tool call 数量
-- 工具执行：工具名、参数、结果、成功/失败
-- 每轮汇总：本轮状态（纯文本 / 调用了哪些工具）
-- 实现：纯 `console.log`，不引入日志库。数组内存存储，提供 `getLogs()` / `clear()` 方法
+| 场景 | 操作 | 预期 |
+|------|------|------|
+| 纯聊天回归 | 关闭工具注册，发"你好" | 行为与改动前一致 |
+| 单工具 | 发"算 3×5" | ToolCallCard → 结果 15 |
+| 多工具并行 | 发"算 A 再算 B，查时间" | 多张 ToolCallCard，并发显示 |
+| 工具异常恢复 | 发含有非法字符的算式 | ToolCallCard error → LLM 调整策略 |
+| 中途取消 | 工具执行中点停止 | 循环终止，不残留 |
+| 多轮交互 | 发需要两轮计算的请求 | ROUND_START 出现两次 |
 
-**② 安全护栏**：
-- **参数合法性**：检查参数是否为合法 JSON + 长度限制（最大 10000 字符）
-- **表达式注入防护**：calculator 使用白名单字符检查 + 禁用关键字（`constructor`、`__proto__`、`eval`、`Function`、`globalThis`、`window`、`document`、`process`、`require`、`import`、`fetch`）
-- **权限分级**：所有内置工具为 `read` 级别，自动执行不询问
-
-**文件**：
-```
-新建：
-  server/service/agent/observability/logger.ts  # AgentLogger（llmCallStart/End、toolCall、toolResult、roundSummary）
-  server/service/agent/tools/guard.ts           # sanitizeToolArgs() + checkToolGuard()
-```
-
-**验证**：终端能看到每次 LLM 调用和工具执行的结构化日志。
+**文档更新**：
+- `roadmap.md`：更新 Phase 2 完成度
+- `status.md`：更新进度快照
 
 ---
 
-### 12.5 完整文件清单
+### 12.5 完整文件变更清单
 
 ```
-新建文件（~25 个）：
-├── server/db/schema/prompts.ts                       # DB Schema
-├── server/service/prompts/types.ts + service.ts      # CRUD Service
-├── server/api/prompts/index.get.ts + index.post.ts   # REST API
-├── server/api/prompts/[id].get.ts + [id].put.ts + [id].delete.ts
-├── server/service/prompt/types.ts + builder.ts       # Prompt Segment
-├── server/service/prompt/segments/base.ts + react.ts + tools.ts + custom-prompt.ts
-├── server/service/agent/types.ts + memory.ts + runtime.ts  # Agent Runtime
-├── server/service/agent/tools/types.ts + registry.ts + executor.ts + guard.ts
-├── server/service/agent/tools/builtin/calculator.ts + current-time.ts
-├── server/service/agent/observability/logger.ts
-├── server/api/agent/schema.ts + run.post.ts          # Agent API
-├── app/api/agent.ts                                  # 前端 API 封装
-├── app/components/agent/ToolCallCard.vue + PromptSelector.vue
+新建（8 个）：
+├── server/service/agent/types.ts                     # AgentEvent 类型
+├── server/service/agent/memory.ts                    # AgentMemory
+├── server/service/agent/tools/builtin/web-search.ts  # P0
+├── server/service/agent/tools/builtin/web-fetch.ts   # P0
+├── server/service/agent/tools/builtin/date-calculator.ts  # P1
+├── server/service/agent/tools/builtin/unit-converter.ts   # P1
+├── server/service/agent/tools/builtin/text-stats.ts       # P1
+├── server/service/agent/tools/builtin/json-formatter.ts   # P1
+├── app/components/agent/ToolCallCard.vue             # 前端
 
-修改文件（~8 个）：
-├── shared/types/provider.ts                          # 新增 LLMStreamChunk 等类型
-├── shared/types/sse.ts                               # 新增 Agent SSE 事件
-├── server/service/llm/types.ts                       # chat() 签名变更
-├── server/service/llm/openai.ts                      # tool call delta 累积（~30 行）
-├── server/service/llm/factory.ts                     # 删除 Anthropic case
-├── server/db/schema/index.ts                         # 导出 prompts 表
-├── server/api/chat/index.post.ts                     # 适配 LLMStreamChunk（~5 行）
-├── app/composables/useChat.ts                        # Agent 事件处理 + sendAgentMessage
+修改（7 个）：
+├── shared/types/sse.ts                               # + ROUND_START, TOOL_START, TOOL_END
+├── server/api/chat/schema.ts                         # 删除 tools 字段
+├── server/api/chat/index.post.ts                     # Agent 流消费 + DB 写入策略
+├── server/service/agent/runner.ts                    # 重写 — AsyncGenerator
+├── server/service/agent/tools/index.ts               # 注册新工具
+├── app/composables/useChat.ts                        # + Agent SSE 事件
+├── app/stores/chat.store.ts                          # + agentRounds, agentToolCalls
+├── app/components/ChatMessage.vue                    # role='tool' 渲染
 
-删除文件（1 个）：
-├── server/service/llm/anthropic.ts
-
-不修改：
-├── server/service/llm/deepseek.ts                    # 仅标注 @deprecated，不改逻辑
+删除（0 个）：
+（仅代码行删除：current-time.ts L25 console.log、schema.ts tools 字段、factory.ts 注释代码）
 ```
 
-### 12.6 完整验证清单
+### 12.6 关键风险
 
-每完成一个步骤，跑对应的验证。不要攒到最后一起测——ReAct 循环的 bug 极难定位。
+| 风险 | 预防措施 |
+|------|---------|
+| Brave Search API 国内不可用 | 预留 SearXNG / Serper.dev 备用方案 |
+| 单轮回复非逐 token 流式 | 短回复（<100 tokens）无感，后续可用 `tee()` 优化 |
+| `/api/chat` 改坏 | 改前跑基线对话截图，改后立即对比 |
+| web_fetch 目标网站超时 | 10s 超时 + catch → 不阻断 ReAct 循环 |
+| AgentMemory 裁剪丢上下文 | 保守裁剪（40 条），观察后再收紧 |
+| Cloudflare 100s 超时 | 心跳已覆盖，ReAct 2-3 轮通常 <30s |
 
-| 步骤 | 验证方式 | 通过标准 |
-|------|---------|---------|
-| 1 | curl 测试 Prompts CRUD | POST 创建 → GET 列表包含 → GET 详情 → PUT 更新 → DELETE 删除返回空列表 |
-| 2 | `npx nuxi typecheck` | 零错误。新增类型可正常 import |
-| 3 | 临时脚本调用 `buildPrompt()` | 输出包含角色设定 + ReAct 指令 + 工具列表，顺序正确 |
-| 4 | 临时脚本调用 `executeToolCalls()` | 计算器返回正确结果、时间工具返回当前时间、未知工具返回 error |
-| 5 | curl 带 tools 的请求到 `/api/chat` | SSE 流中看到 `tool_calls` chunk（OpenAI），或文本正常返回 |
-| 6 | `npx nuxi typecheck` + dev 启动 | typecheck 零错误，dev 启动无运行时 crash |
-| 7 | curl 测试 `/api/agent/run` | SSE 事件流包含完整 ReAct 序列，calculator 工具被正确调用 |
-| 8 | 浏览器中正常聊天 | 文本流式输出正常，无类型错误，无中断 |
-| 9 | 浏览器中触发 Agent 模式 | 工具调用卡片出现在消息流中，TEXT 事件正常追加 |
-| 10 | 检查终端 console 输出 | 每次 LLM 调用和工具执行都有结构化日志 |
-
-### 12.7 关键风险
-
-| 风险 | 发生时机 | 预防措施 |
-|------|---------|---------|
-| **Prompt DB 迁移失败** | 步骤 1 | Drizzle Schema 写完后立即 `npx drizzle-kit push` |
-| **OpenAI tool call delta index 错位** | 步骤 5 | 打印每次 delta 的 index/id/name/arguments，观察连续性 |
-| **ReAct 无限循环** | 步骤 6 | `maxRounds` 硬上限（默认 10）+ AbortSignal 双保险 |
-| **`/api/chat` 改坏** | 步骤 8 | 改前跑一次基线对话，改后立即对比 |
-| **前端事件路由错乱** | 步骤 9 | 确认 `eventConvId === chatStore.currentConvId` 校验在所有新 case 中都存在 |
-| **Cloudflare 100s 超时** | 部署后 | Agent 多轮可能超过 100s。30s 心跳已覆盖，但需确认工具执行不阻塞心跳路径 |
-| **删除 Anthropic 后想用 Claude 模型** | — | 短期无解。如需恢复，参考 git 历史中的 `anthropic.ts`，或等学习目标完成后重新评估 |
-
-### 12.8 推荐工作节奏
-
-```
-Day 1 上午: 步骤 1 — Prompt CRUD DB Schema + Service + API (2h)
-Day 1 下午: 步骤 1 收尾 → curl 验证 (1h) → 步骤 2 — 共享类型扩展 (1h)
-            ★ 第一天结束即可交付"简易 Agent"
-
-Day 2 上午: 步骤 3 — Prompt Segment 系统 (1.5h) → typecheck
-Day 2 下午: 步骤 4 — 工具系统 (3h) → 验证 calculator/current_time/executor
-            ★ 纯后端模块全部完成，可离线单测
-
-Day 3 上午: 步骤 5a — OpenAI Provider tool calling (2h)
-Day 3 下午: 步骤 5b — Factory 精简 + 删除 Anthropic (1h) → 步骤 6 — Agent Runtime (3h)
-            ★ 用 OpenAI 验证 ReAct 循环跑通
-
-Day 4 上午: 步骤 7 — Agent API + curl 验证 (1.5h)
-Day 4 下午: 步骤 8 — /api/chat 适配 + 回归 (1h) → 步骤 9a-9c — Agent UI 后端对接 (2h)
-            ★ Agent 端到端跑通
-
-Day 5 上午: 步骤 9d-9e — ToolCallCard + PromptSelector 组件 (2h)
-Day 5 下午: 步骤 10 — 可观测性 + 安全护栏 (1.5h) → 端到端测试 (1h)
-
-缓冲 1-2 天: 处理意外 bug
-```

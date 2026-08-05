@@ -9,6 +9,8 @@ defineProps<{
   hasError?: boolean
   /** 是否正在初始化中 */
   isInitializing?: boolean
+  /** 是否在气泡顶部渲染工具调用步骤面板 */
+  showTools?: boolean
 }>()
 
 const chatStore = useChatStore()
@@ -17,17 +19,20 @@ const chatStore = useChatStore()
 <template>
   <!-- 消息气泡 -->
   <div
-    class="max-w-[75%] rounded-(--radius-lg) px-4 py-2.5 text-sm leading-relaxed shadow-(--shadow-sm)"
+    class=" rounded-(--radius-lg) px-4 py-2.5 text-sm leading-relaxed"
     :class="[
       role === 'user'
-        ? 'bg-(--ui-primary) text-white'
-        : 'bg-(--ui-bg-elevated) text-(--ui-text) max-w-[calc(100%-36px)]',
+        ? 'bg-(--ui-primary) text-white max-w-[80%]'
+        : 'bg-(--ui-bg) text-(--ui-text) !py-0 w-[calc(100%-78px)]',
       hasError
         ? 'border-2 border-error-500 dark:border-error-500/60 bg-error-50 dark:bg-error-500/10'
         : ''
 
     ]"
   >
+    <!-- ===== 工具调用步骤（Agent 模式下在气泡内展示） ===== -->
+    <AgentToolInline v-if="showTools" />
+
     <!-- ===== 新增：无内容 + 错误 = 显示错误文案 ===== -->
     <p
       v-if="hasError && !content"

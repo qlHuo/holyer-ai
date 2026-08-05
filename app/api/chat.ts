@@ -11,7 +11,6 @@ export interface ChatRequest {
   message: Message[]
   regenerate?: boolean
   conversationId: string | null
-  tools?: string[]
   systemPrompt?: string
   temperature?: number
   maxTokens?: number

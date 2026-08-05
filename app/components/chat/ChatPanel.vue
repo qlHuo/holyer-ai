@@ -44,6 +44,13 @@ function scrollToBottom() {
   })
 }
 
+/**
+ * 消息渲染：
+ * 简单 v-for 遍历 messages，工具调用通过 ChatMessage 的 #tools 插槽注入到 AI 回复气泡内部。
+ * 条件：当前对话有工具调用 + 最后一条消息是 assistant。
+ */
+const hasTools = computed(() => chatStore.agentToolCalls.length > 0)
+
 /** 判断指定消息是否为错误状态 */
 function isMessageError(index: number, role: string): boolean {
   return (
@@ -174,6 +181,7 @@ watch(chatError, (newError) => {
           :has-error="isMessageError(index, msg.role)"
           :is-initializing="index === chatStore.messages.length - 1 && chatStore.isInitializing"
           :show-regenerate="index === chatStore.messages.length - 1"
+          :show-tools="hasTools && index === chatStore.messages.length - 1 && msg.role === 'assistant'"
         />
       </div>
     </div>

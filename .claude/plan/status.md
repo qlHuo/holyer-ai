@@ -1,31 +1,31 @@
 # 项目进度快照
 
-> 更新于 2026-07-29
+> 更新于 2026-08-03
 
 ## 当前状态
 
-**Phase 2 进行中** — 第二步 Agent Runtime 核心已跑通，完成度约 42%
+**Phase 2 第二步完成** — Agent Runtime 核心完成，完成度约 85%
 
 ## 近期完成
 
-- [2.1] Agent ReAct 循环 + Tool Registry + tool call delta 累积（2026-07-29）
-- [2.2] 内置工具 — calculator + current-time（2026-07-29）
-- [2.3] Provider 升级 — chat() → `ReadableStream<LLMStreamChunk>` + Anthropic 删除（2026-07-29）
-- [2.0] 自定义提示词管理（2026-07-26）
-- [2.3] Provider 精简 — 全链路移除 provider 字段（2026-07-26）
+- [2.1] Runner 重写 — AsyncGenerator + AgentMemory + 并发执行（2026-08-03）
+- [2.2] 工具扩展 — web_search + web_fetch（2026-08-03）
+- [2.4] `/api/chat` 适配 — Agent SSE 事件 + DB 写入策略（2026-08-03）
+- [2.5] Agent UI — ToolCallCard + useChat + store（2026-08-03）
+- [2.6] 代码卫生 — 清理 console.log + 死代码 + schema tools 字段（2026-08-03）
 
-## 下一步（按优先级）
+## 下一步
 
-1. **[P0] `/api/agent/run` 独立端点** — 当前 ReAct 复用 `/api/chat` 但 `filterTextChunks` 吃掉了所有工具调用事件，前端完全不可见
-2. **[P0] Agent UI** — Agent 开关 + ToolCallCard + SSE 事件处理，让用户"看到"Agent 在干什么
-3. **[P1] AgentMemory 上下文管理** — 消息裁剪策略，防止多轮工具调用消息数组无限增长
-4. **[P2] 可观测性 + 安全护栏** — AgentLogger 日志 + 工具参数 sanitize + 权限分级执行
-5. **[P2] Prompt Segment 系统** — buildPrompt() 拼装，为 Prompt 注入管线打基础
+1. **[P1] 工具扩展** — date_calculator、unit_converter、text_stats、json_formatter（纯函数，零依赖）
+2. **[P2] Prompt 工程** — 调优 System Prompt 引导 LLM 合理调用工具（当前 DeepSeek 对"你好"也调工具）
+3. **[P2] 文本流式优化** — 最后一轮用 `tee()` 实现逐 token 流式输出（当前一次性发出）
+4. **[P3] Prompt Segment 系统** — 代码中的 system prompt 片段管理
+5. **[P3] Agent 持久化** — 工具调用结果写入 DB（当前仅 UI 瞬时展示）
 
 ## 阻塞 / 风险
 
-- 当前无阻塞项
-- ReAct 循环已跑通（curl 可验证），但前端无入口——需尽快补齐 UI
+- Brave Search API Key 未配置（web_search 工具降级返回提示）
+- DeepSeek v4-pro 对工具调用过于激进（"你好"也会触发多轮工具调用），需通过 System Prompt 引导
 
 ## 推迟项
 

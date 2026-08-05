@@ -31,7 +31,6 @@ export default defineEventHandler(async (event) => {
     message,
     regenerate,
     conversationId, // 创建新会话时为空
-    tools,
     systemPrompt,
     temperature,
     maxTokens
@@ -112,63 +111,133 @@ export default defineEventHandler(async (event) => {
         // 插入空消息
         const newMsg = await insertMessage(conv.id, { role: 'assistant', content: '' })
 
-        // const llmStream = filterTextChunks(await llmProvider.chat(allMessages, {
-        //   model,
-        //   tools,
-        //   systemPrompt,
-        //   temperature,
-        //   maxTokens,
-        //   signal: llmAbortController.signal
-        // }))
-        // 将前端传来的工具名解析为完整的 ToolDefinition（LLM 需要 name + description + parameters）
-        const toolDefinitions = tools?.length
-          ? toolRegistry.getDefinitions().filter(t => tools.includes(t.name))
-          : undefined
+        const toolDefinitions = toolRegistry.getDefinitions()
+
+        // 有工具可用时，追加工具调用准则到 system prompt（防止 LLM 对"你好"也调工具）
+        const now = new Date()
+        const dateContext = `
+          ## 当前时间
+          今天是 ${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日（周${['日', '一', '二', '三', '四', '五', '六'][now.getDay()]}），当前时间是 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}（北京时间 UTC+8）。
+          搜索实时信息时，请使用上述日期作为参考，不要使用过期的年份。
+        `
+
+        const toolUsageGuidelines = `
+          ## 工具调用准则
+          你可以使用工具来辅助回答问题。遵守以下规则：
+          - 只有问题涉及实时信息、具体计算、日期时间或需要获取特定网页内容时才调用工具
+          - 日常问候、闲聊、常识性问题不要调用工具，直接回答即可
+          - 如果不确定是否需要工具，就不要调用——先尝试直接回答
+        `
+
+        const effectiveSystemPrompt = toolDefinitions.length > 0
+          ? [systemPrompt, dateContext, toolUsageGuidelines].filter(Boolean).join('\n\n')
+          : systemPrompt
 
         const chatOptions = {
           model,
-          tools: toolDefinitions,
-          systemPrompt,
+          systemPrompt: effectiveSystemPrompt,
           temperature,
           maxTokens,
           signal: llmAbortController.signal
         }
 
-        const rawStream = toolDefinitions?.length
-          ? await runAgentLoop(llmProvider, allMessages, chatOptions)
-          : await llmProvider.chat(allMessages, chatOptions)
-
-        const llmStream = filterTextChunks(rawStream)
-
-        const reader = llmStream.getReader()
         let contentBuffer = ''
         let lastFlushLength = 0
 
-        while (true) {
-          // 客户端已断开，不再读写DB
-          if (isCancelled) {
-            controller.close()
-            break
+        if (toolDefinitions.length > 0) {
+          // ─── Agent 路径：AsyncGenerator<AgentEvent> → SSE ───
+          const eventStream = runAgentLoop(llmProvider, allMessages, chatOptions)
+
+          for await (const event of eventStream) {
+            if (isCancelled) break
+
+            switch (event.type) {
+              case 'round_start':
+                controller.enqueue({
+                  type: SSE_EVENT.ROUND_START,
+                  round: event.round,
+                  conversationId: conv.id
+                })
+                break
+
+              case 'tool_start':
+                controller.enqueue({
+                  type: SSE_EVENT.TOOL_START,
+                  toolName: event.toolName,
+                  toolCallId: event.toolCallId,
+                  args: event.arguments,
+                  conversationId: conv.id
+                })
+                break
+
+              case 'tool_end':
+                controller.enqueue({
+                  type: SSE_EVENT.TOOL_END,
+                  toolName: event.toolName,
+                  toolCallId: event.toolCallId,
+                  result: event.result,
+                  success: event.success,
+                  conversationId: conv.id
+                })
+                break
+
+              case 'text':
+                // 最后一轮文本 → 增量写入 DB（同纯聊天路径）
+                contentBuffer += event.content
+                controller.enqueue({
+                  type: SSE_EVENT.TEXT,
+                  content: event.content,
+                  conversationId: conv.id
+                })
+                if (contentBuffer.length - lastFlushLength >= 200) {
+                  await updateMessage(newMsg.id, { content: contentBuffer })
+                  lastFlushLength = contentBuffer.length
+                }
+                break
+
+              case 'error':
+                controller.enqueue({
+                  type: SSE_EVENT.ERROR,
+                  content: event.message,
+                  conversationId: conv.id
+                })
+                break
+
+              case 'done':
+                break
+            }
           }
+        } else {
+          // ─── 纯聊天路径（零工具注册时）：现有逻辑不变 ───
+          const rawStream = await llmProvider.chat(allMessages, chatOptions)
+          const llmStream = filterTextChunks(rawStream)
 
-          const { done, value } = await reader.read()
-          if (done) break
+          const reader = llmStream.getReader()
 
-          contentBuffer += value
-          controller.enqueue({ type: SSE_EVENT.TEXT, content: value, conversationId: conv.id })
-          // 增量更新Message: 每 200 字符，更新 message 一次
-          if (contentBuffer.length - lastFlushLength >= 200) {
-            await updateMessage(newMsg.id, { content: contentBuffer })
-            lastFlushLength = contentBuffer.length
+          while (true) {
+            if (isCancelled) {
+              controller.close()
+              break
+            }
+
+            const { done, value } = await reader.read()
+            if (done) break
+
+            contentBuffer += value
+            controller.enqueue({ type: SSE_EVENT.TEXT, content: value, conversationId: conv.id })
+            if (contentBuffer.length - lastFlushLength >= 200) {
+              await updateMessage(newMsg.id, { content: contentBuffer })
+              lastFlushLength = contentBuffer.length
+            }
           }
         }
 
-        // 流结束，存assistant消息
+        // 流结束，最终保存 assistant 消息
         if (contentBuffer) {
           await updateMessage(newMsg.id, { content: contentBuffer })
         }
 
-        // 连接正常情况下，会触发 DONE 事件
+        // 正常结束 → DONE
         if (!isCancelled) {
           controller.enqueue({
             type: SSE_EVENT.DONE,
