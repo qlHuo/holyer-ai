@@ -7,7 +7,6 @@ import type { LLMProvider } from './types'
 import { OpenAIProvider } from './openai'
 import { MODELS } from '~~/app/constants/models'
 
-
 export function createLLMProvider(): LLMProvider {
   const config = useRuntimeConfig()
   if (!config.modelApiKey || !config.modelBaseUrl) {
