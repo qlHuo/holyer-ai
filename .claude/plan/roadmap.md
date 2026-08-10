@@ -78,7 +78,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 2：自定义提示词管理 + Agent Runtime（预计 3 天）🔄 第二步完成（完成度约 85%）
+## Phase 2：自定义提示词管理 + Agent Runtime（预计 3 天）🔄 第二步完成（完成度约 85%）· 2026-08-05
 
 > 方案：[Phase 2 Agent 系统设计方案](phase2-agent-design.md)（含 6 个架构决策 + 9 个实现步骤） · [2026-07-30 架构修正](phase2-agent-design.md#决策-4保持-apichat-单端点agent-是-chat-的超集)（单端点、全量工具、无 Agent 开关） · [ADR-012 LLMStreamChunk](../../docs/decisions/012-llm-stream-chunk-type.md) · [ADR-013 Prompt 命名](../../docs/decisions/013-prompt-naming.md) · [ADR-014 Agent 流式 DB 写入](../../docs/decisions/014-agent-streaming-db-write.md)
 >

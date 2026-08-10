@@ -25,6 +25,97 @@ const DEFAULT_MAX_ITERATIONS = 10
 /** Agent 整体超时（毫秒），超时后强制终止 ReAct 循环 */
 const AGENT_TIMEOUT_MS = 60_000
 
+// ============================================================
+// 内容审核自愈 — 问题 & 方案说明
+// ============================================================
+//
+// 问题：Agent 调用 web_search 后，工具结果（网页文本）可能含敏感内容。
+//       下一轮 LLM 调用时，API 安全过滤扫描整个请求体，命中后返回
+//       HTTP 400 "Content Exists Risk"，用户得不到任何回复。
+//
+// 难点：400 是请求级别的——不告诉你具体哪条消息、哪段文字触发了过滤。
+//
+// 方案：反应式隔离（只在 400 出现时触发，零正常路径成本）
+//       ① 逐条试毒：每条工具结果独立发极简 LLM 请求 → 判断是否被拦
+//       ② 精确替换：只替换有问题的结果，干净的保留
+//       ③ 渐进降级：隔离后仍被拒 → 全部替换为占位文本
+//
+// 为什么不前置过滤（每条都测）？每轮多 N 次 API 调用，延迟翻倍。
+// 为什么不纯 truncate？信息损失大，且截断到多少字符安全纯属猜测。
+// ============================================================
+
+/**
+ * 检测错误是否为 LLM API 内容审核拦截
+ *
+ * 匹配主流 API（DeepSeek、OpenAI 兼容）的内容过滤错误信息。
+ * 注意不匹配 "rate" / "limit" 等，避免误判限流错误。
+ */
+function isContentFilterError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error)
+  return /content.*risk|content.*filter|content_filter/i.test(msg)
+}
+
+/**
+ * 逐条试毒：并行测试每条工具结果是否触发 LLM 内容审核
+ *
+ * 每条结果构造一个最小但结构一致的测试上下文发往 LLM：
+ *   [user: "OK"] → [assistant(tool_calls)] → [tool: 完整搜索结果]
+ *
+ * 为什么用 assistant + tool 配对而不是直接当 user 消息？
+ * 真实对话中敏感内容是 tool role，API 安全过滤可能对不同 role
+ * 采用不同策略。保持结构一致可降低误判（测试通过但真实被拦）。
+ *
+ * 并行执行：N 条结果 ≈ 单次 API 调用延迟（~500ms）。
+ *
+ * @returns 被替换为占位文本的结果条数
+ */
+async function isolateAndFilterToolResults(
+  memory: AgentMemory,
+  provider: LLMProvider,
+  options: ChatOptions
+): Promise<number> {
+  const toolMessages = memory.getToolMessages()
+  if (toolMessages.length === 0) return 0
+
+  // 并行试毒
+  const checks = await Promise.all(
+    toolMessages.map(async (msg) => {
+      try {
+        const testStream = await provider.chat(
+          [
+            { role: 'user', content: 'OK' },
+            {
+              role: 'assistant',
+              content: '',
+              toolCalls: [{ id: 'audit_check', name: 'check', arguments: '{}' }]
+            },
+            { role: 'tool', content: msg.content, toolCallId: 'audit_check' }
+          ],
+          { ...options, tools: undefined, maxTokens: 10 }
+        )
+        // 消费后立即取消，释放 HTTP 连接
+        testStream.cancel().catch(() => {})
+        return true // 通过审核
+      } catch (error) {
+        if (isContentFilterError(error)) return false // 被拦截
+        // 其他错误（网络波动等）→ 保守保留，宁可多留不可误杀
+        return true
+      }
+    })
+  )
+
+  // 替换有问题的结果
+  let filteredCount = 0
+  for (let i = 0; i < toolMessages.length; i++) {
+    if (!checks[i]) {
+      toolMessages[i]!.content = '（此搜索结果因内容限制不可用）'
+      filteredCount++
+    }
+  }
+
+  return filteredCount
+}
+
 /**
  * 执行 Agent ReAct 循环
  *
@@ -71,11 +162,48 @@ export async function* runAgentLoop(
         return
       }
 
-      // 1. 调用 LLM——始终带上全量工具定义（LLM 自行判断是否需要调用）
-      const stream = await provider.chat(memory.getAll(), {
-        ...options,
-        tools: toolRegistry.getDefinitions()
-      })
+      // 1. 调用 LLM — 带内容审核自愈
+      //
+      // 当上轮工具结果（如 web_search 返回的网页文本）含敏感内容时，
+      // LLM API 安全过滤会对整个请求体做审核，直接返回 400。
+      // 此处捕获后走"试毒 → 剔除 → 重试"流程，而非直接报错。
+      let stream: ReadableStream<LLMStreamChunk>
+      let contentWarning: string | undefined
+
+      try {
+        stream = await provider.chat(memory.getAll(), {
+          ...options,
+          tools: toolRegistry.getDefinitions()
+        })
+      } catch (error) {
+        // 非内容审核错误 → 原样抛出
+        if (!isContentFilterError(error) || round === 1) throw error
+
+        // Level 1: 逐条试毒，精确定位并剔除有问题的工具结果
+        const filteredCount = await isolateAndFilterToolResults(memory, provider, options)
+        if (filteredCount > 0) {
+          contentWarning = `（${filteredCount} 条搜索结果因内容限制未采用）\n\n`
+        }
+
+        try {
+          // 重试时不传 tools：避免 LLM 再次搜索拿到同样的敏感内容，陷入死循环
+          stream = await provider.chat(memory.getAll(), { ...options })
+        } catch (retryError) {
+          if (!isContentFilterError(retryError)) throw retryError
+
+          // Level 2: 隔离后仍被拒（极少见，多条结果的组合触发审核）→ 全部替换为占位文本
+          for (const msg of memory.getToolMessages()) {
+            msg.content = '（此搜索结果因内容限制不可用）'
+          }
+          contentWarning = '（搜索结果因内容限制未采用，以下基于已有知识回答）\n\n'
+          stream = await provider.chat(memory.getAll(), { ...options })
+        }
+      }
+
+      // 降级后发出提示文本（在 LLM 真实回复之前）
+      if (contentWarning) {
+        yield { type: 'text', content: contentWarning }
+      }
 
       // 2. 读取 LLM 响应流：文本逐 chunk 流式发出，tool_calls 累积后在循环结束时处理
       //    策略：仅在没有 tool_calls 的阶段流式输出文本。一旦 tool_calls 出现，

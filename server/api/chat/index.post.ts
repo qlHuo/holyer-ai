@@ -147,8 +147,10 @@ export default defineEventHandler(async (event) => {
         if (toolDefinitions.length > 0) {
           // ─── Agent 路径：AsyncGenerator<AgentEvent> → SSE ───
           const eventStream = runAgentLoop(llmProvider, allMessages, chatOptions)
+          console.log('eventStream***', JSON.stringify(eventStream))
 
           for await (const event of eventStream) {
+            console.log('eventStream***', JSON.stringify(event))
             if (isCancelled) break
 
             switch (event.type) {

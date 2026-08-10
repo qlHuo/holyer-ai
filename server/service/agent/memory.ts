@@ -63,6 +63,18 @@ export class AgentMemory {
     return total
   }
 
+  /**
+   * 获取所有 tool 角色消息的可变引用
+   *
+   * 返回的是 historyMessages 中实际 Message 对象的引用（非副本），
+   * 调用方直接修改返回对象的 content 字段即可更新 memory 中的数据。
+   *
+   * 使用场景：LLM 内容审核拦截后，逐条试毒找出有问题的搜索结果并替换为占位文本。
+   */
+  getToolMessages(): Message[] {
+    return this.historyMessages.filter(m => m.role === 'tool')
+  }
+
   /** 清空历史（仅保留 system 消息） */
   clear(): void {
     this.historyMessages = []
