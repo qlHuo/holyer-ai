@@ -1,0 +1,15 @@
+# 行尾统一为 LF，与 .editorconfig 的 end_of_line=lf 保持一致
+# 避免 Windows 开发者 CRLF 混入产生 diff 噪音
+# eol=lf 优先级高于本地 core.autocrlf，任何平台工作区/仓库均存 LF
+* text=auto eol=lf
+
+# 二进制文件不做换行转换（text=auto 已能识别，显式声明更稳）
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary

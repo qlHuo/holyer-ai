@@ -33,7 +33,10 @@ const chatStore = useChatStore()
     ]"
   >
     <!-- ===== 工具调用步骤（Agent 模式下在气泡内展示） ===== -->
-    <AgentToolInline v-if="tools?.length" :tool-calls="tools" />
+    <AgentToolInline
+      v-if="tools?.length"
+      :tool-calls="tools"
+    />
 
     <!-- ===== 新增：无内容 + 错误 = 显示错误文案 ===== -->
     <p

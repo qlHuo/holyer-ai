@@ -6,7 +6,7 @@ import { db } from '~~/server/db'
 import type { AddMessageInput, ConversationDetail, CreateConversationInput, MessageDetail } from './types'
 import type { Message } from '~~/shared/types/provider'
 import { conversations, messages } from '~~/server/db/schema'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 
 /**
  * 创建新会话: 返回完整对象

@@ -6,9 +6,9 @@ import type { AgentToolCallItem } from '~/types/agent'
  * - user: 用户消息
  * - assistant: 助手回复（可能附带折叠后的工具调用列表）
  */
-export type RenderItem =
-  | { kind: 'user'; message: Message }
-  | { kind: 'assistant'; message: Message; tools?: AgentToolCallItem[] }
+export type RenderItem
+  = | { kind: 'user', message: Message }
+    | { kind: 'assistant', message: Message, tools?: AgentToolCallItem[] }
 
 /**
  * 把 DB 消息折叠成渲染单元。
