@@ -13,21 +13,15 @@
  * 不负责 SSE 连接本身，只维护相关状态
  */
 
-import type { Message } from '#shared/types/provider'
+import type { Message, ToolCall } from '#shared/types/provider'
 import type { ConversationListItem } from '#shared/types/conversation'
+import type { AgentToolCallItem } from '~/types/agent'
 import ConversationApi from '~/api/conversations'
 
-/** 工具调用 UI 状态 */
-export interface AgentToolCallState {
-  id: string
-  name: string
-  args: string
-  status: 'running' | 'done' | 'error'
-  result?: string
+/** 工具调用 UI 状态（流式场景，在渲染状态之上增加前端计时字段） */
+export interface AgentToolCallState extends AgentToolCallItem {
   /** 前端记录的 TOOL_START 时间戳，用于计算耗时 */
   startedAt?: number
-  /** 工具执行耗时（毫秒），TOOL_END 时计算 */
-  durationMs?: number
 }
 
 /** selectConversation 的可选参数 */
@@ -247,6 +241,46 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
+   * 把流式期间累积的 agentToolCalls 折叠回 messages 数组
+   *
+   * 背景：流式过程中，工具调用只存在于 agentToolCalls（SSE TOOL_START/TOOL_END 驱动），
+   * messages 里只有一个 assistant 占位。若不在流结束时写回 messages，
+   * buildRenderItems 无法从 messages 还原工具卡片 ——
+   * 表现为「工具卡片在流结束后 / 再次发送时消失，刷新后才出现」。
+   *
+   * 折叠结果与后端落库结构一致（assistant(tool_calls) → tool(result) → assistant(text)），
+   * 因此历史渲染与刷新加载走同一套 buildRenderItems 逻辑，无需特判。
+   */
+  function persistAgentToolCalls() {
+    const tools = agentToolCalls.value
+    if (tools.length === 0) return
+
+    const last = messages.value[messages.value.length - 1]
+    // 最后一条必须是 assistant 占位（startStreaming 保证），异常数据直接丢弃
+    if (!last || last.role !== 'assistant') {
+      agentToolCalls.value = []
+      return
+    }
+
+    const rows: Message[] = [
+      {
+        role: 'assistant',
+        content: '',
+        toolCalls: tools.map((tc): ToolCall => ({ id: tc.id, name: tc.name, arguments: tc.args }))
+      },
+      ...tools.map((tc): Message => ({
+        role: 'tool',
+        content: tc.result ?? '',
+        toolCallId: tc.id
+      }))
+    ]
+
+    // 插入到最后一条 assistant(text) 之前，保持时间线顺序
+    messages.value.splice(messages.value.length - 1, 0, ...rows)
+    agentToolCalls.value = []
+  }
+
+  /**
    * 结束流式接收
    *
    * 清空流式状态。注意：不在这里清 streamError ——
@@ -258,7 +292,8 @@ export const useChatStore = defineStore('chat', () => {
     isStreaming.value = false
     streamContent.value = ''
     streamingConvId.value = null
-    // 注意：不在这里清空 agentToolCalls — 工具调用区在流结束后保留以便查看
+    // 流结束：把工具调用折叠回 messages，工具卡片改由 buildRenderItems 渲染
+    persistAgentToolCalls()
   }
 
   /**

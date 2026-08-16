@@ -403,4 +403,5 @@ API 路由:   text → SSE text × N (前端逐字渲染)
 - [ADR-012：LLMStreamChunk 类型升级](../decisions/012-llm-stream-chunk-type.md) — `chat()` 返回类型从 `string` 升级为 `LLMStreamChunk`
 - [ADR-014：Agent 流式 DB 写入策略](../decisions/014-agent-streaming-db-write.md) — 增量写入的决策理由
 - [LLM Provider 开发规则](../../.claude/rules/llm-provider.md) — tool call delta 聚拢模式
+- [Agent ReAct 已知问题记录](2026-08-06-agent-react-known-issues.md) — 基于流程审查发现的 5 项优化点
 - [Agent 内容审核拦截自愈](2026-08-06-agent-content-filter-self-healing.md) — 工具结果触发的 400 处理、并行试毒、渐进降级

@@ -76,21 +76,25 @@ export class OpenAIProvider implements LLMProvider {
     }
 
     // ② 发起请求，获取流式响应
-    const stream = await this.client.chat.completions.create({
-      model: options.model,
-      messages: requestMessages,
-      stream: true,
-      temperature: options.temperature,
-      max_tokens: options.maxTokens,
-      ...(options.tools?.length
-        ? {
-            tools: options.tools.map(t => ({
-              type: 'function' as const,
-              function: { name: t.name, description: t.description, parameters: t.parameters }
-            }))
-          }
-        : {})
-    })
+    // signal 必须放在第二个参数（RequestOptions）里，放在 body 里会类型报错
+    const stream = await this.client.chat.completions.create(
+      {
+        model: options.model,
+        messages: requestMessages,
+        stream: true,
+        temperature: options.temperature,
+        max_tokens: options.maxTokens,
+        ...(options.tools?.length
+          ? {
+              tools: options.tools.map(t => ({
+                type: 'function' as const,
+                function: { name: t.name, description: t.description, parameters: t.parameters }
+              }))
+            }
+          : {})
+      },
+      { signal: options.signal }
+    )
 
     // ③ 将 OpenAI 的流式响应转换为 ReadableStream<string>
     return new ReadableStream<LLMStreamChunk>({

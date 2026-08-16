@@ -12,11 +12,12 @@
  * 2. AbortSignal 用于取消 LLM API 调用，前端可取消对话
  * 3. 增量写入DB, 保证中途断开也不会丢失已接收的数据
 */
-import { addMessages, deleteLastAssistantMessage, getOrCreateConversation, updateConversationById, insertMessage, updateMessage
+import { addMessages, deleteLastAssistantGroup, getOrCreateConversation, updateConversationById, insertMessage, updateMessage
 } from '~~/server/service/conversation'
 import { createLLMProvider } from '~~/server/service/llm/factory'
 import type { SSEChunk } from '~~/server/utils/sse'
 import type { ConversationDetail } from '~~/shared/types/conversation'
+import type { ToolCall } from '~~/shared/types/provider'
 import { createSSEResponse } from '~~/server/utils/sse'
 import { ChatBodySchema } from './schema'
 import { SSE_EVENT } from '~~/shared/types/sse'
@@ -62,9 +63,9 @@ export default defineEventHandler(async (event) => {
   // 3. 拼装上下文：历史 + 当前用户信息
   let allMessages: typeof conv.messages
   if (regenerate) {
-    // 去掉最后一条旧的 assistant 回复，LLM 不应看到它
+    // 去掉最后一次 assistant 回复的整组消息（Agent 场景含 tool_calls + tool 结果），LLM 不应看到它们
     const msgs = [...conv.messages]
-    if (msgs[msgs.length - 1]?.role === 'assistant') {
+    while (msgs.length > 0 && msgs[msgs.length - 1]!.role !== 'user') {
       msgs.pop()
     }
     allMessages = msgs
@@ -106,10 +107,11 @@ export default defineEventHandler(async (event) => {
       try {
         // 必须要在LLM前删除并插入空message,原因在于llmProvider.chat当它 return ReadableStream 时，HTTP 响应体已经在接收数据，数据持续写入内部缓冲增加延迟
         if (regenerate) {
-          await deleteLastAssistantMessage(conv.id)
+          await deleteLastAssistantGroup(conv.id)
         }
-        // 插入空消息
-        const newMsg = await insertMessage(conv.id, { role: 'assistant', content: '' })
+        // 最终回复消息 id —— 纯聊天路径提前占位；Agent 路径延后到第一个 text 事件才创建，
+        // 保证中间轮的 assistant(tool_calls)/tool 消息在 DB 时间线上排在最终回复之前
+        let finalMsgId: string | null = null
 
         const toolDefinitions = toolRegistry.getDefinitions()
 
@@ -147,14 +149,16 @@ export default defineEventHandler(async (event) => {
         if (toolDefinitions.length > 0) {
           // ─── Agent 路径：AsyncGenerator<AgentEvent> → SSE ───
           const eventStream = runAgentLoop(llmProvider, allMessages, chatOptions)
-          console.log('eventStream***', JSON.stringify(eventStream))
+
+          // 当前轮累积的 assistant tool_calls：tool_start 累积，第一个 tool_end 时落库并清空
+          let pendingToolCalls: ToolCall[] = []
 
           for await (const event of eventStream) {
-            console.log('eventStream***', JSON.stringify(event))
             if (isCancelled) break
 
             switch (event.type) {
               case 'round_start':
+                pendingToolCalls = []
                 controller.enqueue({
                   type: SSE_EVENT.ROUND_START,
                   round: event.round,
@@ -163,6 +167,11 @@ export default defineEventHandler(async (event) => {
                 break
 
               case 'tool_start':
+                pendingToolCalls.push({
+                  id: event.toolCallId,
+                  name: event.toolName,
+                  arguments: event.arguments
+                })
                 controller.enqueue({
                   type: SSE_EVENT.TOOL_START,
                   toolName: event.toolName,
@@ -173,6 +182,17 @@ export default defineEventHandler(async (event) => {
                 break
 
               case 'tool_end':
+                // 本轮第一条 tool_end → 先把 assistant(tool_calls) 落库（串行保证顺序）
+                if (pendingToolCalls.length > 0) {
+                  await insertMessage(conv.id, { role: 'assistant', content: '', toolCalls: pendingToolCalls })
+                  pendingToolCalls = []
+                }
+                // 再落 tool(result)
+                await insertMessage(conv.id, {
+                  role: 'tool',
+                  content: event.result,
+                  toolCallId: event.toolCallId
+                })
                 controller.enqueue({
                   type: SSE_EVENT.TOOL_END,
                   toolName: event.toolName,
@@ -184,7 +204,10 @@ export default defineEventHandler(async (event) => {
                 break
 
               case 'text':
-                // 最后一轮文本 → 增量写入 DB（同纯聊天路径）
+                // 最终回复：首次 text 时才创建占位消息（此时才是时间线末端）
+                if (!finalMsgId) {
+                  finalMsgId = (await insertMessage(conv.id, { role: 'assistant', content: '' })).id
+                }
                 contentBuffer += event.content
                 controller.enqueue({
                   type: SSE_EVENT.TEXT,
@@ -192,7 +215,7 @@ export default defineEventHandler(async (event) => {
                   conversationId: conv.id
                 })
                 if (contentBuffer.length - lastFlushLength >= 200) {
-                  await updateMessage(newMsg.id, { content: contentBuffer })
+                  await updateMessage(finalMsgId!, { content: contentBuffer })
                   lastFlushLength = contentBuffer.length
                 }
                 break
@@ -211,6 +234,10 @@ export default defineEventHandler(async (event) => {
           }
         } else {
           // ─── 纯聊天路径（零工具注册时）：现有逻辑不变 ───
+          // 提前插入空消息占位（拿到 id 供增量写）
+          const newMsg = await insertMessage(conv.id, { role: 'assistant', content: '' })
+          finalMsgId = newMsg.id
+
           const rawStream = await llmProvider.chat(allMessages, chatOptions)
           const llmStream = filterTextChunks(rawStream)
 
@@ -235,8 +262,8 @@ export default defineEventHandler(async (event) => {
         }
 
         // 流结束，最终保存 assistant 消息
-        if (contentBuffer) {
-          await updateMessage(newMsg.id, { content: contentBuffer })
+        if (contentBuffer && finalMsgId) {
+          await updateMessage(finalMsgId, { content: contentBuffer })
         }
 
         // 正常结束 → DONE

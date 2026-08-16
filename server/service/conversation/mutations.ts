@@ -4,8 +4,9 @@
 
 import { db } from '~~/server/db'
 import type { AddMessageInput, ConversationDetail, CreateConversationInput, MessageDetail } from './types'
+import type { Message } from '~~/shared/types/provider'
 import { conversations, messages } from '~~/server/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 
 /**
  * 创建新会话: 返回完整对象
@@ -119,12 +120,19 @@ export async function addMessages(
 */
 export async function insertMessage(
   conversationId: string,
-  data: { role: string, content: string }
+  data: {
+    role: string
+    content: string
+    toolCalls?: Message['toolCalls']
+    toolCallId?: string
+  }
 ): Promise<MessageDetail> {
   const [row] = await db.insert(messages).values({
     conversationId,
     role: data.role,
-    content: data.content
+    content: data.content,
+    toolCallId: data.toolCallId ?? null,
+    toolCalls: data.toolCalls ?? null
   }).returning()
 
   return {
@@ -152,27 +160,46 @@ export async function updateMessage(
 }
 
 /**
- * 删除对话的最后一条消息，供 regenerate 使用
+ * 删除对话最后一次 assistant 回复的整组消息，供 regenerate 使用
  *
- * 先查出最新消息的 id，再按 id 删除。
- * 不回查 role 是否为 'assistant' —— 调用方保证只在 regenerate 场景使用。
+ * Agent 一次回复在 DB 中是多行（assistant(tool_calls) → tool → assistant(text)），
+ * regenerate 需要把「最后一个 user 之后的所有消息」整组删除，否则残留旧的工具消息。
  *
- * 如果对话没有消息（极端情况），静默成功（DELETE 0 行 ≠ 报错）。
+ * 实现：按时间正序加载全部消息，在应用层找到最后一条 user 的索引（与前端
+ * regenerate 的 splice 逻辑对称），再按 id 精确删除该 user 之后的所有消息。
+ *
+ * 为什么不用 createdAt 做 SQL 删除边界：createdAt 是 timestamp（微秒精度），
+ * 经 Drizzle 读回会转成 JS Date（毫秒精度），微秒被截断。若再把它回传进
+ * `gt(createdAt, 边界)` 比较，边界会被置成 .000 微秒，比真实值小，
+ * 导致最后一条 user 消息本身以及同一毫秒内的上一轮回复被误删。
+ * 按 id 删除彻底规避这个精度问题。
+ *
+ * 如果对话没有 user 消息（极端情况），静默成功（DELETE 0 行 ≠ 报错）。
 */
 
-export async function deleteLastAssistantMessage(conversationId: string): Promise<void> {
-  // 1. 找到最新消息
-  const [lastMsg] = await db
-    .select({ id: messages.id })
+export async function deleteLastAssistantGroup(conversationId: string): Promise<void> {
+  // 1. 按时间正序加载全部消息（只取 id + role，避免 content 大字段），id 作 secondary 排序保证稳定
+  const rows = await db
+    .select({ id: messages.id, role: messages.role })
     .from(messages)
     .where(eq(messages.conversationId, conversationId))
-    .orderBy(desc(messages.createdAt))
-    .limit(1)
+    .orderBy(asc(messages.createdAt), asc(messages.id))
 
-  // 2. 有则删除
-  if (lastMsg) {
-    await db.delete(messages).where(eq(messages.id, lastMsg.id))
+  // 2. 找到最后一条 user 的索引
+  let lastUserIndex = -1
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i]!.role === 'user') {
+      lastUserIndex = i
+      break
+    }
   }
+  if (lastUserIndex === -1) return
+
+  // 3. 按 id 精确删除该 user 之后的所有消息（整组 assistant/tool）
+  const deleteIds = rows.slice(lastUserIndex + 1).map(r => r.id)
+  if (deleteIds.length === 0) return
+
+  await db.delete(messages).where(inArray(messages.id, deleteIds))
 }
 
 /**

@@ -57,6 +57,6 @@ export type AgentEvent
 
 /** Agent 运行配置 */
 export interface AgentRunConfig {
-  /** 最大 ReAct 迭代轮数，默认 10 */
+  /** 最大 ReAct 迭代轮数，默认 3 */
   maxIterations?: number
 }

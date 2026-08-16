@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { buildRenderItems, type RenderItem } from '~/utils/buildRenderItems'
+import type { AgentToolCallItem } from '~/types/agent'
+
 const chatStore = useChatStore()
 // useChat 是模块级单例，多次调用安全
 const { error: chatError } = useChat()
@@ -45,17 +48,30 @@ function scrollToBottom() {
 }
 
 /**
- * 消息渲染：
- * 简单 v-for 遍历 messages，工具调用通过 ChatMessage 的 #tools 插槽注入到 AI 回复气泡内部。
- * 条件：当前对话有工具调用 + 最后一条消息是 assistant。
+ * 消息渲染（统一）：
+ * 流式与历史都走 buildRenderItems 折叠 —— 历史里的 assistant(tool_calls) + tool 消息
+ * 若直接 v-for 会渲染成空气泡（表现为"回复变成多个 assistant 对话"）。
+ * 区别只在最后一条 assistant：
+ * - 流式中：注入实时 agentToolCalls（Store 里由 TOOL_START/TOOL_END 驱动）
+ * - 历史中：注入 DB 折叠出的 tools
  */
-const hasTools = computed(() => chatStore.agentToolCalls.length > 0)
+const renderItems = computed(() => buildRenderItems(chatStore.messages))
 
-/** 判断指定消息是否为错误状态 */
+/** 从渲染单元取出工具调用列表（assistant 才有，user 恒 undefined） */
+function renderItemTools(item: RenderItem, index: number): AgentToolCallItem[] | undefined {
+  if (item.kind !== 'assistant') return undefined
+  // 流式中最后一条 assistant：注入实时 agentToolCalls；其余用 DB 折叠出的 tools
+  if (index === renderItems.value.length - 1 && chatStore.isStreaming && chatStore.agentToolCalls.length > 0) {
+    return chatStore.agentToolCalls
+  }
+  return item.tools
+}
+
+/** 判断指定渲染单元是否为错误状态 */
 function isMessageError(index: number, role: string): boolean {
   return (
     role === 'assistant'
-    && index === chatStore.messages.length - 1
+    && index === renderItems.value.length - 1
     && !chatStore.isStreaming
     && chatStore.streamError !== null
   )
@@ -172,16 +188,18 @@ watch(chatError, (newError) => {
         v-else
         class="max-w-3xl mx-auto"
       >
+        <!-- 统一渲染：流式与历史都通过 buildRenderItems 折叠，
+             流式最后一条 assistant 注入实时 agentToolCalls -->
         <ChatMessage
-          v-for="(msg, index) in chatStore.messages"
-          :key="index"
-          :role="msg.role"
-          :content="msg.content"
-          :is-streaming="index === chatStore.messages.length - 1 && chatStore.isStreaming"
-          :has-error="isMessageError(index, msg.role)"
-          :is-initializing="index === chatStore.messages.length - 1 && chatStore.isInitializing"
-          :show-regenerate="index === chatStore.messages.length - 1"
-          :show-tools="hasTools && index === chatStore.messages.length - 1 && msg.role === 'assistant'"
+          v-for="(item, index) in renderItems"
+          :key="`msg-${index}`"
+          :role="item.message.role"
+          :content="item.message.content"
+          :is-streaming="index === renderItems.length - 1 && chatStore.isStreaming"
+          :has-error="isMessageError(index, item.message.role)"
+          :is-initializing="index === renderItems.length - 1 && chatStore.isInitializing"
+          :show-regenerate="index === renderItems.length - 1"
+          :tools="renderItemTools(item, index)"
         />
       </div>
     </div>

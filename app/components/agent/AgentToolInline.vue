@@ -6,10 +6,14 @@
  * - 聚合头「已使用 N 个工具」可整体折叠/展开
  * - 每张卡片：工具图标 + 名称 + 状态（running/done/error）+ 耗时 + 展开箭头
  * - 展开后显示「输入」和「输出」两栏
- * - 流结束后工具卡片保留（不随 finishStreaming 清空），新流开始时清空
+ * - 流结束后工具卡片保留（finishStreaming 把 agentToolCalls 折叠回 messages，改由 buildRenderItems 渲染）
  */
 
-const chatStore = useChatStore()
+import type { AgentToolCallItem } from '~/types/agent'
+
+const props = defineProps<{
+  toolCalls: AgentToolCallItem[]
+}>()
 
 /** 工具元数据：中文标签 + Lucide 图标 */
 const TOOL_META: Record<string, { label: string, icon: string }> = {
@@ -61,9 +65,9 @@ function formatArgs(args: string): string {
 
 /** 聚合头文案 */
 const headerText = computed(() => {
-  const total = chatStore.agentToolCalls.length
+  const total = props.toolCalls.length
   if (total === 0) return ''
-  const doneCount = chatStore.agentToolCalls.filter(t => t.status !== 'running').length
+  const doneCount = props.toolCalls.filter(t => t.status !== 'running').length
   if (doneCount === total) return `已使用 ${total} 个工具`
   return `正在使用工具…（${doneCount}/${total}）`
 })
@@ -71,12 +75,12 @@ const headerText = computed(() => {
 /** 全部工具完成后，自动展开第一张卡片 */
 // watch(
 //   () => {
-//     const calls = chatStore.agentToolCalls
+//     const calls = props.toolCalls
 //     return calls.length > 0 && calls.every(tc => tc.status !== 'running')
 //   },
 //   (allDone) => {
-//     if (allDone && chatStore.agentToolCalls.length > 0 && expandedId.value === null) {
-//       const first = chatStore.agentToolCalls[0]
+//     if (allDone && props.toolCalls.length > 0 && expandedId.value === null) {
+//       const first = props.toolCalls[0]
 //       if (first) expandedId.value = first.id
 //     }
 //   }
@@ -85,7 +89,7 @@ const headerText = computed(() => {
 
 <template>
   <div
-    v-if="chatStore.agentToolCalls.length > 0"
+    v-if="props.toolCalls.length > 0"
     class="tool-section"
   >
     <!-- 聚合头：「已使用 N 个工具」+ 折叠箭头 -->
@@ -106,7 +110,7 @@ const headerText = computed(() => {
       class="tool-card-list"
     >
       <div
-        v-for="tc in chatStore.agentToolCalls"
+        v-for="tc in props.toolCalls"
         :key="tc.id"
         class="tool-card"
       >

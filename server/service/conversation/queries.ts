@@ -38,7 +38,7 @@ export async function getConversationList(): Promise<ConversationListItem[]> {
         SELECT ${messages.content}
         FROM ${messages}
         WHERE ${messages.conversationId} = "conversations"."id"
-        ORDER BY ${messages.createdAt} DESC
+        ORDER BY ${messages.createdAt} DESC, ${messages.id} DESC
         LIMIT 1
       )`
   })
@@ -77,7 +77,8 @@ export async function getHistory(conversationId: string): Promise<Message[]> {
     .select()
     .from(messages)
     .where(eq(messages.conversationId, conversationId))
-    .orderBy(asc(messages.createdAt))
+    // id 作 secondary sort：createdAt 相同时保证顺序稳定（否则折叠/渲染会乱序）
+    .orderBy(asc(messages.createdAt), asc(messages.id))
 
   return rows.map(row => ({
     role: row.role as Message['role'],

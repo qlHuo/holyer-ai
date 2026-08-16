@@ -103,15 +103,33 @@ export function useChat() {
    */
   async function regenerate() {
     const convId = chatStore.currentConvId
-    if (!convId) return
-    if (sendingConvIds.value.has(convId)) return
+    if (!convId) {
+      return
+    }
+    if (sendingConvIds.value.has(convId)) {
+      return
+    }
 
     const msgs = chatStore.messages
-    const lastMsg = msgs[msgs.length - 1]
-    if (!lastMsg || lastMsg.role !== 'assistant') return
 
-    // 1. 移除旧 assistant（UI 上消失）
-    msgs.pop()
+    // 找到最后一个 user 消息的位置。
+    // Agent 一次回复在 DB 里是一组消息（assistant(tool_calls) → tool → assistant(text)），
+    // 刷新/切换对话后 messages 是 DB 原始数组，必须整组移除，
+    // 否则残留的工具消息会被流式渲染成空气泡（表现为"工具卡片变成 assistant 对话"）。
+    let lastUserIndex = -1
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i]!.role === 'user') {
+        lastUserIndex = i
+        break
+      }
+    }
+    // 没有 user 消息（异常数据）→ 无法重试
+    if (lastUserIndex === -1) {
+      return
+    }
+
+    // 1. 移除最后一个 user 之后的所有消息（对称后端 deleteLastAssistantGroup）
+    msgs.splice(lastUserIndex + 1)
 
     // 2. 开始流式状态
     chatStore.startStreaming()

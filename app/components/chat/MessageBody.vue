@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { AgentToolCallItem } from '~/types/agent'
+
 defineProps<{
   /** 聊天消息内容 */
   content: string
@@ -9,8 +11,8 @@ defineProps<{
   hasError?: boolean
   /** 是否正在初始化中 */
   isInitializing?: boolean
-  /** 是否在气泡顶部渲染工具调用步骤面板 */
-  showTools?: boolean
+  /** 气泡顶部渲染的工具调用步骤（Agent 模式） */
+  tools?: AgentToolCallItem[]
 }>()
 
 const chatStore = useChatStore()
@@ -31,7 +33,7 @@ const chatStore = useChatStore()
     ]"
   >
     <!-- ===== 工具调用步骤（Agent 模式下在气泡内展示） ===== -->
-    <AgentToolInline v-if="showTools" />
+    <AgentToolInline v-if="tools?.length" :tool-calls="tools" />
 
     <!-- ===== 新增：无内容 + 错误 = 显示错误文案 ===== -->
     <p

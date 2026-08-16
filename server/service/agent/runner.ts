@@ -20,10 +20,10 @@ import { toolRegistry } from './tools'
 import { AgentMemory } from './memory'
 
 /** 最大 ReAct 迭代轮数（硬上限，防止无限循环） */
-const DEFAULT_MAX_ITERATIONS = 10
+const DEFAULT_MAX_ITERATIONS = 3
 
 /** Agent 整体超时（毫秒），超时后强制终止 ReAct 循环 */
-const AGENT_TIMEOUT_MS = 60_000
+const AGENT_TIMEOUT_MS = 120_000
 
 // ============================================================
 // 内容审核自愈 — 问题 & 方案说明
@@ -151,12 +151,17 @@ export async function* runAgentLoop(
     // 初始化 AgentMemory——自动分离 system 消息，后续自动裁剪
     const memory = new AgentMemory(messages)
 
+    // 内容审核降级提示，跨轮累积，最终轮统一作为回复前缀发出。
+    // 不能随降级即时发出——降级可能发生在中间轮，若以 text 事件即时发，
+    // 会触发上层提前创建最终回复占位，导致 DB 时间线错乱（工具消息排到回复之后）。
+    let pendingWarning = ''
+
     for (let round = 1; round <= maxIterations; round++) {
       if (isAborted()) {
         yield {
           type: 'error',
           message: timeoutController.signal.aborted
-            ? 'Agent 执行超时（60s），请简化提问后重试'
+            ? 'Agent 执行超时（120s），请简化提问后重试'
             : '请求已取消'
         }
         return
@@ -168,7 +173,6 @@ export async function* runAgentLoop(
       // LLM API 安全过滤会对整个请求体做审核，直接返回 400。
       // 此处捕获后走"试毒 → 剔除 → 重试"流程，而非直接报错。
       let stream: ReadableStream<LLMStreamChunk>
-      let contentWarning: string | undefined
 
       try {
         stream = await provider.chat(memory.getAll(), {
@@ -182,7 +186,7 @@ export async function* runAgentLoop(
         // Level 1: 逐条试毒，精确定位并剔除有问题的工具结果
         const filteredCount = await isolateAndFilterToolResults(memory, provider, options)
         if (filteredCount > 0) {
-          contentWarning = `（${filteredCount} 条搜索结果因内容限制未采用）\n\n`
+          pendingWarning += `（${filteredCount} 条搜索结果因内容限制未采用）\n\n`
         }
 
         try {
@@ -195,21 +199,21 @@ export async function* runAgentLoop(
           for (const msg of memory.getToolMessages()) {
             msg.content = '（此搜索结果因内容限制不可用）'
           }
-          contentWarning = '（搜索结果因内容限制未采用，以下基于已有知识回答）\n\n'
+          pendingWarning += '（搜索结果因内容限制未采用，以下基于已有知识回答）\n\n'
           stream = await provider.chat(memory.getAll(), { ...options })
         }
       }
 
-      // 降级后发出提示文本（在 LLM 真实回复之前）
-      if (contentWarning) {
-        yield { type: 'text', content: contentWarning }
-      }
-
-      // 2. 读取 LLM 响应流：文本逐 chunk 流式发出，tool_calls 累积后在循环结束时处理
-      //    策略：仅在没有 tool_calls 的阶段流式输出文本。一旦 tool_calls 出现，
-      //    后续文本不再发出（LLM 通常不会在 tool_calls 后输出文本）。
-      const textParts: string[] = []
+      // 2. 读取 LLM 响应流 —— 前瞻窗口策略
+      //    文本先缓冲前 LOOKAHEAD_CHARS 字符，确认无 tool_calls 后才开始流式：
+      //    - 中间轮：引导文本（如"让我搜索一下"）被缓冲住，读到 tool_calls 时整体丢弃，不闪烁
+      //    - 最终轮：窗口满即冲刷，恢复打字机流式，而非方案 A 的「读完整个响应一次性返回」
+      //    代价：最终轮首字延迟 ≈ LOOKAHEAD_CHARS 的生成时间（约 1 秒）；窗口可调。
+      const LOOKAHEAD_CHARS = 40
+      const pendingText: string[] = [] // 前瞻缓冲（尚未冲刷的文本 chunk）
       const toolCalls: ToolCall[] = []
+      let assistantContent = '' // 本轮完整文本输出（含引导文本，供 memory 使用）
+      let streaming = false // 是否已开始向前端流式输出
 
       const reader = stream.getReader()
       try {
@@ -218,7 +222,7 @@ export async function* runAgentLoop(
             yield {
               type: 'error',
               message: timeoutController.signal.aborted
-                ? 'Agent 执行超时（60s），请简化提问后重试'
+                ? 'Agent 执行超时（120s），请简化提问后重试'
                 : '请求已取消'
             }
             return
@@ -228,9 +232,24 @@ export async function* runAgentLoop(
           if (done) break
 
           if (value.type === 'text') {
-            textParts.push(value.content)
-            if (toolCalls.length === 0) {
+            assistantContent += value.content
+            if (streaming) {
+              // 已进入流式态 → 直接转发
               yield { type: 'text', content: value.content }
+            } else {
+              pendingText.push(value.content)
+              // 前瞻窗口满 → 判定为最终轮，冲刷缓冲并进入流式态
+              if (assistantContent.length >= LOOKAHEAD_CHARS) {
+                streaming = true
+                if (pendingWarning) {
+                  yield { type: 'text', content: pendingWarning }
+                  pendingWarning = ''
+                }
+                for (const part of pendingText) {
+                  yield { type: 'text', content: part }
+                }
+                pendingText.length = 0
+              }
             }
           } else if (value.type === 'tool_calls') {
             toolCalls.push(...value.toolCalls)
@@ -240,10 +259,18 @@ export async function* runAgentLoop(
         reader.releaseLock()
       }
 
-      const assistantContent = textParts.join('')
-
-      // 3. 无 tool_calls → 最后一轮
+      // 3. 无 tool_calls → 最后一轮：先发降级提示（若有），再冲刷剩余文本，最后 done
       if (toolCalls.length === 0) {
+        if (pendingWarning) {
+          yield { type: 'text', content: pendingWarning }
+          pendingWarning = ''
+        }
+        // 整条回复短于前瞻窗口，读完才冲刷（内容短，一次性发出无感知）
+        if (!streaming) {
+          for (const part of pendingText) {
+            yield { type: 'text', content: part }
+          }
+        }
         yield { type: 'done' }
         return
       }
@@ -271,7 +298,7 @@ export async function* runAgentLoop(
         yield {
           type: 'error',
           message: timeoutController.signal.aborted
-            ? 'Agent 执行超时（60s），请简化提问后重试'
+            ? 'Agent 执行超时（120s），请简化提问后重试'
             : '请求已取消'
         }
         return
