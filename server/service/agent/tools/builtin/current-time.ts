@@ -3,7 +3,7 @@ import type { ToolDefinition } from '~~/shared/types/provider'
 
 export class CurrentTimeTool implements ExecutableTool {
   readonly name = 'current_time'
-  readonly description = '获取当前日期和时间。可指定 IANA 时区（如 Asia/Shanghai、America/New_York），不指定时区则返回北京时间（UTC+8）。'
+  readonly description = '获取当前日期和时间。可指定 IANA 时区（如 Asia/Shanghai、America/New_York）。'
   readonly permission: ToolPermission = 'readonly'
   // 参数定义格式
   readonly parameters: Record<string, any> = {

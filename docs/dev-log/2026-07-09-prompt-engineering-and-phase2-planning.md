@@ -184,3 +184,5 @@ const cases = [
 - [ADR-009: 模型兼容性](../decisions/009-model-compatibility.md) — 工具调用格式在不同 Provider 间的差异（Phase 2 直接相关）
 - [实施路线图](../../.claude/plan/roadmap.md)
 - [待办事项](../../.claude/plan/todo.md)
+- [2026-08-17 Prompt 评测-调优闭环](2026-08-17-prompt-eval-tuning-loop.md) — 本文「评估集驱动迭代」设想的落地与反思
+- [业界提示词工程规范](../learning-notes/prompt-engineering-standards.md) — 规范的三层含义与适用边界（补充本文工程化做法的「业界共识」视角）

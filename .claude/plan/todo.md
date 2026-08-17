@@ -5,7 +5,7 @@
 
 ## 🔧 功能优化
 
-- [ ] **SSE 重连** (来自 roadmap 1.17) — 网络闪断后自动恢复流式连接。推迟原因：场景极少、无法实现真重连只能从头生成，收益抵不上复杂度。推迟到 Phase 3+ 移动端适配时重新评估。详见 [流式中断保护方案](../docs/dev-log/2026-06-23-stream-interruption-protection.md)
+- [ ] **SSE 重连** (来自 roadmap 1.17) — 网络闪断后自动恢复流式连接。推迟原因：场景极少、无法实现真重连只能从头生成，收益抵不上复杂度。推迟到 Phase 3+ 移动端适配时重新评估。详见 [流式中断保护方案](/docs/dev-log/2026-06-23-stream-interruption-protection.md)
 - [ ] **编辑重发** (来自 roadmap 1.19) — 编辑已发送消息后重新发送。当前消息操作（复制+重新生成）已满足日常使用
 - [ ] **键盘快捷键** (来自 roadmap 1.25) — Ctrl+N 新建对话、Esc 关闭面板、Ctrl+/ 快捷键提示（Ctrl+K 命令面板需搜索功能先落地）。当前鼠标操作已满足日常使用
 
@@ -14,6 +14,7 @@
 - [ ] **API 单元测试** (来自 roadmap 1.31) — vitest + conversations CRUD 测试。推迟原因：conversations CRUD 无复杂业务逻辑，vitest + Nitro/Edge Runtime 集成成本高、个人项目无 CI 回归拦截需求。推迟到 Phase 2 Agent Runtime 有复杂逻辑（ReAct 循环、工具调用状态机）时再引入
 - [ ] **部署构建优化** 目前使用Cloudflare Workers，可能没有处理静态资源的CDN，后续考虑优化。
 - [ ] **current_time 工具冗余清理** — system prompt 已通过 dateContext 注入当前时间（[index.post.ts](../../server/api/chat/index.post.ts)），current_time 工具职责被覆盖。删除 current-time.ts + index.ts 取消注册。推迟原因：无害冗余，不紧急，下次碰工具系统（Phase 3 MCP）时顺手清理。
+- [ ] **PromptSegment 抽象落地**（源自 [07-09 提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) 2.2 节，仅设想未实现）— 当前 prompt 散落在 [index.post.ts](../../server/api/chat/index.post.ts)（dateContext + toolUsageGuidelines 硬编码）、system-prompt.ts、工具描述等 5 层。按设想建 `server/service/prompt/`（PromptSegment 接口 + buildPrompt() 按 priority 拼接）。推迟原因：当前 prompt 仅 2 段 + 4 工具，抽象收益不抵成本。触发点：Phase 3 RAG 注入 context、Phase 4 MCP 注入工具描述时，片段涨到 5~6 段再落地。连带收益：解决评测脚本快照漂移（buildPrompt() 统一入口，评测直接 import 而非复制快照）。
 
 ## 🔮 远期规划
 

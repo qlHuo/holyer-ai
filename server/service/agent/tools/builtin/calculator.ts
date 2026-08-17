@@ -24,7 +24,7 @@ function safeEvaluate(expression: string): number {
 
 export class CalculatorTool implements ExecutableTool {
   readonly name = 'calculator'
-  readonly description = '执行数学计算。支持 + - * / ( ) % 运算符和小数。输入一个数学表达式字符串，返回计算结果。'
+  readonly description = '执行数学计算。支持 + - * / ( ) % 运算符、小数和科学计数法（如 1e10）。输入一个数学表达式字符串，返回计算结果。'
   readonly permission: ToolPermission = 'readonly'
   readonly parameters: Record<string, any> = {
     type: 'object',

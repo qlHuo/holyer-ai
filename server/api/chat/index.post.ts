@@ -125,10 +125,13 @@ export default defineEventHandler(async (event) => {
 
         const toolUsageGuidelines = `
           ## 工具调用准则
-          你可以使用工具来辅助回答问题。遵守以下规则：
-          - 只有问题涉及实时信息、具体计算、日期时间或需要获取特定网页内容时才调用工具
-          - 日常问候、闲聊、常识性问题不要调用工具，直接回答即可
-          - 如果不确定是否需要工具，就不要调用——先尝试直接回答
+          你可以使用工具来辅助回答问题。按以下规则选择是否调用及调用哪个工具：
+          - 涉及实时信息、最新资讯、事实核查 → 调用 web_search
+          - 需要读取某个具体网页的内容 → 调用 web_fetch（需提供完整 URL）
+          - 涉及多位数字的算术运算 → 调用 calculator
+          - 询问当前日期或时间 → 调用 current_time
+          - 日常问候、闲聊、常识性问题 → 不要调用工具，直接回答
+          - 用户明确要求「查询 / 搜索 / 查一下 / 最新」等信息时，应调用 web_search 获取最新结果，不要仅凭记忆回答
         `
 
         const effectiveSystemPrompt = toolDefinitions.length > 0

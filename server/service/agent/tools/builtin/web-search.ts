@@ -38,14 +38,14 @@ interface TavilyResponse {
 
 export class WebSearchTool implements ExecutableTool {
   readonly name = 'web_search'
-  readonly description = '在互联网上搜索信息。输入搜索关键词，返回相关网页的标题、URL 和内容摘要。适用于需要实时信息、事实核查或查找资料的场景。'
+  readonly description = '在互联网上搜索信息。输入搜索查询（自然语言问题或关键词均可），返回相关网页的标题、URL 和内容摘要。适用于需要实时信息、事实核查或查找资料的场景。当你不确定目标网页的具体 URL 时，先用本工具搜索定位；需要抓取某个具体 URL 时改用 web_fetch。'
   readonly permission: ToolPermission = 'readonly'
   readonly parameters: Record<string, any> = {
     type: 'object',
     properties: {
       query: {
         type: 'string',
-        description: '搜索关键词，建议使用完整的自然语言问题以获得最佳结果。例如 "TypeScript 5.8 有哪些新特性" 或 "2026年诺贝尔物理学奖获得者"'
+        description: '搜索查询，建议使用完整的自然语言问题以获得最佳结果。例如 "TypeScript 5.8 有哪些新特性" 或 "2026年诺贝尔物理学奖获得者"'
       }
     },
     required: ['query']

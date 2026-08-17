@@ -1,5 +1,11 @@
 // ============================================================
-// DeepSeek Provider
+// DeepSeek Provider — ⚠️ 已废弃（学习用途，勿用于生产）
+//
+// 本文件未被 factory.ts 引用，生产环境永远走 OpenAIProvider。
+// 保留仅为练习「手动 SSE 解析」，不要在此新增生产逻辑。
+// 注意：本文件 SUPPORTED_MODELS 的 supportsTools: false 与
+// app/constants/models.ts 不一致，以 models.ts 为准。
+//
 // 纯 fetch 实现，不依赖任何 SDK —— 练习手动 SSE 解析
 // ============================================================
 

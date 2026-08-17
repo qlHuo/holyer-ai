@@ -20,7 +20,7 @@ const TIMEOUT_MS = 10_000
 
 export class WebFetchTool implements ExecutableTool {
   readonly name = 'web_fetch'
-  readonly description = '获取指定网页的文本内容。输入一个完整的 URL（需包含 https://），返回提取后的纯文本。适用于阅读文章、查看文档或获取网页信息。'
+  readonly description = '获取指定网页的文本内容。输入一个完整的 URL（需包含 https://），返回提取后的纯文本。适用于阅读文章、查看文档或获取网页信息。仅在已确定具体 URL 时使用，不要猜测或编造 URL——若只有一个主题而没有 URL，请改用 web_search。'
   readonly permission: ToolPermission = 'readonly'
   readonly parameters: Record<string, any> = {
     type: 'object',
