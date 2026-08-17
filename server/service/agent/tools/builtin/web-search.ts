@@ -12,6 +12,7 @@
 
 import type { ExecutableTool, ToolPermission } from '../types'
 import type { ToolDefinition } from '~~/shared/types/provider'
+import { mergeAbortSignals } from '~~/server/utils/abort'
 
 const TAVILY_API = 'https://api.tavily.com/search'
 
@@ -50,17 +51,19 @@ export class WebSearchTool implements ExecutableTool {
     required: ['query']
   }
 
-  async execute(args: Record<string, unknown>): Promise<string> {
+  async execute(args: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
     const query = String(args.query ?? '').trim()
     if (!query) return '错误：搜索关键词不能为空'
 
     const config = useRuntimeConfig()
     const apiKey = (config as any).tavilyApiKey as string | undefined
 
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+    // 合并「外部取消信号（客户端断开/Agent 超时）」与「自身 15s 超时」
+    const timeoutController = new AbortController()
+    const timeout = setTimeout(() => timeoutController.abort(), TIMEOUT_MS)
+    const requestSignal = mergeAbortSignals(signal, timeoutController.signal)
 
+    try {
       const body: Record<string, unknown> = {
         query,
         search_depth: 'advanced',
@@ -85,9 +88,8 @@ export class WebSearchTool implements ExecutableTool {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
-        signal: controller.signal
+        signal: requestSignal
       })
-      clearTimeout(timeout)
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '')
@@ -104,25 +106,28 @@ export class WebSearchTool implements ExecutableTool {
         return `未找到与 "${query}" 相关的结果。`
       }
 
-      // 组装结果：AI 摘要（如有）+ 搜索结果列表
+      // 组装结果：AI 摘要（如有）+ 搜索结果列表（纯文本，无 markdown 标记）
       const parts: string[] = []
 
       if (data.answer) {
-        parts.push(`📌 **AI 摘要**：${data.answer}`)
+        parts.push(`AI 摘要：${data.answer}`)
       }
 
       parts.push(
         data.results
-          .map((r, i) => `${i + 1}. **[${r.title}](${r.url})**\n   ${r.content || '(无描述)'}`)
+          .map((r, i) => `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.content || '(无描述)'}`)
           .join('\n\n')
       )
 
       return parts.join('\n\n')
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        return '搜索请求超时（15 秒），请稍后重试。'
+        // 区分：外部取消（用户停止/Agent 超时）vs 自身 15s 超时
+        return signal?.aborted ? '已取消' : '搜索请求超时（15 秒），请稍后重试。'
       }
       return `搜索失败：${error instanceof Error ? error.message : '未知错误'}`
+    } finally {
+      clearTimeout(timeout)
     }
   }
 

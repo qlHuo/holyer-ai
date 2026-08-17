@@ -78,7 +78,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 2：自定义提示词管理 + Agent Runtime（预计 3 天）🔄 第二步完成（完成度约 85%）· 2026-08-05
+## Phase 2：自定义提示词管理 + Agent Runtime（预计 3 天）🔄 第二步进行中（完成度约 90%）· 2026-08-16
 
 > 方案：[Phase 2 Agent 系统设计方案](phase2-agent-design.md)（含 6 个架构决策 + 9 个实现步骤） · [2026-07-30 架构修正](phase2-agent-design.md#决策-4保持-apichat-单端点agent-是-chat-的超集)（单端点、全量工具、无 Agent 开关） · [ADR-012 LLMStreamChunk](../../docs/decisions/012-llm-stream-chunk-type.md) · [ADR-013 Prompt 命名](../../docs/decisions/013-prompt-naming.md) · [ADR-014 Agent 流式 DB 写入](../../docs/decisions/014-agent-streaming-db-write.md)
 >
@@ -99,11 +99,18 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
 | 2.1 | Agent Runtime | ReAct 循环 ✅ (2026-07-29) + Runner 重写 ✅ (2026-08-03，AsyncGenerator + AgentMemory + 并发执行) | ✅ |
-| 2.2 | 内置工具 | calculator + current-time ✅ (2026-07-29) + web_search/web_fetch ✅ (2026-08-03) + date_calculator/unit_converter/text_stats/json_formatter (P1) ⬜ | 🔄 |
+| 2.2 | 内置工具 | calculator + current-time ✅ (2026-07-29) + web_search/web_fetch ✅ (2026-08-03)。P1 工具不做（见下方备注） | ✅ |
 | 2.3 | Provider 升级 + 精简 | `chat()` → `ReadableStream<LLMStreamChunk>` + tool call delta 累积 + 全链路移除 provider 字段 | ✅ (2026-07-29) |
 | 2.4 | `/api/chat` 适配 | Agent 流消费分支 + SSE 事件（ROUND_START/TOOL_START/TOOL_END）+ DB 增量写入 | ✅ (2026-08-03) |
 | 2.5 | Agent UI | ToolCallCard 组件 + useChat SSE 事件扩展 + store Agent 状态 | ✅ (2026-08-03) |
-| 2.6 | 可观测性 + 安全护栏 | ✅ 工具权限分级（已在 types.ts 定义） + ✅ 并发执行错误隔离 + ✅ AbortSignal 传递到工具层 | ✅ (2026-08-03) |
+| 2.6 | 可观测性 + 安全护栏 | ✅ 工具权限分级 + ✅ 并发执行错误隔离 + ✅ 内容审核自愈 (2026-08-10) + ✅ AbortSignal 传到工具执行层 (2026-08-17) | ✅ (2026-08-03) |
+
+> **2026-08-10 ~ 08-16 收尾优化**（基于 [Agent ReAct 已知问题](../../docs/dev-log/2026-08-06-agent-react-known-issues.md)）：
+> - ✅ 工具结果持久化 — 中间轮 `assistant(tool_calls)` + `tool` 消息落库，历史工具卡片可渲染（含流式双轨收口）
+> - ✅ 文本闪烁修复 — 前瞻窗口策略（`LOOKAHEAD_CHARS=40`），最终轮恢复流式
+> - ✅ 内容审核自愈 — 试毒 → 剔除 → 降级三级方案
+> - ⚠️ 剩余：Prompt 调优、Memory 裁剪约束
+> - 📋 工具集定型（2026-08-17）：~~date_calculator/unit_converter/text_stats/json_formatter (P1)~~ 不做——纯函数工具价值低、无新学习点，扩展交由 Phase 3 MCP；~~current-time~~ 冗余——时间已由 system prompt dateContext 注入，待顺手清理（见 todo.md）
 
 > **Prompt + Agent 协同**：第二步 Agent Runtime 完工后，第一步创建的所有 Prompt 自动获得工具调用能力。用户选择自定义 Prompt 发起对话 → LLM 看到 Prompt 提示词 + 工具列表，自然按提示词引导调用工具。
 

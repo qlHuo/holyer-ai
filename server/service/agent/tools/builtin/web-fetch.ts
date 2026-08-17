@@ -10,6 +10,7 @@
 
 import type { ExecutableTool, ToolPermission } from '../types'
 import type { ToolDefinition } from '~~/shared/types/provider'
+import { mergeAbortSignals } from '~~/server/utils/abort'
 
 /** 最大响应体积：1MB */
 const MAX_SIZE = 1_024_000
@@ -32,7 +33,7 @@ export class WebFetchTool implements ExecutableTool {
     required: ['url']
   }
 
-  async execute(args: Record<string, unknown>): Promise<string> {
+  async execute(args: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
     const url = String(args.url ?? '').trim()
     if (!url) return '错误：URL 不能为空'
 
@@ -46,19 +47,20 @@ export class WebFetchTool implements ExecutableTool {
       return `错误：无效的 URL 格式——"${url.slice(0, 100)}"`
     }
 
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+    // 合并「外部取消信号（客户端断开/Agent 超时）」与「自身 10s 超时」
+    const timeoutController = new AbortController()
+    const timeout = setTimeout(() => timeoutController.abort(), TIMEOUT_MS)
+    const requestSignal = mergeAbortSignals(signal, timeoutController.signal)
 
+    try {
       const response = await fetch(url, {
         headers: {
           'Accept': 'text/html, application/xhtml+xml',
           'User-Agent': 'HolyerBot/1.0 (Web Fetch Tool)'
         },
-        signal: controller.signal,
+        signal: requestSignal,
         redirect: 'follow'
       })
-      clearTimeout(timeout)
 
       if (!response.ok) {
         return `获取网页失败：HTTP ${response.status} ${response.statusText}`
@@ -80,9 +82,12 @@ export class WebFetchTool implements ExecutableTool {
       return html.slice(0, 5000) + (text.length > 5000 ? '\n\n...（内容过长，已截断）' : '')
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        return '请求超时（10 秒），目标网站响应过慢，请稍后重试。'
+        // 区分：外部取消（用户停止/Agent 超时）vs 自身 10s 超时
+        return signal?.aborted ? '已取消' : '请求超时（10 秒），目标网站响应过慢，请稍后重试。'
       }
       return `获取网页失败：${error instanceof Error ? error.message : '未知错误'}`
+    } finally {
+      clearTimeout(timeout)
     }
   }
 

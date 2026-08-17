@@ -18,6 +18,7 @@ import type { LLMProvider } from '~~/server/service/llm/types'
 import type { AgentEvent, AgentRunConfig } from './types'
 import { toolRegistry } from './tools'
 import { AgentMemory } from './memory'
+import { mergeAbortSignals } from '~~/server/utils/abort'
 
 /** 最大 ReAct 迭代轮数（硬上限，防止无限循环） */
 const DEFAULT_MAX_ITERATIONS = 3
@@ -137,6 +138,9 @@ export async function* runAgentLoop(
   // 启动内部超时定时器——仅限制 ReAct 循环耗时，不覆盖外层 DB 操作或纯聊天路径
   const timeoutController = new AbortController()
   const timeoutId = setTimeout(() => timeoutController.abort(), AGENT_TIMEOUT_MS)
+
+  // 合并外部取消（客户端断开）+ 内部超时（120s）为单一 signal，供工具执行层使用
+  const runSignal = mergeAbortSignals(externalSignal, timeoutController.signal)
 
   // 工具结果缓存：同一轮 Agent 运行中，相同工具+相同参数不重复执行
   // 解决 LLM "失忆"导致重复调用同一工具的问题（尤其是 Memory 裁剪后）
@@ -337,8 +341,8 @@ export async function* runAgentLoop(
               }
             }
 
-            // 未命中 → 实际执行并写入缓存
-            const result = await tool.execute(args)
+            // 未命中 → 实际执行并写入缓存（传入合并后的取消信号）
+            const result = await tool.execute(args, runSignal)
             toolCache.set(cacheKey, { result, success: true })
             return {
               toolCallId: tc.id,
@@ -358,6 +362,17 @@ export async function* runAgentLoop(
           }
         })
       )
+
+      // 工具执行期间可能被取消（客户端断开 / Agent 超时）→ 立即终止，不发出 stale 事件
+      if (isAborted()) {
+        yield {
+          type: 'error',
+          message: timeoutController.signal.aborted
+            ? 'Agent 执行超时（120s），请简化提问后重试'
+            : '请求已取消'
+        }
+        return
+      }
 
       // 5c. 发出 tool_end 事件 + 写入 AgentMemory
       for (const item of settled) {

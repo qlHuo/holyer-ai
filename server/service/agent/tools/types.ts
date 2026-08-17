@@ -9,6 +9,6 @@ export interface ExecutableTool {
   readonly description: string
   readonly permission: ToolPermission
   readonly parameters: Record<string, any>
-  execute(args: Record<string, unknown>): string | Promise<string>
+  execute(args: Record<string, unknown>, signal?: AbortSignal): string | Promise<string>
   toDefinition(): ToolDefinition
 }

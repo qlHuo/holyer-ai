@@ -1,32 +1,31 @@
 # 项目进度快照
 
-> 更新于 2026-08-05
+> 更新于 2026-08-17
 
 ## 当前状态
 
-**Phase 2 第二步完成** — Agent Runtime 核心完成，完成度约 85%
+**Phase 2 第二步** — 完成度约 95%，内置工具集已定型，收尾后进入 Phase 3
 
 ## 近期完成
 
-- [2.1] Agent Runner 重写 — AsyncGenerator + AgentMemory + 并发执行（2026-08-03）
-- [2.2] P0 工具 — web_search (Tavily keyless) + web_fetch（2026-08-03）
-- [2.4] `/api/chat` Agent 分支 — SSE 事件映射 + DB 增量写入（2026-08-03）
-- [2.5] Agent UI — AgentToolInline + ToolCallCard + store（2026-08-03）
-- [2.6] 安全护栏 — 工具权限分级 + 并发错误隔离 + 类型检查修复（2026-08-05）
+- 工具结果持久化 — 中间轮工具消息落库 + 历史卡片渲染（2026-08-16）
+- 文本闪烁修复 — 前瞻窗口策略，最终轮恢复流式（2026-08-16）
+- 内容审核自愈 — 试毒 / 剔除 / 降级三级方案（2026-08-10）
+- 工具集评估 — P1 工具判定不做、current_time 判定冗余，内置工具定型（2026-08-17）
+- AbortSignal 传递 — `tool.execute()` 增加 signal 参数，取消信号下传到工具执行层（2026-08-17）
 
 ## 下一步
 
-1. **[理解] ReAct 流程消化** — 阅读 [完整流程分析](../../docs/dev-log/2026-08-05-agent-react-full-flow.md) 理解 6 层架构数据流
-2. **[优化] 中间轮文本闪烁修复** — ROUND_START 之前不流式发出文本（当前先发文本再清空，有闪烁）
-3. **[优化] 工具结果持久化** — tool call 消息写入 DB（当前仅 UI 瞬时展示，刷新丢失）
-4. **[P1] 工具扩展** — date_calculator、unit_converter、text_stats、json_formatter（纯函数）
-5. **[P2] Prompt 调优** — 优化 System Prompt 引导 LLM 合理调用工具（DeepSeek 太激进）
+1. **[优化] Prompt 调优** — 工具调用准则加 few-shot 示例，抑制 DeepSeek 过度调用
+2. **[代码质量] AgentMemory 裁剪边界显式约束** — 确保 tool call 配对保留（已知问题 3.3）
+3. **[收尾] Phase 2 审查** — 全链路审查 + 更新设计文档
+4. **[主线] 进入 Phase 3 MCP** — 内置工具到此为止，扩展交给 MCP 生态
 
 ## 阻塞 / 风险
 
-- Brave Search API Key 未配置 → 已切换到 Tavily keyless 模式，功能可用但有限频
-- DeepSeek v4-pro 对"你好"也调 web_search → 已加工具调用准则，效果待观察
+- Tavily keyless 有限频（搜索工具后端）— 功能可用，量大时需申请 key
+- 文本闪烁残留概率非零（引导文本超 40 字符窗口时）— 可选「保留引导文本」方案
 
 ## 推迟项
 
-todo.md 中有 7 项待办，详见 [todo.md](todo.md)
+todo.md 中有 8 项待办，详见 [todo.md](todo.md)

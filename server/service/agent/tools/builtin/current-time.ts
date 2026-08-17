@@ -3,7 +3,7 @@ import type { ToolDefinition } from '~~/shared/types/provider'
 
 export class CurrentTimeTool implements ExecutableTool {
   readonly name = 'current_time'
-  readonly description = '获取当前日期和时间。可指定时区（如 Asia/Shanghai、America/New_York），不指定则返回本地时间。'
+  readonly description = '获取当前日期和时间。可指定 IANA 时区（如 Asia/Shanghai、America/New_York），不指定时区则返回北京时间（UTC+8）。'
   readonly permission: ToolPermission = 'readonly'
   // 参数定义格式
   readonly parameters: Record<string, any> = {
@@ -15,14 +15,14 @@ export class CurrentTimeTool implements ExecutableTool {
         // 告诉 LLM：这个字段必须是字符串
         type: 'string',
         // 告诉 LLM：这个字段的含义
-        description: 'IANA 时区标识符，例如 "Asia/Shanghai"、"America/New_York"、"Europe/London"。不传则使用系统本地时区。'
+        description: 'IANA 时区标识符，例如 "Asia/Shanghai"、"America/New_York"、"Europe/London"。不传则返回北京时间（UTC+8）。'
       }
     },
-    required: ['timezone']
+    required: []
   }
 
   execute(args: Record<string, unknown>): string {
-    const timezone = typeof args.timezone === 'string' ? args.timezone : undefined
+    const timezone = typeof args.timezone === 'string' && args.timezone ? args.timezone : 'Asia/Shanghai'
     const now = new Date()
 
     try {
@@ -39,8 +39,9 @@ export class CurrentTimeTool implements ExecutableTool {
       })
       return formatter.format(now)
     } catch {
-      // 时区无效时回退到本地时间
+      // 时区无效时回退到北京时间（Workers 环境无「用户本地时区」概念，不能依赖运行环境时区）
       return new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',

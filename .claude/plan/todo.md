@@ -13,6 +13,7 @@
 
 - [ ] **API 单元测试** (来自 roadmap 1.31) — vitest + conversations CRUD 测试。推迟原因：conversations CRUD 无复杂业务逻辑，vitest + Nitro/Edge Runtime 集成成本高、个人项目无 CI 回归拦截需求。推迟到 Phase 2 Agent Runtime 有复杂逻辑（ReAct 循环、工具调用状态机）时再引入
 - [ ] **部署构建优化** 目前使用Cloudflare Workers，可能没有处理静态资源的CDN，后续考虑优化。
+- [ ] **current_time 工具冗余清理** — system prompt 已通过 dateContext 注入当前时间（[index.post.ts](../../server/api/chat/index.post.ts)），current_time 工具职责被覆盖。删除 current-time.ts + index.ts 取消注册。推迟原因：无害冗余，不紧急，下次碰工具系统（Phase 3 MCP）时顺手清理。
 
 ## 🔮 远期规划
 
