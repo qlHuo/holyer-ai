@@ -40,7 +40,6 @@ function buildSystemPrompt() {
 - 涉及实时信息、最新资讯、事实核查 → 调用 web_search
 - 需要读取某个具体网页的内容 → 调用 web_fetch（需提供完整 URL）
 - 涉及多位数字的算术运算 → 调用 calculator
-- 询问当前日期或时间 → 调用 current_time
 - 日常问候、闲聊、常识性问题 → 不要调用工具，直接回答
 - 用户明确要求「查询 / 搜索 / 查一下 / 最新」等信息时，应调用 web_search 获取最新结果，不要仅凭记忆回答`
 
@@ -48,7 +47,7 @@ function buildSystemPrompt() {
 }
 
 // ────────────────────────────────────────────────────────────
-// 快照 2：4 个工具定义（对应 tools/builtin/*.ts 的 toDefinition()）
+// 快照 2：3 个工具定义（对应 tools/builtin/*.ts 的 toDefinition()）
 // ────────────────────────────────────────────────────────────
 const TOOLS = [
   {
@@ -62,20 +61,6 @@ const TOOLS = [
           expression: { type: 'string', description: '要计算的数学表达式，例如 "2 + 3 * 4" 或 "(100 - 20) / 4"' }
         },
         required: ['expression']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'current_time',
-      description: '获取当前日期和时间。可指定 IANA 时区（如 Asia/Shanghai、America/New_York）。',
-      parameters: {
-        type: 'object',
-        properties: {
-          timezone: { type: 'string', description: 'IANA 时区标识符，例如 "Asia/Shanghai"、"America/New_York"、"Europe/London"。不传则返回北京时间（UTC+8）。' }
-        },
-        required: []
       }
     }
   },

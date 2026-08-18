@@ -1,6 +1,6 @@
 /**
  * LLM 输出流过滤器
- *
+ * 【说明】当前无调用者，保留作零工具模式适配器
 */
 
 import type { LLMStreamChunk } from '~~/shared/types/provider'

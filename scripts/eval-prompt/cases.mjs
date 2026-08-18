@@ -13,14 +13,13 @@ export const cases = [
   // ── 负例：期望不调工具，直接回答 ──
   { id: 'greet', userMessage: '你好', expectedTool: null },
   { id: 'joke', userMessage: '给我讲个冷笑话', expectedTool: null },
+  // 时间问题：dateContext 已注入当前时间，期望直接回答而非调工具
+  { id: 'time-a', userMessage: '现在几点了', expectedTool: null },
+  { id: 'time-b', userMessage: '今天星期几', expectedTool: null },
 
   // ── calculator ──
   { id: 'calc-a', userMessage: '帮我算 12345 * 6789 等于多少', expectedTool: 'calculator', expectedArgs: { expression: '12345' } },
   { id: 'calc-b', userMessage: '帮我算 98765.4321 乘以 12345.6789 等于多少', expectedTool: 'calculator', expectedArgs: { expression: '98765' } },
-
-  // ── current_time ──
-  { id: 'time-a', userMessage: '现在几点了', expectedTool: 'current_time' },
-  { id: 'time-b', userMessage: '今天星期几', expectedTool: 'current_time' },
 
   // ── web_search ──
   { id: 'search-a', userMessage: 'TypeScript 5.8 有哪些新特性', expectedTool: 'web_search' },

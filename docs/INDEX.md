@@ -1,6 +1,6 @@
 # 文档索引
 
-> 57 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 58 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（32 篇）
+## 开发日志（33 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +35,7 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 08-18 | [phase2-review](dev-log/2026-08-18-phase2-review.md) | **Phase 2 全链路审查与收尾修复** — 8 层链路梳理、7 项问题分级、修复死代码/SSRF/error 落库等 7 项、后台切回残留推迟 |
 | 08-17 | [prompt-eval-tuning-loop](dev-log/2026-08-17-prompt-eval-tuning-loop.md) | **Prompt 评测-调优闭环实践** — 5 层 prompt 分布盘点、6 条工具描述审计、评测脚本落地、80%→100% 调优、评测鸡肋与规范反思 |
 | 08-06 | [agent-content-filter-self-healing](dev-log/2026-08-06-agent-content-filter-self-healing.md) | **Agent 内容审核拦截的自愈方案** — 并行试毒、精确剔除、渐进降级、Provider 复用模式、退化版子 Agent |
 | 08-06 | [agent-react-known-issues](dev-log/2026-08-06-agent-react-known-issues.md) | **Agent ReAct 已知问题记录** — 文本闪烁根因与前瞻窗口方案、工具结果未持久化、AbortSignal 未传递等 5 项问题 |

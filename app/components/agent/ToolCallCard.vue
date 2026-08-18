@@ -17,7 +17,6 @@ defineProps<{
 /** 工具名的中文友好显示 */
 const TOOL_LABELS: Record<string, string> = {
   calculator: '计算器',
-  current_time: '当前时间',
   web_search: '网络搜索',
   web_fetch: '网页抓取'
 }

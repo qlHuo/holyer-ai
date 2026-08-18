@@ -6,6 +6,8 @@ import type { ToolDefinition } from '~~/shared/types/provider'
  * 不使用 eval()，而是通过 Function 构造器在受限作用域中执行四则运算，
  * 仅允许数字、运算符、括号、小数点和空白字符。
  */
+// 白名单是唯一安全边界：放行的字符组合成 JS 表达式，但无字母（除 e/E）、引号、
+// 方括号等，因此无法引用变量或注入任意代码。放宽此正则 = 任意代码执行风险。
 const SAFE_EXPR_RE = /^[\d\s+\-*/().%eE]+$/
 
 function safeEvaluate(expression: string): number {

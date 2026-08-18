@@ -114,7 +114,9 @@ export class OpenAIProvider implements LLMProvider {
               for (const tc of delta.tool_calls) {
                 const existing = toolCallAccumulator.get(tc.index) ?? { id: '', name: '', arguments: '' }
                 if (tc.id) existing.id = tc.id
-                if (tc.function?.name) existing.name += tc.function.name
+                // name 用覆盖式（同 id）而非 +=：name 只在首 delta 出现不分片，
+                // 覆盖式能防御部分兼容模型在每个 delta 重复发送完整 name 导致的重复拼接
+                if (tc.function?.name) existing.name = tc.function.name
                 if (tc.function?.arguments) existing.arguments += tc.function.arguments
                 toolCallAccumulator.set(tc.index, existing)
               }
@@ -130,7 +132,6 @@ export class OpenAIProvider implements LLMProvider {
             }))
             controller.enqueue({ type: 'tool_calls', toolCalls })
           }
-          controller.enqueue({ type: 'done' })
           controller.close()
         } catch (error) {
           controller.error(error)

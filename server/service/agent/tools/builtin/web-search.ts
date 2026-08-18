@@ -56,7 +56,7 @@ export class WebSearchTool implements ExecutableTool {
     if (!query) return '错误：搜索关键词不能为空'
 
     const config = useRuntimeConfig()
-    const apiKey = (config as any).tavilyApiKey as string | undefined
+    const apiKey = config.tavilyApiKey
 
     // 合并「外部取消信号（客户端断开/Agent 超时）」与「自身 15s 超时」
     const timeoutController = new AbortController()

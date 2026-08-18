@@ -78,7 +78,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 2：自定义提示词管理 + Agent Runtime（预计 3 天）🔄 第二步进行中（完成度约 90%）· 2026-08-16
+## Phase 2：自定义提示词管理 + Agent Runtime（预计 3 天）✅ 已完成（2026-08-18）
 
 > 方案：[Phase 2 Agent 系统设计方案](phase2-agent-design.md)（含 6 个架构决策 + 9 个实现步骤） · [2026-07-30 架构修正](phase2-agent-design.md#决策-4保持-apichat-单端点agent-是-chat-的超集)（单端点、全量工具、无 Agent 开关） · [ADR-012 LLMStreamChunk](../../docs/decisions/012-llm-stream-chunk-type.md) · [ADR-013 Prompt 命名](../../docs/decisions/013-prompt-naming.md) · [ADR-014 Agent 流式 DB 写入](../../docs/decisions/014-agent-streaming-db-write.md)
 >
@@ -105,12 +105,14 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 2.5 | Agent UI | ToolCallCard 组件 + useChat SSE 事件扩展 + store Agent 状态 | ✅ (2026-08-03) |
 | 2.6 | 可观测性 + 安全护栏 | ✅ 工具权限分级 + ✅ 并发执行错误隔离 + ✅ 内容审核自愈 (2026-08-10) + ✅ AbortSignal 传到工具执行层 (2026-08-17) | ✅ (2026-08-03) |
 
-> **2026-08-10 ~ 08-16 收尾优化**（基于 [Agent ReAct 已知问题](../../docs/dev-log/2026-08-06-agent-react-known-issues.md)）：
+> **2026-08-10 ~ 08-18 收尾优化**（基于 [Agent ReAct 已知问题](../../docs/dev-log/2026-08-06-agent-react-known-issues.md)）：
 > - ✅ 工具结果持久化 — 中间轮 `assistant(tool_calls)` + `tool` 消息落库，历史工具卡片可渲染（含流式双轨收口）
 > - ✅ 文本闪烁修复 — 前瞻窗口策略（`LOOKAHEAD_CHARS=40`），最终轮恢复流式
 > - ✅ 内容审核自愈 — 试毒 → 剔除 → 降级三级方案
-> - ⚠️ 剩余：Prompt 调优、Memory 裁剪约束
-> - 📋 工具集定型（2026-08-17）：~~date_calculator/unit_converter/text_stats/json_formatter (P1)~~ 不做——纯函数工具价值低、无新学习点，扩展交由 Phase 3 MCP；~~current-time~~ 冗余——时间已由 system prompt dateContext 注入，待顺手清理（见 todo.md）
+> - ✅ Prompt 调优 — 评测-调优闭环落地（[评测-调优闭环](../../docs/dev-log/2026-08-17-prompt-eval-tuning-loop.md)，80%→100%，脚本定位为休眠资产）(2026-08-18)
+> - ✅ Memory 裁剪约束 — 抽 `findSafeCutIndex()` 显式化 tool 配对不变量，行为不变 (2026-08-18)
+> - ✅ 全链路审查 — 8 层梳理 + 7 项修复（纯聊天死代码 / SSRF 防护 / error 落库 / 类型与注释），1 项推迟（后台切回残留），详见 [审查文档](../../docs/dev-log/2026-08-18-phase2-review.md) (2026-08-18)
+> - 📋 工具集定型（2026-08-17）：~~date_calculator/unit_converter/text_stats/json_formatter (P1)~~ 不做——纯函数工具价值低、无新学习点，扩展交由 Phase 3 MCP；~~current-time~~ 冗余——时间已由 system prompt dateContext 注入，已删除（2026-08-18）
 
 > **Prompt + Agent 协同**：第二步 Agent Runtime 完工后，第一步创建的所有 Prompt 自动获得工具调用能力。用户选择自定义 Prompt 发起对话 → LLM 看到 Prompt 提示词 + 工具列表，自然按提示词引导调用工具。
 

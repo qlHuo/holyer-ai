@@ -15,7 +15,7 @@ export const messages = pgTable('messages', {
   conversationId: uuid('conversation_id')
     .references(() => conversations.id, { onDelete: 'cascade' })
     .notNull(),
-  role: varchar('role', { length: 20 }).notNull(), // 'user' | 'assistant' | 'system'
+  role: varchar('role', { length: 20 }).notNull(), // 'user' | 'assistant' | 'system' | 'tool'
   content: text('content').notNull(),
   toolCalls: jsonb('tool_calls'), // Agent 工具调用的原始 JSON
   toolCallId: varchar('tool_call_id', { length: 100 }),

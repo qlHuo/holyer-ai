@@ -40,15 +40,25 @@ export class AgentMemory {
     if (this.historyMessages.length <= this.maxHistory) return
 
     const toRemove = this.historyMessages.length - this.maxHistory
-    let cutIndex = toRemove
+    const cutIndex = this.findSafeCutIndex(toRemove)
 
-    // 如果裁剪边界的第一条是 tool role，说明它对应的 assistant(tool_calls) 被裁掉了，
-    // 往前推直到第一条不是 tool role，保证 tool call 和 result 不分离
+    this.historyMessages = this.historyMessages.slice(cutIndex)
+  }
+
+  /**
+   * 找到不拆散 tool 配对的裁剪边界。
+   *
+   * 不变量：assistant(tool_calls) 与紧随其后的 tool 结果成对出现，tool 永远跟在 assistant 后面。
+   * 由于 slice 从 cutIndex 往后全保留，assistant 被保留时它的 tool 必被保留；
+   * 唯一会出问题的是 cutIndex 恰好落在 tool 上——它的 assistant 已被裁掉，成为孤儿 tool。
+   * 因此从这里跳过连续孤儿 tool，停在下一个新轮次开头（user / assistant）。
+   */
+  private findSafeCutIndex(start: number): number {
+    let cutIndex = start
     while (cutIndex < this.historyMessages.length && this.historyMessages[cutIndex]?.role === 'tool') {
       cutIndex++
     }
-
-    this.historyMessages = this.historyMessages.slice(cutIndex)
+    return cutIndex
   }
 
   /** 估算当前消息的 token 数（简化版：中文字符/1.5 + 其他/4） */

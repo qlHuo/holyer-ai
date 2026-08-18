@@ -68,9 +68,6 @@ export interface LLMStreamToolCallsChunk {
   toolCalls: ToolCall[]
 }
 
-// LLM 响应完成接口，表示 LLM 生成的文本生成完毕
-export interface LLMStreamDoneChunk {
-  type: 'done'
-}
-
-export type LLMStreamChunk = LLMStreamTextChunk | LLMStreamToolCallsChunk | LLMStreamDoneChunk
+// LLM 流结束由 ReadableStream 的 close()（reader.read() 返回 done:true）隐式表示，
+// 不再单独发 done chunk——此前无任何消费者（Runner/filterTextChunks 都靠 read() 结束）。
+export type LLMStreamChunk = LLMStreamTextChunk | LLMStreamToolCallsChunk

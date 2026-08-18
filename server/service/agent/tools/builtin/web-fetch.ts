@@ -43,6 +43,10 @@ export class WebFetchTool implements ExecutableTool {
       if (!['http:', 'https:'].includes(parsed.protocol)) {
         return '错误：仅支持 http:// 和 https:// 协议的 URL'
       }
+      // SSRF 防护：拒绝内网/保留地址（云元数据、环回、私有网段）
+      if (isPrivateHostname(parsed.hostname)) {
+        return '错误：出于安全考虑，不允许访问内网或保留地址'
+      }
     } catch {
       return `错误：无效的 URL 格式——"${url.slice(0, 100)}"`
     }
@@ -98,6 +102,37 @@ export class WebFetchTool implements ExecutableTool {
       parameters: this.parameters
     }
   }
+}
+
+/**
+ * 判断 hostname 是否为内网/保留地址（SSRF 防护）
+ *
+ * Edge Runtime 无 dns 模块，无法做「域名 → IP 解析后再判断」的深度防护，
+ * 只能拦截字面量内网地址。这不能防 DNS rebinding（域名解析到内网 IP），
+ * 但对个人应用已足够阻断最常见的 SSRF 目标（云元数据、环回、私有网段）。
+ */
+function isPrivateHostname(hostname: string): boolean {
+  // URL.hostname 对 IPv6 返回带方括号（如 "[::1]"），先剥离
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+
+  // 环回 / localhost 及其子域
+  if (h === 'localhost' || h.endsWith('.localhost')) return true
+  // IPv6 环回 / 未指定
+  if (h === '::1' || h === '::' || h === '0:0:0:0:0:0:0:1' || h === '0:0:0:0:0:0:0:0') return true
+
+  // IPv4 字面量内网段
+  const ipv4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (ipv4) {
+    const a = Number(ipv4[1])
+    const b = Number(ipv4[2])
+    if (a === 0 || a === 127 || a === 10) return true // 0.0.0.0/8 · 127.0.0.0/8 · 10.0.0.0/8
+    if (a === 172 && b >= 16 && b <= 31) return true // 172.16.0.0/12
+    if (a === 192 && b === 168) return true // 192.168.0.0/16
+    if (a === 169 && b === 254) return true // 169.254.0.0/16（link-local + 云元数据）
+  }
+
+  // 内网保留 TLD
+  return /\.(internal|local|lan|home|corp|intranet)$/.test(h)
 }
 
 /**

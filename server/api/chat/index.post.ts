@@ -21,7 +21,6 @@ import type { ToolCall } from '~~/shared/types/provider'
 import { createSSEResponse } from '~~/server/utils/sse'
 import { ChatBodySchema } from './schema'
 import { SSE_EVENT } from '~~/shared/types/sse'
-import { filterTextChunks } from '~~/server/utils/stream'
 import { runAgentLoop } from '~~/server/service/agent/runner'
 import { toolRegistry } from '~~/server/service/agent/tools'
 
@@ -113,6 +112,8 @@ export default defineEventHandler(async (event) => {
         // 保证中间轮的 assistant(tool_calls)/tool 消息在 DB 时间线上排在最终回复之前
         let finalMsgId: string | null = null
 
+        // 工具在 tools/index.ts 无条件注册，toolDefinitions 恒非空 → 所有请求都走 Agent 路径。
+        // 原「纯聊天路径」else 分支是死代码，已删除；保留此判断作为「零工具模式」的未来扩展点。
         const toolDefinitions = toolRegistry.getDefinitions()
 
         // 有工具可用时，追加工具调用准则到 system prompt（防止 LLM 对"你好"也调工具）
@@ -129,7 +130,6 @@ export default defineEventHandler(async (event) => {
           - 涉及实时信息、最新资讯、事实核查 → 调用 web_search
           - 需要读取某个具体网页的内容 → 调用 web_fetch（需提供完整 URL）
           - 涉及多位数字的算术运算 → 调用 calculator
-          - 询问当前日期或时间 → 调用 current_time
           - 日常问候、闲聊、常识性问题 → 不要调用工具，直接回答
           - 用户明确要求「查询 / 搜索 / 查一下 / 最新」等信息时，应调用 web_search 获取最新结果，不要仅凭记忆回答
         `
@@ -224,6 +224,11 @@ export default defineEventHandler(async (event) => {
                 break
 
               case 'error':
+                // 达到 maxIterations 上限 / Agent 超时且尚无最终回复时，落一条 assistant 消息
+                // 记录错误文案，避免用户刷新后只看到工具消息、无最终回复
+                if (!finalMsgId) {
+                  finalMsgId = (await insertMessage(conv.id, { role: 'assistant', content: event.message })).id
+                }
                 controller.enqueue({
                   type: SSE_EVENT.ERROR,
                   content: event.message,
@@ -233,33 +238,6 @@ export default defineEventHandler(async (event) => {
 
               case 'done':
                 break
-            }
-          }
-        } else {
-          // ─── 纯聊天路径（零工具注册时）：现有逻辑不变 ───
-          // 提前插入空消息占位（拿到 id 供增量写）
-          const newMsg = await insertMessage(conv.id, { role: 'assistant', content: '' })
-          finalMsgId = newMsg.id
-
-          const rawStream = await llmProvider.chat(allMessages, chatOptions)
-          const llmStream = filterTextChunks(rawStream)
-
-          const reader = llmStream.getReader()
-
-          while (true) {
-            if (isCancelled) {
-              controller.close()
-              break
-            }
-
-            const { done, value } = await reader.read()
-            if (done) break
-
-            contentBuffer += value
-            controller.enqueue({ type: SSE_EVENT.TEXT, content: value, conversationId: conv.id })
-            if (contentBuffer.length - lastFlushLength >= 200) {
-              await updateMessage(newMsg.id, { content: contentBuffer })
-              lastFlushLength = contentBuffer.length
             }
           }
         }
