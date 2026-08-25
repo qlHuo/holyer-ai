@@ -4,24 +4,23 @@
 
 ## 当前状态
 
-**Phase 2 完成 ✅** — 全部任务 + 收尾优化 + 全链路审查已完成，进入 Phase 3 MCP
+**Phase 2 完成 ✅** — 工具系统 + Agent Runtime + 可观测性 + 全链路审查已收尾。Phase 3 顺序待定（MCP vs RAG）。
 
 ## 近期完成
 
-- current_time 工具清理 — 时间已由 dateContext 注入，删除工具 + 评测脚本/前端标签同步（2026-08-19）
-- Phase 2 审查 — 8 层链路梳理 + 7 项修复（死代码/SSRF/error 落库/类型注释）（2026-08-18）
-- Memory 裁剪约束 — 抽 `findSafeCutIndex()` 显式化 tool 配对不变量（2026-08-18）
-- Prompt 调优 — 评测-调优闭环落地，80%→100%（2026-08-18）
-- AbortSignal 传递 — `tool.execute()` 增加 signal 参数，取消信号下传（2026-08-17）
+- Phase 2 审查 — 8 层链路梳理 + 7 项修复（2026-08-18）
+- Prompt 调优闭环 — 80%→100%（2026-08-18）
+- AbortSignal 传递至工具执行层（2026-08-17）
 
-## 下一步
+## 下一步（顺序待决策，见下）
 
-1. **[主线] 进入 Phase 3 MCP** — HTTP/SSE 传输 + 管理界面 + 垂直场景框架
+1. **[共同前置] PromptSegment 抽象** — RAG/MCP 都会注入 prompt 片段，先落地 `server/service/prompt/`
+2. **[推荐] RAG 知识库** — 检索做成内置工具，复用 ToolRegistry，个人知识库场景价值最直接
+3. **[备选] MCP 客户端** — 工具系统外部化，学习 Agent 生态协议，但当前无明确外部 server 需求
 
 ## 阻塞 / 风险
 
-- Tavily keyless 有限频（搜索工具后端）— 功能可用，量大时需申请 key
-- 文本闪烁残留概率非零（引导文本超 40 字符窗口时）— 可选「保留引导文本」方案
+- Phase 3 顺序未定（MCP 先 vs RAG 先）— 详见本次 /progress 决策分析
 
 ## 推迟项
 

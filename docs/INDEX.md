@@ -36,6 +36,7 @@
 | 日期 | 文件 | 内容 |
 |------|------|------|
 | 08-18 | [phase2-review](dev-log/2026-08-18-phase2-review.md) | **Phase 2 全链路审查与收尾修复** — 8 层链路梳理、7 项问题分级、修复死代码/SSRF/error 落库等 7 项、后台切回残留推迟 |
+| 08-19 | [rag-knowledge-base-design](dev-log/2026-08-19-rag-knowledge-base-design.md) | **RAG 知识库功能完整设计方案** — 概念澄清（三层模型/两阶段数据流/Agentic RAG）、业界演进、语义分块/混合检索/Contextual Retrieval 四决策、Schema、三阶段实施 |
 | 08-17 | [prompt-eval-tuning-loop](dev-log/2026-08-17-prompt-eval-tuning-loop.md) | **Prompt 评测-调优闭环实践** — 5 层 prompt 分布盘点、6 条工具描述审计、评测脚本落地、80%→100% 调优、评测鸡肋与规范反思 |
 | 08-06 | [agent-content-filter-self-healing](dev-log/2026-08-06-agent-content-filter-self-healing.md) | **Agent 内容审核拦截的自愈方案** — 并行试毒、精确剔除、渐进降级、Provider 复用模式、退化版子 Agent |
 | 08-06 | [agent-react-known-issues](dev-log/2026-08-06-agent-react-known-issues.md) | **Agent ReAct 已知问题记录** — 文本闪烁根因与前瞻窗口方案、工具结果未持久化、AbortSignal 未传递等 5 项问题 |
@@ -146,4 +147,5 @@
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) |
+| **RAG 知识库** | [rag-knowledge-base-design](dev-log/2026-08-19-rag-knowledge-base-design.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

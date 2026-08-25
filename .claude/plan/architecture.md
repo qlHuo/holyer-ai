@@ -252,11 +252,17 @@ interface MCPClient {
 
 ### 3.5 RAG 管道
 
+> 📋 **完整方案**：[RAG 知识库完整设计](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md) — 语义分块、混合检索、Contextual Retrieval、Agentic 工具、三阶段 MVP 实施路径
+
 ```
-文档上传 → 解析 → 分块 (512 tokens, 滑动窗口)
-  → OpenAI Embeddings (1536d) → pgvector 存储
-  → 查询时：问题嵌入 → 余弦相似度 Top-K → 注入 LLM 上下文
+【写入】文档上传 → 语义分块(按标题层级) → (Contextual Retrieval 预生成上下文)
+         → Embeddings (qwen3.7-text-embedding 1024d) → pgvector 存储
+
+【查询】search_knowledge_base 工具 → 混合检索(向量 + tsvector 全文, RRF 融合)
+         → top-k 片段(带来源) → 注入上下文 → LLM 生成(带 citation)
 ```
+
+关键决策：语义分块（Markdown 按标题，非固定字数）、Embeddings 选 qwen3.7-text-embedding 1024 维（中文强 + 国内快 + 复用 openai SDK）、混合检索（纯向量召回差）、检索即工具（复用 ToolRegistry）、不存原文（chunk 即切片，省 R2）。
 
 ### 3.6 SSE 心跳机制
 
