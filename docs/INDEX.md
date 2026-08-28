@@ -1,6 +1,6 @@
 # 文档索引
 
-> 58 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 60 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（33 篇）
+## 开发日志（34 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +35,7 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 08-26 | [rag-image-display-boundary](dev-log/2026-08-26-rag-image-display-boundary.md) | **知识库图片展示：为什么通用平台做不到** — 检索侧/呈现侧拆分、千问 DS Dify 四层原因、语料所有权规律、三层边界设计、既有图片渲染安全缺口 |
 | 08-18 | [phase2-review](dev-log/2026-08-18-phase2-review.md) | **Phase 2 全链路审查与收尾修复** — 8 层链路梳理、7 项问题分级、修复死代码/SSRF/error 落库等 7 项、后台切回残留推迟 |
 | 08-19 | [rag-knowledge-base-design](dev-log/2026-08-19-rag-knowledge-base-design.md) | **RAG 知识库功能完整设计方案** — 概念澄清（三层模型/两阶段数据流/Agentic RAG）、业界演进、语义分块/混合检索/Contextual Retrieval 四决策、Schema、三阶段实施 |
 | 08-17 | [prompt-eval-tuning-loop](dev-log/2026-08-17-prompt-eval-tuning-loop.md) | **Prompt 评测-调优闭环实践** — 5 层 prompt 分布盘点、6 条工具描述审计、评测脚本落地、80%→100% 调优、评测鸡肋与规范反思 |
@@ -103,7 +104,7 @@
 
 ---
 
-## 学习笔记（7 篇）
+## 学习笔记（8 篇）
 
 `docs/learning-notes/` — 新技术知识点梳理。
 
@@ -116,6 +117,7 @@
 | [drizzle-orm](learning-notes/drizzle-orm.md) | **Drizzle ORM API 笔记** — Schema 定义、CRUD 操作、`.returning()`、双驱动、分层架构（以 prompts 为例） |
 | [zod](learning-notes/zod.md) | **Zod 校验库笔记** — Schema 定义、`.parse()` vs `.safeParse()`、全局错误处理、三种数据来源校验 |
 | [prompt-engineering-standards](learning-notes/prompt-engineering-standards.md) | **业界提示词工程规范** — 模板框架（CO-STAR/CRISPE/五要素/ICIO）、方法论、工程化规范 + 适用边界 |
+| [pgvector](learning-notes/pgvector.md) | **pgvector 笔记** — 向量列 vs 标量列（各家术语对照）、向量与元数据「同一行」关联原理、距离运算符、索引换速度损召回、维度不可逆 |
 
 ---
 
@@ -147,5 +149,5 @@
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) |
-| **RAG 知识库** | [rag-knowledge-base-design](dev-log/2026-08-19-rag-knowledge-base-design.md) |
+| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [pgvector](learning-notes/pgvector.md) · [ADR-003](decisions/003-neon-drizzle.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

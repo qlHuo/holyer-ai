@@ -112,7 +112,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 > - ✅ Prompt 调优 — 评测-调优闭环落地（[评测-调优闭环](../../docs/dev-log/2026-08-17-prompt-eval-tuning-loop.md)，80%→100%，脚本定位为休眠资产）(2026-08-18)
 > - ✅ Memory 裁剪约束 — 抽 `findSafeCutIndex()` 显式化 tool 配对不变量，行为不变 (2026-08-18)
 > - ✅ 全链路审查 — 8 层梳理 + 7 项修复（纯聊天死代码 / SSRF 防护 / error 落库 / 类型与注释），1 项推迟（后台切回残留），详见 [审查文档](../../docs/dev-log/2026-08-18-phase2-review.md) (2026-08-18)
-> - 📋 工具集定型（2026-08-17）：~~date_calculator/unit_converter/text_stats/json_formatter (P1)~~ 不做——纯函数工具价值低、无新学习点，扩展交由 Phase 3 MCP；~~current-time~~ 冗余——时间已由 system prompt dateContext 注入，已删除（2026-08-18）
+> - 📋 工具集定型（2026-08-17）：~~date_calculator/unit_converter/text_stats/json_formatter (P1)~~ 不做——纯函数工具价值低、无新学习点，扩展交由 Phase 4 MCP；~~current-time~~ 冗余——时间已由 system prompt dateContext 注入，已删除（2026-08-18）
 
 > **Prompt + Agent 协同**：第二步 Agent Runtime 完工后，第一步创建的所有 Prompt 自动获得工具调用能力。用户选择自定义 Prompt 发起对话 → LLM 看到 Prompt 提示词 + 工具列表，自然按提示词引导调用工具。
 
@@ -131,33 +131,58 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 3：MCP + 垂直场景框架（预计 2-3 天）
-
-| 编号 | 任务 | 内容 | 状态 |
-|------|------|------|:--:|
-| 3.1 | MCP Client | HTTP/SSE 传输 | ⬜ |
-| 3.2 | MCP 管理界面 | 连接/断开服务器、工具列表 | ⬜ |
-| 3.3 | 垂直场景框架 | 场景模板 + 快速创建机制 | ⬜ |
-| 3.4 | 示例场景 | 代码审查助手 | ⬜ |
-
----
-
-## Phase 4：RAG（预计 2-3 天）
+## Phase 3：RAG 知识库（阶段 A 预计 2-3 天）
 
 > 方案：[RAG 知识库完整设计](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)（语义分块 + 混合检索 + Contextual Retrieval + Agentic 工具，三阶段 MVP 实施）
+>
+> **顺序调整（2026-08-25）**：原 Phase 3 = MCP、Phase 4 = RAG，现对调。理由：RAG 方案已定稿、检索做成内置工具可直接复用 ToolRegistry、个人知识库场景价值最直接；MCP 当前无明确外部 server 需求，顺延为 Phase 4。详见设计文档「讨论背景」。
+
+### 阶段 A：管道验证（纯后端脚本，不做 UI）
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 4.1 | 文档处理 | 上传、解析、分块管道 | ⬜ |
-| 4.2 | 向量存储 | pgvector 表 + Embeddings | ⬜ |
-| 4.3 | 检索 API | 相似度搜索 + 上下文注入 | ⬜ |
-| 4.4 | 知识库 UI | 文档管理 + 搜索测试 | ⬜ |
+| 3.1 | Schema + pgvector | 三张表（knowledge_bases / documents / chunks）+ 四个预留列 `user_id`/`embedding_model`/`source_type`/`images`，Neon 启用 pgvector。**建表时一次加齐，事后加要写迁移** | ⬜ |
+| 3.2 | 检索管道 Service | `chunker.ts`（Markdown 按标题语义分块 + 元素分流：alt 进文本、URL 进 `images`，见[设计文档决策 1](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)）+ `embeddings.ts`（qwen3.7-text-embedding，1024 维）+ `retriever.ts`（纯向量检索） | ⬜ |
+| 3.3 | 灌库脚本 | `scripts/ingest-docs.ts` — 读 /docs 58 篇 → 分块 → 向量化 → 存库 | ⬜ |
+| 3.4 | 检索工具 + 质量验证 | `search_knowledge_base` 注册进 ToolRegistry，跑通 Agentic RAG 最小闭环 | ⬜ |
+
+> **卡点**：10 个问题召回命中率 >80% 才进阶段 B。不达标先调分块/检索策略——先把最不确定的「检索质量」跑通，避免 UI 做完发现检索是垃圾。
+
+### 阶段 B：产品化
+
+| 编号 | 任务 | 内容 | 状态 |
+|------|------|------|:--:|
+| 3.5 | 上传 API | `POST /api/rag/documents` — 与灌库脚本复用同一套 service，脚本保留作批量导入调试工具 | ⬜ |
+| 3.6 | 知识库 UI | 建库、上传 .md、文档列表/下载/删除（级联删向量） | ⬜ |
+| 3.7 | GitHub 文档引入 | 拉取仓库 .md 手动同步，复用上传管道。**相对路径图片必须转绝对 raw URL**（`./img/a.png` → `raw.githubusercontent.com/...`），否则前端渲染 404 | ⬜ |
+| 3.8 | 图片展示 + 白名单渲染 | 检索结果带出 `images`；[markdown.ts](../../app/utils/markdown.ts) image 规则校验 `env.allowedImages`（本轮检索结果集合），不在集合内降级为文字。**同时堵住文档 prompt injection 诱导外链请求的既有缺口**（详见[决策 7](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)） | ⬜ |
+
+### 阶段 C：质量增强
+
+| 编号 | 任务 | 内容 | 状态 |
+|------|------|------|:--:|
+| 3.9 | 混合检索 | 向量 + 全文关键词（tsvector）+ RRF 融合排序 | ⬜ |
+| 3.10 | Contextual Retrieval | 每 chunk 预生成上下文（个人语料几百 chunk，一次性成本极低） | ⬜ |
+| 3.11 | 引用溯源 | citation 回链原文，答案可追溯 | ⬜ |
 
 > **产品功能分层**（详见 [需求分析](requirements.md)）：
-> - **现阶段（Phase 4）**：知识库 CRUD（新建/上传/下载/删除，删文档级联删向量）+ GitHub 文档引入（手动同步，复用上传管道）
+> - **现阶段（Phase 3）**：知识库 CRUD（新建/上传/下载/删除，删文档级联删向量）+ GitHub 文档引入（手动同步，复用上传管道）
 > - **未来扩展**：分享链接（需先落地 auth）、多用户隔离（`user_id` 已预留）
 > - **明确不做**：在线编辑（格式兼容复杂）、PDF/Word/Excel/PPT（Edge 限制 + 存储压力）
 > - **已定决策**：只做 markdown；原文存 DB `content` 列（不引 R2）
+
+---
+
+## Phase 4：MCP + 垂直场景框架（预计 2-3 天）
+
+| 编号 | 任务 | 内容 | 状态 |
+|------|------|------|:--:|
+| 4.1 | MCP Client | HTTP/SSE 传输（Edge 无子进程，不支持 stdio） | ⬜ |
+| 4.2 | MCP 管理界面 | 连接/断开服务器、工具列表 | ⬜ |
+| 4.3 | 垂直场景框架 | 场景模板 + 快速创建机制 | ⬜ |
+| 4.4 | 示例场景 | 代码审查助手 | ⬜ |
+
+> **前置联动**：MCP 注入外部工具描述会让 `toolUsageGuidelines` 膨胀，这是 [todo.md](todo.md) 中 PromptSegment 抽象的既定触发点——本 Phase 开工时一并落地。
 
 ---
 
@@ -167,7 +192,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 |------|------|------|---------|
 | Cloudflare 100s 空闲超时断流 | 中 | 高 | SSE 30s 心跳 + 客户端自动重连 |
 | Neon 免费层不够用 | 中 | 中 | 监控用量，预留升级预算 |
-| DeepSeek 工具调用不稳定 | 中 | 中 | 先基于 OpenAI/Anthropic 验证 |
+| 模型工具调用不稳定 | 中 | 中 | Provider 层统一 OpenAI 兼容格式（ADR-009），换模型只改 env 的 baseUrl/apiKey，不改代码；Phase 2 已用评测集验证工具调用链路 |
 | Nuxt 4 依赖兼容问题 | 低 | 中 | 锁定版本，定期更新 |
 | 个人开发效率瓶颈 | 高 | 中 | Phase 拆分，每阶段有可用交付物 |
 
@@ -179,10 +204,13 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 # 1. 启动本地开发
 npx nuxi dev
 
-# 2. 测试多模型流式对话
+# 2. 测试流式对话
+# 注意：ADR-009 已收敛为单 Provider（OpenAI 兼容格式），请求体无 provider 字段，
+# 消息字段名是 message（数组）而非 messages。接入哪家模型由 env 的
+# NUXT_MODEL_BASE_URL / NUXT_MODEL_API_KEY 决定，代码不改。
 curl -N -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"provider":"openai","model":"gpt-4o","messages":[{"role":"user","content":"你好"}]}'
+  -d '{"model":"deepseek-v4-pro","message":[{"role":"user","content":"你好"}]}'
 
 # 3. 构建 Cloudflare 版本
 npx nuxi build
@@ -194,7 +222,7 @@ npx wrangler pages dev dist/
 npx drizzle-kit push
 
 # 6. 端到端验证项
-# - 切换模型（OpenAI → Claude → DeepSeek）对话正常
+# - 切换模型（app/constants/models.ts 中的 MODELS 列表）对话正常
 # - Agent 工具调用正确执行
 # - RAG 文档检索返回相关内容
 ```

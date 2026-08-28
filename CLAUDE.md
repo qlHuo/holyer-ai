@@ -72,7 +72,11 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 ## 当前进度
 
-Phase 1 + 1.5 全部完成 ✅。Phase 2 (Agent + Skills) 待启动。推迟项：SSE 重连、编辑重发、键盘快捷键、API 单元测试。详见 [roadmap](.claude/plan/roadmap.md)。
+Phase 1 + 1.5 + 2 全部完成 ✅（Phase 2 = Prompt 管理 + Agent Runtime + 工具系统，2026-08-18 全链路审查收尾）。
+
+下一步 **Phase 3 = RAG 知识库**——2026-08-25 与 MCP 对调后先行，从阶段 A「管道验证」起步（纯脚本，召回命中率 >80% 才做 UI）。MCP 顺延为 Phase 4。
+
+进度快照 [status.md](.claude/plan/status.md) · 全量规划 [roadmap](.claude/plan/roadmap.md) · 推迟项 [todo.md](.claude/plan/todo.md)。
 
 ## 开发期技能
 

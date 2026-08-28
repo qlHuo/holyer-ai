@@ -50,8 +50,7 @@ export default defineEventHandler(async () => {
 // schema.ts — 集中管理验证逻辑
 export const CreateConversationSchema = z.object({
   title: z.string().max(100).optional(),
-  model: z.string().min(1, 'model 是必填项'),
-  provider: z.enum(['openai', 'anthropic', 'deepseek'])
+  model: z.string().min(1, 'model 是必填项')
 })
 
 // 路由中 — 第一行就校验
