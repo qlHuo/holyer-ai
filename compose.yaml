@@ -1,0 +1,22 @@
+# 本地开发数据库（PG17 + pgvector）
+#
+# 用法（在项目根目录执行）：
+#   docker compose up -d     # 启动（首次会拉镜像并创建容器）
+#   docker compose down      # 停止（数据保留在命名卷 holyer-pg-data 里）
+#   docker compose down -v   # 停止并删除数据（⚠️ 慎用，会清空数据库）
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: holyer-pg
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: holyer
+    ports:
+      - '5432:5432'
+    volumes:
+      - holyer-pg-data:/var/lib/postgresql/data
+    # 开机自动启动：Docker Desktop 起来时，容器跟着起来
+    restart: unless-stopped
+
+volumes:
+  holyer-pg-data:

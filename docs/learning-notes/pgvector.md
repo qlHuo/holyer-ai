@@ -182,6 +182,7 @@ export const chunks = pgTable('chunks', {
 
 - [RAG 知识库完整设计](../dev-log/2026-08-19-rag-knowledge-base-design.md) — 本项目的 Schema、维度选型、Neon 配额实测
 - [知识库图片展示边界](../dev-log/2026-08-26-rag-image-display-boundary.md) — 为什么 URL 要进元数据而非向量
+- [Embedding 维度与 Matryoshka](embedding-dimensions.md) — 模型侧：能力上限 vs 锁定维度、为什么低维不亏
 - [Drizzle ORM 笔记](drizzle-orm.md) — Schema 定义与 CRUD 基础
 - [Drizzle Kit 笔记](drizzle-kit.md) — push / generate / migrate 工作流
 - [ADR-003](../decisions/003-neon-drizzle.md) — 选择 Neon + Drizzle，向量搜索定 pgvector

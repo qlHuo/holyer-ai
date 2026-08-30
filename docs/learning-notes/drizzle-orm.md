@@ -45,6 +45,7 @@ Drizzle 的 `pgTable` 列定义格式：`columnName: typeName('db_column_name', 
 | `integer('count')` | `INTEGER` | 整数 |
 | `boolean('is_active')` | `BOOLEAN` | 布尔值 |
 | `jsonb('metadata')` | `JSONB` | JSON 数据 |
+| `vector('embedding', { dimensions: 1024 })` | `VECTOR(1024)` | 向量（需 pgvector 扩展，见 [[rag-schema]]） |
 
 ### JS 属性名 vs 数据库列名
 
@@ -87,6 +88,9 @@ conversationId: uuid('conversation_id')
 
 // 可选列（无 notNull）
 toolCalls: jsonb('tool_calls')
+
+// 纯 TS 类型标注（不影响 DB 结构，见 [[rag-schema]]）
+images: jsonb('images').$type<{ url: string, alt: string }[]>()
 ```
 
 ### 索引定义

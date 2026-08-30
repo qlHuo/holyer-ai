@@ -21,7 +21,9 @@ export default defineNuxtConfig({
     modelBaseUrl: '',
     // Tavily Search API — 可选，不配则走 keyless 模式（免费，有限频）
     // 注册获取 1000 次/月免费额度：https://app.tavily.com
-    tavilyApiKey: ''
+    tavilyApiKey: '',
+    embeddingBaseUrl: '',
+    embeddingApiKey: ''
   },
 
   routeRules: {
