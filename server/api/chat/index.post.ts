@@ -147,7 +147,6 @@ export default defineEventHandler(async (event) => {
         }
 
         let contentBuffer = ''
-        let lastFlushLength = 0
 
         if (toolDefinitions.length > 0) {
           // ─── Agent 路径：AsyncGenerator<AgentEvent> → SSE ───
@@ -217,10 +216,8 @@ export default defineEventHandler(async (event) => {
                   content: event.content,
                   conversationId: conv.id
                 })
-                if (contentBuffer.length - lastFlushLength >= 200) {
-                  await updateMessage(finalMsgId!, { content: contentBuffer })
-                  lastFlushLength = contentBuffer.length
-                }
+                // 不做增量 updateMessage：每 200 字符写一次 DB 会耗尽 Cloudflare 免费计划的
+                // 50 个 subrequest 配额（长回答轻松超限），统一在流结束一次性写入（见 ADR-014）
                 break
 
               case 'error':

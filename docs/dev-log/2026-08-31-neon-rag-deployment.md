@@ -72,5 +72,5 @@ if (isNeon) {
 
 - [local-db-docker-migration](2026-08-30-local-db-docker-migration.md) — 本地库迁移 Docker（互补，本地侧）
 - [rag-stage-a-implementation](2026-08-31-rag-stage-a-implementation.md) — 阶段 A 落地（灌库脚本的上下文）
-- [message-content-sanitize](2026-09-01-message-content-sanitize.md) — 上线后的消息落库失败排查（非法字符清洗）
+- [cf-workers-subrequest-limit](2026-09-01-cf-workers-subrequest-limit.md) — 上线后的 subrequest 超限排查（Agent 增量写入代价）
 - [cloudflare-edge-notes](../learning-notes/cloudflare-edge-notes.md) — Edge 双驱动约束
