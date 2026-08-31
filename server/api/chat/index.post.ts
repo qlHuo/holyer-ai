@@ -259,10 +259,19 @@ export default defineEventHandler(async (event) => {
         if (error instanceof Error && error.name === 'AbortError') {
           return
         }
+        // Drizzle 的 DrizzleQueryError 把真正的 DB 错误藏在 cause 里（message 只含 SQL + params），
+        // 这里把 cause 揪出来：既打到日志供 wrangler tail 排查，也附到 SSE 让前端能看到真实原因。
+        const cause = (error as { cause?: { code?: string, message?: string, detail?: string } })?.cause
+        const causeText = cause
+          ? [cause.code, cause.message, cause.detail].filter(Boolean).join(' · ')
+          : ''
+        console.error('[chat] 流式处理失败:', error, causeText && `\nDB cause: ${causeText}`)
         if (!isCancelled) {
           controller.enqueue({
             type: SSE_EVENT.ERROR,
-            content: error instanceof Error ? error.message : 'LLM调用失败',
+            content: error instanceof Error
+              ? (causeText ? `${error.message}\n（数据库错误：${causeText}）` : error.message)
+              : 'LLM调用失败',
             conversationId: conv.id
           })
         }

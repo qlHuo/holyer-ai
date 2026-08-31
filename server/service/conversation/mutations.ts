@@ -7,6 +7,7 @@ import type { AddMessageInput, ConversationDetail, CreateConversationInput, Mess
 import type { Message } from '~~/shared/types/provider'
 import { conversations, messages } from '~~/server/db/schema'
 import { asc, eq, inArray } from 'drizzle-orm'
+import { sanitizeDbText } from '~~/server/utils/text'
 
 /**
  * 创建新会话: 返回完整对象
@@ -99,7 +100,7 @@ export async function addMessages(
       db.insert(messages).values({
         conversationId,
         role: msg.role,
-        content: msg.content,
+        content: sanitizeDbText(msg.content),
         toolCallId: msg.toolCallId ?? null,
         toolCalls: msg.toolCalls ?? null
       })
@@ -130,7 +131,7 @@ export async function insertMessage(
   const [row] = await db.insert(messages).values({
     conversationId,
     role: data.role,
-    content: data.content,
+    content: sanitizeDbText(data.content),
     toolCallId: data.toolCallId ?? null,
     toolCalls: data.toolCalls ?? null
   }).returning()
@@ -155,7 +156,7 @@ export async function updateMessage(
 ): Promise<void> {
   await db
     .update(messages)
-    .set(data)
+    .set({ content: sanitizeDbText(data.content) })
     .where(eq(messages.id, messageId))
 }
 

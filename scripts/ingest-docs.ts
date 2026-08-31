@@ -14,7 +14,10 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import postgres from 'postgres'
-import { drizzle } from 'drizzle-orm/postgres-js'
+import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js'
+import { neon } from '@neondatabase/serverless'
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http'
+import type { DbClient } from '../server/db'
 import * as schema from '../server/db/schema'
 import { parseMarkdown, chunkSections } from '../server/service/rag/chunker'
 import { embedTexts, EMBEDDING_MODEL } from '../server/service/rag/embeddings'
@@ -41,9 +44,20 @@ const SOURCES = [
 const BATCH_SIZE = 20 // 每批向量化的 chunk 数（减少 API 调用次数）
 
 async function main() {
-  // 2. 建连接 —— 纯 dev 脚本直接用 postgres-js，不经过 import.meta.dev 分支
-  const sql = postgres(DB_URL, { max: 10 })
-  const db = drizzle(sql, { schema })
+  // 2. 建连接 —— 按目标库选驱动：
+  //    Neon 走 HTTP（neon-http，端口 443，和生产运行时同源；postgres-js 的 TCP 5432 会 ECONNRESET）
+  //    本地 Docker 走 TCP（postgres-js，Docker 无 HTTP 端点）
+  const isNeon = DB_URL.includes('neon.tech')
+  let db: DbClient
+  let closeConnection: (() => Promise<void>) | undefined
+
+  if (isNeon) {
+    db = drizzleNeon(neon(DB_URL), { schema })
+  } else {
+    const sql = postgres(DB_URL, { max: 10 })
+    db = drizzlePostgres(sql, { schema })
+    closeConnection = () => sql.end()
+  }
 
   // 3. 清空旧数据（子表在前），保证脚本可重复运行
   await db.delete(schema.chunks)
@@ -116,7 +130,7 @@ async function main() {
   }
 
   console.log(`\n🎉 完成：${files.length} 篇文档 → ${totalChunks} 个 chunk`)
-  await sql.end()
+  if (closeConnection) await closeConnection()
 }
 
 main().catch((err) => {
