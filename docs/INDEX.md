@@ -1,6 +1,6 @@
 # 文档索引
 
-> 63 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 65 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（35 篇）
+## 开发日志（37 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +35,8 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 08-31 | [rag-stage-a-implementation](dev-log/2026-08-31-rag-stage-a-implementation.md) | **RAG 阶段 A 落地** — 管道验证到 Agentic 检索闭环、12 问召回 92%、双驱动 union/tsx/类型收窄等踩坑 |
+| 08-31 | [agent-tool-budget](dev-log/2026-08-31-agent-tool-budget.md) | **ReAct 轮数限制 vs 工具调用预算** — CPU 不是轮数约束、maxToolCalls 预算 + 优雅降级 |
 | 08-30 | [local-db-docker-migration](dev-log/2026-08-30-local-db-docker-migration.md) | **本地开发库迁移 Docker + pgvector 启用** — 原生 PG17 → Docker 官方镜像、装 vs 激活、compose 绑定项目、踩坑（PowerShell/端口/SCRAM） |
 | 08-26 | [rag-image-display-boundary](dev-log/2026-08-26-rag-image-display-boundary.md) | **知识库图片展示：为什么通用平台做不到** — 检索侧/呈现侧拆分、千问 DS Dify 四层原因、语料所有权规律、三层边界设计、既有图片渲染安全缺口 |
 | 08-18 | [phase2-review](dev-log/2026-08-18-phase2-review.md) | **Phase 2 全链路审查与收尾修复** — 8 层链路梳理、7 项问题分级、修复死代码/SSRF/error 落库等 7 项、后台切回残留推迟 |
@@ -151,6 +153,6 @@
 | **数据库** | [ADR-003](decisions/003-neon-drizzle.md) · [drizzle-kit](learning-notes/drizzle-kit.md) · [drizzle-orm](learning-notes/drizzle-orm.md) · [docker-migration](dev-log/2026-08-30-local-db-docker-migration.md) · [database-rules](../.claude/rules/database.md) |
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) |
-| **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) |
-| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
+| **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) · [工具预算](dev-log/2026-08-31-agent-tool-budget.md) |
+| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

@@ -19,7 +19,8 @@ const props = defineProps<{
 const TOOL_META: Record<string, { label: string, icon: string }> = {
   web_search: { label: '网络搜索', icon: 'i-lucide-search' },
   web_fetch: { label: '网页抓取', icon: 'i-lucide-globe' },
-  calculator: { label: '计算器', icon: 'i-lucide-calculator' }
+  calculator: { label: '计算器', icon: 'i-lucide-calculator' },
+  search_knowledge_base: { label: '知识库搜索', icon: 'i-lucide-book-open' }
 }
 
 /** 整个工具区块是否折叠（聚合头控制） */

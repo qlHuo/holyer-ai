@@ -57,6 +57,8 @@ export type AgentEvent
 
 /** Agent 运行配置 */
 export interface AgentRunConfig {
-  /** 最大 ReAct 迭代轮数，默认 3 */
+  /** 最大 ReAct 迭代轮数（默认 10，见 runner.ts DEFAULT_MAX_ITERATIONS） */
   maxIterations?: number
+  /** 工具调用总次数上限（默认 8，见 runner.ts DEFAULT_MAX_TOOL_CALLS） */
+  maxToolCalls?: number
 }

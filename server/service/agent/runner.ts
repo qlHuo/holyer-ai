@@ -20,8 +20,21 @@ import { toolRegistry } from './tools'
 import { AgentMemory } from './memory'
 import { mergeAbortSignals } from '~~/server/utils/abort'
 
+/**
+ * 两个上限的关系（重要）：
+ * - maxToolCalls（工具调用总次数）=「资源预算」，正常流程的收尾点，触达后优雅降级
+ * - maxIterations（迭代轮数）=「循环兜底」，防死循环的保险丝，仅在异常时触达
+ * - 因每个非最终轮至少 1 个工具调用，故有效轮数 ≤ maxToolCalls + 1；
+ *   默认 8 < 10，正常流程下 maxIterations 基本触达不到，仅作兜底。
+ */
 /** 最大 ReAct 迭代轮数（硬上限，防止无限循环） */
-const DEFAULT_MAX_ITERATIONS = 3
+const DEFAULT_MAX_ITERATIONS = 10
+
+/** 工具调用总次数上限（硬上限，防止过度检索烧掉 Cloudflare 子请求/CPU 配额） */
+const DEFAULT_MAX_TOOL_CALLS = 8
+
+/** 工具调用预算耗尽时，提示 LLM 直接给出最终回答 */
+const TOOL_BUDGET_EXHAUSTED_HINT = '（系统提示：已达到工具调用次数上限，请基于以上检索到的信息直接给出完整回答，不要再调用工具。）'
 
 /** Agent 整体超时（毫秒），超时后强制终止 ReAct 循环 */
 const AGENT_TIMEOUT_MS = 120_000
@@ -133,6 +146,7 @@ export async function* runAgentLoop(
   config: AgentRunConfig = {}
 ): AsyncGenerator<AgentEvent> {
   const maxIterations = config.maxIterations ?? DEFAULT_MAX_ITERATIONS
+  const maxToolCalls = config.maxToolCalls ?? DEFAULT_MAX_TOOL_CALLS
   const externalSignal = options.signal
 
   // 启动内部超时定时器——仅限制 ReAct 循环耗时，不覆盖外层 DB 操作或纯聊天路径
@@ -145,6 +159,10 @@ export async function* runAgentLoop(
   // 工具结果缓存：同一轮 Agent 运行中，相同工具+相同参数不重复执行
   // 解决 LLM "失忆"导致重复调用同一工具的问题（尤其是 Memory 裁剪后）
   const toolCache = new Map<string, { result: string, success: boolean }>()
+
+  // 工具调用预算：累计调用数 + 预算是否耗尽（耗尽后下一轮不带 tools 强制最终回答，不甩错误）
+  let totalToolCalls = 0
+  let budgetExhausted = false
 
   try {
     // 检查是否已被取消（合并外部 signal + 内部超时）
@@ -181,7 +199,8 @@ export async function* runAgentLoop(
       try {
         stream = await provider.chat(memory.getAll(), {
           ...options,
-          tools: toolRegistry.getDefinitions()
+          // 预算耗尽后不带 tools，强制 LLM 只输出最终回答
+          tools: budgetExhausted ? [] : toolRegistry.getDefinitions()
         })
       } catch (error) {
         // 非内容审核错误 → 原样抛出
@@ -279,17 +298,27 @@ export async function* runAgentLoop(
         return
       }
 
+      // 3.5 工具调用预算：累计调用数，超过上限则强制最终回答（优雅降级，不甩错误）
+      const remaining = maxToolCalls - totalToolCalls
+      if (remaining <= 0) {
+        budgetExhausted = true
+        memory.add({ role: 'user', content: TOOL_BUDGET_EXHAUSTED_HINT })
+        continue
+      }
+      const toExecute = toolCalls.slice(0, remaining)
+      totalToolCalls += toExecute.length
+
       // 4. 有 tool_calls → 中间轮
       yield { type: 'round_start', round }
 
       memory.add({
         role: 'assistant',
         content: assistantContent,
-        toolCalls
+        toolCalls: toExecute
       })
 
       // 5a. 先发出所有 tool_start 事件
-      for (const tc of toolCalls) {
+      for (const tc of toExecute) {
         yield {
           type: 'tool_start',
           toolCallId: tc.id,
@@ -312,7 +341,7 @@ export async function* runAgentLoop(
       const registeredNames = toolRegistry.list().map(t => t.name)
 
       const settled = await Promise.allSettled(
-        toolCalls.map(async (tc) => {
+        toExecute.map(async (tc) => {
           try {
             const tool = toolRegistry.get(tc.name)
             if (!tool) {
@@ -395,11 +424,40 @@ export async function* runAgentLoop(
         }
       }
 
-      // 6. 进入下一轮
+      // 6. 本轮截断（LLM 想要更多工具但预算不够）或预算恰好耗尽 → 下一轮强制最终回答
+      if (toExecute.length < toolCalls.length || totalToolCalls >= maxToolCalls) {
+        budgetExhausted = true
+        memory.add({ role: 'user', content: TOOL_BUDGET_EXHAUSTED_HINT })
+      }
+
+      // 7. 进入下一轮
     }
 
-    // 达到最大迭代轮数
-    yield { type: 'error', message: '已达到工具调用次数上限，请简化提问后重试' }
+    // 达到最大迭代轮数 → 优雅降级（与工具预算耗尽一致）：不带 tools 强制最终回答
+    memory.add({ role: 'user', content: TOOL_BUDGET_EXHAUSTED_HINT })
+    if (pendingWarning) {
+      yield { type: 'text', content: pendingWarning }
+      pendingWarning = ''
+    }
+    try {
+      const finalStream = await provider.chat(memory.getAll(), { ...options, tools: [] })
+      const reader = finalStream.getReader()
+      try {
+        while (true) {
+          if (isAborted()) break
+          const { done, value } = await reader.read()
+          if (done) break
+          if (value.type === 'text') {
+            yield { type: 'text', content: value.content }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+      yield { type: 'done' }
+    } catch (error) {
+      yield { type: 'error', message: `生成回答失败：${error instanceof Error ? error.message : '未知错误'}` }
+    }
   } finally {
     clearTimeout(timeoutId)
   }
