@@ -15,6 +15,7 @@
 - [ ] **API 单元测试** (来自 roadmap 1.31) — vitest + conversations CRUD 测试。推迟原因：conversations CRUD 无复杂业务逻辑，vitest + Nitro/Edge Runtime 集成成本高、个人项目无 CI 回归拦截需求。推迟到 Phase 2 Agent Runtime 有复杂逻辑（ReAct 循环、工具调用状态机）时再引入
 - [ ] **部署构建优化** 目前使用Cloudflare Workers，可能没有处理静态资源的CDN，后续考虑优化。
 - [ ] **PromptSegment 抽象落地**（源自 [07-09 提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) 2.2 节，仅设想未实现）— 当前 prompt 散落在 [index.post.ts](../../server/api/chat/index.post.ts)（dateContext + toolUsageGuidelines 硬编码）、system-prompt.ts、工具描述等 5 层。按设想建 `server/service/prompt/`（PromptSegment 接口 + buildPrompt() 按 priority 拼接）。推迟原因：当前 prompt 仅 2 段 + 4 工具，抽象收益不抵成本。触发点：MCP 注入工具描述、以及工具增多导致 toolUsageGuidelines 膨胀时（Agentic RAG 下检索结果走 tool 消息，不经过 system prompt 组装），片段涨到 5~6 段再落地。连带收益：解决评测脚本快照漂移（buildPrompt() 统一入口，评测直接 import 而非复制快照）。
+- [ ] **数据库迁移 Hyperdrive** (来自 RAG 线上排查 2026-09-01) — 生产用 neon-http 直连 Neon，每次 DB 读写消耗 1 次 subrequest（免费计划 50 次/请求上限）。已通过「阈值 2000 增量写入 + 中断兜底」缓解（正常 RAG 对话 ~13 次、刷新最多丢 2000 字），Hyperdrive 降级为可选优化。触发点：极端场景（超长回答 + 多轮检索）逼近上限、或想恢复高频增量写入时再评估。待验证：免费计划可用性、Nitro binding 访问、缓存一致性、连接生命周期管理。详见 [CF Workers subrequest 超限排查](/docs/dev-log/2026-09-01-cf-workers-subrequest-limit.md)
 
 ## 🔮 远期规划
 

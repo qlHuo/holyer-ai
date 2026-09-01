@@ -103,6 +103,10 @@ export default defineEventHandler(async (event) => {
         }
       }
 
+      // 最终回复消息 id 与内容缓冲提升到 try 外，供 catch 的中断兜底写入访问
+      let finalMsgId: string | null = null
+      let contentBuffer = ''
+
       try {
         // 必须要在LLM前删除并插入空message,原因在于llmProvider.chat当它 return ReadableStream 时，HTTP 响应体已经在接收数据，数据持续写入内部缓冲增加延迟
         if (regenerate) {
@@ -110,7 +114,6 @@ export default defineEventHandler(async (event) => {
         }
         // 最终回复消息 id —— 纯聊天路径提前占位；Agent 路径延后到第一个 text 事件才创建，
         // 保证中间轮的 assistant(tool_calls)/tool 消息在 DB 时间线上排在最终回复之前
-        let finalMsgId: string | null = null
 
         // 工具在 tools/index.ts 无条件注册，toolDefinitions 恒非空 → 所有请求都走 Agent 路径。
         // 原「纯聊天路径」else 分支是死代码，已删除；保留此判断作为「零工具模式」的未来扩展点。
@@ -146,7 +149,7 @@ export default defineEventHandler(async (event) => {
           signal: llmAbortController.signal
         }
 
-        let contentBuffer = ''
+        let lastFlushLength = 0
 
         if (toolDefinitions.length > 0) {
           // ─── Agent 路径：AsyncGenerator<AgentEvent> → SSE ───
@@ -216,8 +219,13 @@ export default defineEventHandler(async (event) => {
                   content: event.content,
                   conversationId: conv.id
                 })
-                // 不做增量 updateMessage：每 200 字符写一次 DB 会耗尽 Cloudflare 免费计划的
-                // 50 个 subrequest 配额（长回答轻松超限），统一在流结束一次性写入（见 ADR-014）
+                // 每累积 2000 字符增量落库一次：阈值太小（原 200）会在长回答下频繁写 DB，
+                // 耗尽 Cloudflare 免费计划的 50 次 subrequest 配额；2000 字 ≈ 1~2 分钟生成量，
+                // 既够稀疏避免超限，又保留刷新保护（最多丢最后 2000 字）
+                if (contentBuffer.length - lastFlushLength >= 2000) {
+                  await updateMessage(finalMsgId!, { content: contentBuffer })
+                  lastFlushLength = contentBuffer.length
+                }
                 break
 
               case 'error':
@@ -252,8 +260,15 @@ export default defineEventHandler(async (event) => {
           })
         }
       } catch (error) {
-        // 用户中断请求
+        // 用户中断请求：abort 前把已生成的内容兜底落库，避免刷新后「记录不存在 / 空消息残留」
         if (error instanceof Error && error.name === 'AbortError') {
+          if (contentBuffer && finalMsgId) {
+            try {
+              await updateMessage(finalMsgId, { content: contentBuffer })
+            } catch {
+              // 兜底写入失败静默忽略——已尽力，不阻塞中断流程
+            }
+          }
           return
         }
         // Drizzle 的 DrizzleQueryError 把真正的 DB 错误藏在 cause 里（message 只含 SQL + params），
