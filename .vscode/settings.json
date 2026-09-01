@@ -24,5 +24,6 @@
   },
   // TypeScript / Vue 类型检查
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "claudeCode.disableLoginPrompt": true
 }

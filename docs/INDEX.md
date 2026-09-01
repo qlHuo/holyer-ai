@@ -102,7 +102,7 @@
 
 ---
 
-## Claude Code 技巧（4 篇）
+## Claude Code 技巧（5 篇）
 
 `docs/claude-tips/` — 工具使用经验、权限配置心得。
 
@@ -112,6 +112,7 @@
 | [commands-vs-skills](claude-tips/commands-vs-skills.md) | **Commands vs Skills + 子代理** — 两种扩展机制的区别、触发方式、最佳实践 |
 | [hooks-guide](claude-tips/hooks-guide.md) | Claude Code Hook 指南 — 事件触发自动行为 |
 | [permissions-guide](claude-tips/permissions-guide.md) | Claude Code 权限配置指南 — 精细化权限控制 |
+| [codegraph](claude-tips/codegraph.md) | **CodeGraph 接入 Claude Code** — 第三方 MCP 代码知识图谱：配置步骤、两个「全局」陷阱、团队协作（产物忽略/配置提交） |
 
 ---
 
@@ -160,7 +161,7 @@
 | **性能与构建** | [perf-neon-latency](dev-log/2026-06-16-perf-neon-latency.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |
 | **数据库** | [ADR-003](decisions/003-neon-drizzle.md) · [drizzle-kit](learning-notes/drizzle-kit.md) · [drizzle-orm](learning-notes/drizzle-orm.md) · [docker-migration](dev-log/2026-08-30-local-db-docker-migration.md) · [database-rules](../.claude/rules/database.md) |
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
-| **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) |
+| **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) · [codegraph](claude-tips/codegraph.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) · [工具预算](dev-log/2026-08-31-agent-tool-budget.md) · [工具调用 UI](dev-log/2026-08-03-agent-toolcall-ui-redesign.md) |
 | **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

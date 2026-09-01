@@ -72,3 +72,14 @@ Phase 1 + 1.5 全部完成 ✅。Phase 2 (Agent + Skills) 待启动。推迟项�
 - **设计文档**：[需求分析](.Codex/plan/requirements.md) · [架构设计](.Codex/plan/architecture.md) · [实施路线图](.Codex/plan/roadmap.md)
 - **文档索引**：[docs/INDEX.md](docs/INDEX.md) — 43 篇文档的中心索引（ADR、开发日志、学习笔记、技巧）
 - **开发规则**：[`.Codex/rules/`](.Codex/rules/) — 前端、Edge Runtime、SSE、数据库专项规则
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->

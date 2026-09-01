@@ -34,7 +34,8 @@
       "Bash(node *)",
       "Bash(mkdir *)",
       "Bash(type *)",
-      "Bash(which *)"
+      "Bash(which *)",
+      "mcp__codegraph__*"
     ],
     "deny": [
       "Read(.env)",
@@ -66,6 +67,16 @@
           {
             "type": "command",
             "command": ".claude/hooks/pre-bash-guard.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph.cmd prompt-hook"
           }
         ]
       }
