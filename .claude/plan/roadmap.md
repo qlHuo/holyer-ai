@@ -137,18 +137,20 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 >
 > **顺序调整（2026-08-25）**：原 Phase 3 = MCP、Phase 4 = RAG，现对调。理由：RAG 方案已定稿、检索做成内置工具可直接复用 ToolRegistry、个人知识库场景价值最直接；MCP 当前无明确外部 server 需求，顺延为 Phase 4。详见设计文档「讨论背景」。
 
-### 阶段 A：管道验证（纯后端脚本，不做 UI）
+### 阶段 A：管道验证（纯后端脚本，不做 UI）✅ 已完成（2026-08-31，12 问召回 92%）
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 3.1 | Schema + pgvector | 三张表（knowledge_bases / documents / chunks）+ 四个预留列 `user_id`/`embedding_model`/`source_type`/`images`，Neon 启用 pgvector。**建表时一次加齐，事后加要写迁移** | ⬜ |
-| 3.2 | 检索管道 Service | `chunker.ts`（Markdown 按标题语义分块 + 元素分流：alt 进文本、URL 进 `images`，见[设计文档决策 1](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)）+ `embeddings.ts`（qwen3.7-text-embedding，1024 维）+ `retriever.ts`（纯向量检索） | ⬜ |
-| 3.3 | 灌库脚本 | `scripts/ingest-docs.ts` — 读 /docs 58 篇 → 分块 → 向量化 → 存库 | ⬜ |
-| 3.4 | 检索工具 + 质量验证 | `search_knowledge_base` 注册进 ToolRegistry，跑通 Agentic RAG 最小闭环 | ⬜ |
+| 3.1 | Schema + pgvector | 三张表（knowledge_bases / documents / chunks）+ 四个预留列 `user_id`/`embedding_model`/`source_type`/`images`，Neon 启用 pgvector。**建表时一次加齐，事后加要写迁移** | ✅ (2026-08-30) |
+| 3.2 | 检索管道 Service | `chunker.ts`（Markdown 按标题语义分块 + 元素分流：alt 进文本、URL 进 `images`，见[设计文档决策 1](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)）+ `embeddings.ts`（qwen3.7-text-embedding，1024 维）+ `retriever.ts`（纯向量检索） | ✅ (2026-08-31) |
+| 3.3 | 灌库脚本 | `scripts/ingest-docs.ts` — 读 /docs 58 篇 → 分块 → 向量化 → 存库 | ✅ (2026-08-31) |
+| 3.4 | 检索工具 + 质量验证 | `search_knowledge_base` 注册进 ToolRegistry，跑通 Agentic RAG 最小闭环 | ✅ (2026-08-31) |
 
 > **卡点**：10 个问题召回命中率 >80% 才进阶段 B。不达标先调分块/检索策略——先把最不确定的「检索质量」跑通，避免 UI 做完发现检索是垃圾。
 
 ### 阶段 B：产品化
+
+> 实施方案：[2026-09-02 rag-phase-b-implementation](../../docs/dev-log/2026-09-02-rag-phase-b-implementation.md)（M0 安全收窄前置 → M1 上传 API → M2 UI+选库器 → M3 图片端到端 → M4 GitHub 引入）
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|

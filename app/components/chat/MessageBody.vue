@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { AgentToolCallItem } from '~/types/agent'
+import { collectAllowedImagesFromTools } from '~/utils/allowedImages'
 
-defineProps<{
+const props = defineProps<{
   /** 聊天消息内容 */
   content: string
   /** 聊天消息角色 */
@@ -16,6 +17,11 @@ defineProps<{
 }>()
 
 const chatStore = useChatStore()
+
+/** 本轮允许渲染的图片白名单（仅助手消息）：从同轮 search_knowledge_base 结果里提取图片 URL */
+const allowedImages = computed(() =>
+  props.role === 'assistant' ? collectAllowedImagesFromTools(props.tools) : new Set<string>()
+)
 </script>
 
 <template>
@@ -52,6 +58,7 @@ const chatStore = useChatStore()
         v-if="role === 'assistant'"
         :content="content"
         :is-streaming="isStreaming ?? false"
+        :allowed-images="allowedImages"
       />
 
       <!-- ===== 用户消息纯文本 ===== -->

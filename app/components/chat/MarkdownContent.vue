@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PropType } from 'vue'
 import { getMarkdownParser, preprocessMarkdown } from '~/utils/markdown'
 
 const props = defineProps({
@@ -11,6 +12,14 @@ const props = defineProps({
   isStreaming: {
     type: Boolean,
     default: false
+  },
+  /**
+   * 本轮允许渲染的图片 URL 集合（来自 search_knowledge_base 检索结果的图片）。
+   * 缺省空集 → markdown 图片一律降级为文字占位（白名单收窄，防 prompt injection 外链）。
+   */
+  allowedImages: {
+    type: Set as PropType<Set<string>>,
+    default: () => new Set<string>()
   }
 })
 
@@ -21,7 +30,7 @@ const toast = useToast()
 const renderedHtml = computed(() => {
   const md = getMarkdownParser()
   const processed = preprocessMarkdown(props.content)
-  return md.render(processed)
+  return md.render(processed, { allowedImages: props.allowedImages })
 })
 
 /** 容器 DOM 引用（用于 mermaid 查询作用域） */

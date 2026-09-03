@@ -1,34 +1,31 @@
 # 项目进度快照
 
-> 更新于 2026-08-26
+> 更新于 2026-09-01
 
 ## 当前状态
 
-**Phase 2 已完成 ✅**（2026-08-18）— 下一步 **Phase 3 = RAG 知识库**（2026-08-25 与 MCP 对调，MCP 顺延 Phase 4）。RAG 方案已定稿，待启动阶段 A 实施。
+**Phase 3 = RAG 知识库** — 阶段 A 已完成 ✅（2026-08-31，12 问召回 92%，达标 >80%），已上线 Neon。进入 **阶段 B 产品化**。
 
 ## 近期完成
 
-- RAG 决策 7 图片处理 — 只存元数据 + 按次白名单渲染，顺带堵住既有外链缺口（2026-08-26）
-- RAG 知识库完整设计 — 六决策 + Schema + 三阶段实施路径（2026-08-25）
-- Phase 2 全链路审查 — 8 层梳理 + 7 项修复（2026-08-19）
-- Prompt 评测-调优闭环 — 命中率 80%→100%（2026-08-18）
-- AbortSignal 传递至工具执行层（2026-08-17）
+- 3.4 检索工具 + 质量验证 — `search_knowledge_base` 注册进 ToolRegistry，Agentic 闭环跑通（2026-08-31）
+- 3.2 / 3.3 检索管道 Service + 灌库脚本 — chunker/embeddings/retriever 纯函数三层 + `ingest-docs.ts`（2026-08-31）
+- 3.1 Schema + pgvector — Docker 迁移 + Neon 启用 pgvector，三表 + 四预留列（2026-08-30）
+- subrequest 超限修复 — 增量写入阈值 200→2000 + 中断兜底，避免打爆 CF 免费 50 次配额（2026-09-01）
 
 ## 下一步
 
-1. **[P0] 3.1 Schema + pgvector** — 三张表 + 四个预留列（`user_id`/`embedding_model`/`source_type`/`images`），Neon 启用 pgvector
-2. **[P0] 3.2 检索管道 Service** — chunker（Markdown 按标题）+ embeddings（qwen3.7，1024 维）+ retriever（纯向量）
-3. **[P0] 3.3 灌库脚本** — `scripts/ingest-docs.ts` 读 /docs 58 篇灌库
-4. **[P0] 3.4 检索工具 + 质量验证** — `search_knowledge_base` 注册进 ToolRegistry，10 问召回 >80% 才进阶段 B
-
-> PromptSegment 抽象已从下一步移除：RAG 设计定为 MVP 暂硬编码，触发点顺延到 MCP 注入工具描述时。
+1. **[P0] 3.5 上传 API** — `POST /api/rag/documents`，与灌库脚本复用同一套 service
+2. **[P0] 3.6 知识库 UI** — 建库、上传 .md、文档列表/下载/删除（级联删向量）
+3. **[P0] 3.7 GitHub 文档引入** — 拉取仓库 .md，相对路径图片转绝对 raw URL
+4. **[P0] 3.8 图片展示 + 白名单渲染** — 检索结果带出 `images`，白名单校验堵住 prompt injection 外链缺口
 
 ## 阻塞 / 风险
 
-- 检索质量不达标是 RAG 最大风险 — 缓解：阶段 A 脚本先验证，不达标先调分块/检索策略，达标才投 UI
-- Embeddings 维度需在阶段 A 一次敲定（qwen3.7 / 1024 维），定错要重建全库
-- 遗留：`server/service/llm/deepseek.ts` 是 provider 收敛后的废弃学习代码，无任何引用，可择机删
+- 综合题召回是已知难例（「整体流程」跨文件查询纯向量检索力不从心）— 阶段 C 混合检索 + Contextual Retrieval 解决
+- 3.7 相对路径图片必须转绝对 raw URL，否则前端渲染 404
+- subrequest 配额 — 已用阈值 2000 缓解；Hyperdrive 降级为可选优化（见 todo）
 
 ## 推迟项
 
-todo.md 中有 9 项待办，详见 [todo.md](todo.md)
+todo.md 中有 10 项待办（新增「数据库迁移 Hyperdrive」），详见 [todo.md](todo.md)

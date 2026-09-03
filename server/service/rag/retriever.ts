@@ -9,14 +9,17 @@
 
 import { sql } from 'drizzle-orm'
 import type { DbClient } from '../../db'
+import type { ChunkImage } from '../../db/schema'
 
-/** 检索结果（带来源标注，供引用溯源） */
+/** 检索结果（带来源标注 + 附图元数据，供引用溯源与图片白名单） */
 export interface SearchResult {
   chunkId: string
   documentId: string
   documentTitle: string
   chunkIndex: number
   content: string
+  /** 该 chunk 的图片元数据（决策 7：不参与向量化，随文带出供渲染） */
+  images: ChunkImage[]
   score: number // 余弦相似度 0~1，越高越相关
 }
 
@@ -33,7 +36,26 @@ interface RawRow {
   chunk_index: number
   content: string
   document_title: string
+  images: string | null // jsonb 经 ::text 取出，规避双驱动 jsonb 返回形状差异
   score: number | string
+}
+
+/** 解析 images 文本：非法/空 → [] */
+function parseImages(text: string | null | undefined): ChunkImage[] {
+  if (!text) return []
+  try {
+    const arr = JSON.parse(text) as unknown
+    if (Array.isArray(arr)) {
+      return arr.filter((x): x is ChunkImage =>
+        x !== null && typeof x === 'object'
+        && typeof (x as ChunkImage).url === 'string'
+        && typeof (x as ChunkImage).alt === 'string'
+      )
+    }
+  } catch {
+    // 非法 JSON → 视为无图
+  }
+  return []
 }
 
 /**
@@ -59,6 +81,7 @@ export async function searchChunks(
       c.kb_id,
       c.chunk_index,
       c.content,
+      c.images::text AS images,
       d.title AS document_title,
       1 - (c.embedding <=> ${vecStr}::vector) AS score
     FROM chunks c
@@ -77,6 +100,7 @@ export async function searchChunks(
     documentTitle: row.document_title,
     chunkIndex: row.chunk_index,
     content: row.content,
+    images: parseImages(row.images),
     score: Number(row.score)
   }))
 }

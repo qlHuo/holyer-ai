@@ -84,16 +84,34 @@ export function getMarkdownParser(): MarkdownIt {
     return defaultLinkOpen(tokens, idx, options, env, self)
   }
 
-  // 图片：懒加载
+  // 图片：白名单 + 懒加载
+  // 安全（RAG 决策 7 边界三）：markdown 原生图片语法会渲染 <img> 并让浏览器请求任意地址，
+  // 是 prompt injection / LLM 幻觉诱导外链的敞开口子。这里只放行「显式白名单」内的绝对 http(s) URL，
+  // 其余降级为文字占位、不发请求。白名单 env.allowedImages 由本轮 search_knowledge_base 返回的图片
+  // URL 集合注入（普通聊天缺省为空集 → 一律降级）。
   const defaultImage
     = _md.renderer.rules.image
       ?? function (tokens, idx, options, _env, self) {
         return self.renderToken(tokens, idx, options)
       }
 
+  function escapeHtmlAttr(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
   _md.renderer.rules.image = function (tokens, idx, options, env, self) {
     const token = tokens[idx]
     if (!token) return defaultImage(tokens, idx, options, env, self)
+
+    const src = token.attrGet('src') ?? ''
+    const alt = token.children?.[0]?.content ?? ''
+    const allowedImages = (env?.allowedImages as Set<string> | undefined) ?? new Set<string>()
+
+    // 非绝对 http(s)（如本地文档的相对路径图）或不在本轮白名单 → 降级为文字，不发请求
+    if (!/^https?:\/\//i.test(src) || !allowedImages.has(src)) {
+      const label = alt ? `[图片：${escapeHtmlAttr(alt)}]` : '[图片]'
+      return `<span class="text-muted">${label}</span>`
+    }
 
     token.attrSet('loading', 'lazy')
     return defaultImage(tokens, idx, options, env, self)

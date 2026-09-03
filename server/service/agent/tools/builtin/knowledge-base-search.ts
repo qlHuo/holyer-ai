@@ -56,8 +56,17 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
       }
 
       // 4. 格式化结果（带来源，供 LLM 引用溯源）
+      //    命中 chunk 的附图以 markdown 拼在片段后（仅绝对 http(s) URL；相对路径丢弃，防请求应用源）。
+      //    这样结果文本经 TOOL_END 落库 + 进 memory：LLM 可见并可引用图片，前端也能从结果
+      //    提取出本轮白名单（见 app/utils/allowedImages.ts）。
       return results
-        .map((r, i) => `${i + 1}. [来源：${r.documentTitle}]（相似度 ${r.score.toFixed(2)}）\n${r.content}`)
+        .map((r, i) => {
+          const imageLines = r.images
+            .filter(img => /^https?:\/\//i.test(img.url))
+            .map(img => `\n![${img.alt}](${img.url})`)
+            .join('')
+          return `${i + 1}. [来源：${r.documentTitle}]（相似度 ${r.score.toFixed(2)}）\n${r.content}${imageLines}`
+        })
         .join('\n\n')
     } catch (err) {
       return `检索失败：${err instanceof Error ? err.message : '未知错误'}`

@@ -48,7 +48,8 @@ export const knowledgeBases = pgTable('knowledge_bases', {
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description').notNull().default(''),
   userId: uuid('user_id'), // 预留：多用户隔离，加 auth 时启用
-  createdAt: timestamp('created_at').defaultNow().notNull()
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 })
 
 // 文档（所属知识库，原文 content 存 DB 支持下载）

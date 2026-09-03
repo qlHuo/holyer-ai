@@ -1,6 +1,6 @@
 # 文档索引
 
-> 72 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 73 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（44 篇）
+## 开发日志（45 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +35,7 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 09-02 | [rag-phase-b-implementation](dev-log/2026-09-02-rag-phase-b-implementation.md) | **RAG 阶段 B 产品化实施方案** — 上传 API / 知识库 UI / 聊天选库器 / GitHub 浏览器编排引入 / 图片白名单端到端；G1-G4 缺口盘点、CF subrequest 铁律、M0-M4 里程碑 |
 | 09-01 | [cf-workers-subrequest-limit](dev-log/2026-09-01-cf-workers-subrequest-limit.md) | **CF Workers subrequest 超限排查** — RAG 长回答下「每 200 字符增量写入」打爆 50 次配额、回归 ADR-014 一次性写入、暴露 cause 才定位真因 |
 
 ### 2026-08
@@ -163,5 +164,5 @@
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) · [codegraph](claude-tips/codegraph.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) · [工具预算](dev-log/2026-08-31-agent-tool-budget.md) · [工具调用 UI](dev-log/2026-08-03-agent-toolcall-ui-redesign.md) |
-| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
+| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |
