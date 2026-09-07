@@ -78,6 +78,20 @@ colorMode.preference = 'dark'     // 手动切换
 - Tailwind CSS v4 使用 **CSS 驱动配置**（`@theme` 指令在 `app/assets/css/main.css` 中），不需要 `tailwind.config.ts`（v4 已废弃 JS 配置文件）
 - Nuxt UI v4 组件使用语义化颜色 token（`bg-(--ui-bg)` 等），不硬编码颜色值
 
+## hover 交互反馈规范
+
+容器类 hover 反馈（卡片、列表行、可点击面板）只用 **背景色 / border 色 / box-shadow** 表达，**不要用 transform 位移**（如 `-translate-y-*`）做 hover 微交互——位移会「推挤」相邻元素观感，也让亮暗/低动效场景不稳定。
+
+```html
+<!-- ✅ 正确：hover 用 border / shadow / bg 反馈 -->
+<div class="rounded-lg border border-default hover:border-primary hover:shadow-sm transition-colors" />
+
+<!-- ❌ 错误：hover 位移（transform）做反馈 -->
+<div class="hover:-translate-y-0.5 hover:shadow-lg" />
+```
+
+需要位移的进场动画（如列表交错入场、弹层浮现）走一次性 `@keyframes` 动画，不进 hover 态。
+
 ## 状态管理 (Pinia)
 
 **Nuxt 4 不自带 Pinia**，必须显式安装：

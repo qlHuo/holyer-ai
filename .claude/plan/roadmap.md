@@ -151,13 +151,15 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 ### 阶段 B：产品化
 
 > 实施方案：[2026-09-02 rag-phase-b-implementation](../../docs/dev-log/2026-09-02-rag-phase-b-implementation.md)（M0 安全收窄前置 → M1 上传 API → M2 UI+选库器 → M3 图片端到端 → M4 GitHub 引入）
+>
+> **阶段 B 进度（2026-09-06）**：M0 + M1 已完成（3.5 上传 API + KB CRUD + ingest service 抽出）。**M2 前半（3.6 知识库 UI）已交付**（2026-09-06，独立实现未抽公共组件）：建/改/删库、文档上传(同名 409)/列表/下载/删除；**文档在线编辑（markdown）预留**单独实现；聊天选库器随后续单做。M3 图片端到端 / M4 GitHub 引入 待做。
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 3.5 | 上传 API | `POST /api/rag/documents` — 与灌库脚本复用同一套 service，脚本保留作批量导入调试工具 | ⬜ |
-| 3.6 | 知识库 UI | 建库、上传 .md、文档列表/下载/删除（级联删向量） | ⬜ |
+| 3.5 | 上传 API | `POST /api/rag/documents` — 与灌库脚本复用同一套 service，脚本保留作批量导入调试工具 | ✅ (2026-09-03) |
+| 3.6 | 知识库 UI | 建库/编辑/删除、上传 .md、文档列表/下载/删除（级联删向量）。**文档在线编辑预留**（先交付上传/列表/下载/删除） | ✅ (2026-09-06) |
 | 3.7 | GitHub 文档引入 | 拉取仓库 .md 手动同步，复用上传管道。**相对路径图片必须转绝对 raw URL**（`./img/a.png` → `raw.githubusercontent.com/...`），否则前端渲染 404 | ⬜ |
-| 3.8 | 图片展示 + 白名单渲染 | 检索结果带出 `images`；[markdown.ts](../../app/utils/markdown.ts) image 规则校验 `env.allowedImages`（本轮检索结果集合），不在集合内降级为文字。**同时堵住文档 prompt injection 诱导外链请求的既有缺口**（详见[决策 7](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)） | ⬜ |
+| 3.8 | 图片展示 + 白名单渲染 | 检索结果带出 `images`；[markdown.ts](../../app/utils/markdown.ts) image 规则校验 `env.allowedImages`（本轮检索结果集合），不在集合内降级为文字。**同时堵住文档 prompt injection 诱导外链请求的既有缺口**（详见[决策 7](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)） | 🔄 |
 
 ### 阶段 C：质量增强
 

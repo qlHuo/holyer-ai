@@ -93,6 +93,11 @@ function handleToPrompts() {
   navigateTo('/prompts')
   emit('close')
 }
+function handleToRag() {
+  chatStore.currentConvId = null
+  navigateTo('/rag')
+  emit('close')
+}
 </script>
 
 <template>
@@ -133,6 +138,18 @@ function handleToPrompts() {
           class="w-4 h-4 shrink-0"
         />
         <span class="text-sm">提示词管理</span>
+      </div>
+      <div
+        class="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg cursor-pointer
+               hover:bg-default text-dimmed transition-colors"
+        :class="{ 'bg-primary/10 text-primary!': route.path.startsWith('/rag') }"
+        @click="handleToRag"
+      >
+        <UIcon
+          name="i-lucide-database"
+          class="w-4 h-4 shrink-0"
+        />
+        <span class="text-sm">知识库管理</span>
       </div>
     </div>
     <!-- ═══════════════════════════════════════════ -->
