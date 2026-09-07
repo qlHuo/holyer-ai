@@ -40,6 +40,7 @@ async function handleDelete() {
   <UModal
     v-model:open="modalOpen"
     title="删除提示词"
+    :ui="{ footer: 'justify-end' }"
   >
     <template #body>
       <div class="flex flex-col items-center text-center gap-4 py-4">
@@ -64,22 +65,20 @@ async function handleDelete() {
     </template>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          @click="emit('close')"
-        >
-          取消
-        </UButton>
-        <UButton
-          color="error"
-          :loading="deleting"
-          @click="handleDelete"
-        >
-          删除
-        </UButton>
-      </div>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        @click="emit('close')"
+      >
+        取消
+      </UButton>
+      <UButton
+        color="error"
+        :loading="deleting"
+        @click="handleDelete"
+      >
+        删除
+      </UButton>
     </template>
   </UModal>
 </template>

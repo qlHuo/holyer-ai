@@ -48,10 +48,33 @@ function closeDeleteModal() {
 <template>
   <div class="flex flex-col h-full min-h-0">
     <!-- ========== 顶部标题栏 ========== -->
-    <div class="shrink-0 flex items-center justify-between p-4">
+    <div class="shrink-0 flex items-center justify-between gap-3 p-4">
+      <div class="flex items-baseline gap-2 min-w-0">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center"
+          >
+            <UIcon
+              name="i-lucide-bookmark"
+              class="w-3.5 h-3.5"
+            />
+          </div>
+          <h1 class="text-lg font-semibold text-highlighted tracking-tight">
+            提示词
+          </h1>
+        </div>
+        <span
+          v-if="!promptStore.loading"
+          class="text-xs text-dimmed truncate"
+        >
+          {{ promptStore.list.length }} 个
+        </span>
+      </div>
+
       <UButton
         icon="i-lucide-plus"
         color="primary"
+        class="shrink-0"
         @click="openCreate"
       >
         新建提示词

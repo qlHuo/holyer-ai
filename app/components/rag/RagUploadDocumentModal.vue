@@ -115,7 +115,7 @@ async function handleSubmit({ data }: { data: UploadFormState }) {
   <UModal
     v-model:open="modalOpen"
     title="上传文档"
-    :ui="{ content: 'sm:max-w-[560px]' }"
+    :ui="{ content: 'sm:max-w-[560px]', footer: 'justify-end' }"
   >
     <template #body>
       <UForm
@@ -191,24 +191,22 @@ async function handleSubmit({ data }: { data: UploadFormState }) {
     </template>
 
     <template #footer>
-      <div class="flex w-full justify-end gap-2">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          :disabled="uploading"
-          @click="emit('close')"
-        >
-          取消
-        </UButton>
-        <UButton
-          color="primary"
-          :loading="uploading"
-          icon="i-lucide-upload"
-          @click="formRef?.submit()"
-        >
-          上传
-        </UButton>
-      </div>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        :disabled="uploading"
+        @click="emit('close')"
+      >
+        取消
+      </UButton>
+      <UButton
+        color="primary"
+        :loading="uploading"
+        icon="i-lucide-upload"
+        @click="formRef?.submit()"
+      >
+        上传
+      </UButton>
     </template>
   </UModal>
 </template>

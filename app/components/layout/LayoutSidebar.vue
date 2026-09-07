@@ -265,6 +265,7 @@ function handleToRag() {
     <UModal
       v-model:open="showDeleteModal"
       title="删除对话"
+      :ui="{ footer: 'justify-end' }"
     >
       <template #body>
         <p class="text-sm text-(--ui-text)">
@@ -272,21 +273,19 @@ function handleToRag() {
         </p>
       </template>
       <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            @click="() => { deletingId = null }"
-          >
-            取消
-          </UButton>
-          <UButton
-            color="error"
-            @click="handleDelete"
-          >
-            删除
-          </UButton>
-        </div>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          @click="() => { deletingId = null }"
+        >
+          取消
+        </UButton>
+        <UButton
+          color="error"
+          @click="handleDelete"
+        >
+          删除
+        </UButton>
       </template>
     </UModal>
   </div>

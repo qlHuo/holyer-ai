@@ -81,7 +81,7 @@ async function handleSubmit({ data }: { data: KbFormState }) {
   <UModal
     v-model:open="modalOpen"
     :title="editingKb ? '编辑知识库' : '新建知识库'"
-    :ui="{ content: 'sm:max-w-[560px]' }"
+    :ui="{ content: 'sm:max-w-[560px]', footer: 'justify-end' }"
   >
     <template #body>
       <UForm
@@ -121,23 +121,21 @@ async function handleSubmit({ data }: { data: KbFormState }) {
     </template>
 
     <template #footer>
-      <div class="flex w-full justify-end gap-2">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          :disabled="saving"
-          @click="emit('close')"
-        >
-          取消
-        </UButton>
-        <UButton
-          color="primary"
-          :loading="saving"
-          @click="formRef?.submit()"
-        >
-          {{ editingKb ? '保存修改' : '创建' }}
-        </UButton>
-      </div>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        :disabled="saving"
+        @click="emit('close')"
+      >
+        取消
+      </UButton>
+      <UButton
+        color="primary"
+        :loading="saving"
+        @click="formRef?.submit()"
+      >
+        {{ editingKb ? '保存修改' : '创建' }}
+      </UButton>
     </template>
   </UModal>
 </template>

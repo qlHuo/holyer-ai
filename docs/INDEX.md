@@ -1,6 +1,6 @@
 # 文档索引
 
-> 73 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 75 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（45 篇）
+## 开发日志（46 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +35,7 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 09-06 | [rag-ui-component-reuse](dev-log/2026-09-06-rag-ui-component-reuse.md) | **RAG 知识库 UI 实现 + 公共组件复用清单** — 3.6 知识库管理 UI 交付、prompts/rag 成对重复盘点、候选抽取清单（待 UI 稳定后单独做专项） |
 | 09-02 | [rag-phase-b-implementation](dev-log/2026-09-02-rag-phase-b-implementation.md) | **RAG 阶段 B 产品化实施方案** — 上传 API / 知识库 UI / 聊天选库器 / GitHub 浏览器编排引入 / 图片白名单端到端；G1-G4 缺口盘点、CF subrequest 铁律、M0-M4 里程碑 |
 | 09-01 | [cf-workers-subrequest-limit](dev-log/2026-09-01-cf-workers-subrequest-limit.md) | **CF Workers subrequest 超限排查** — RAG 长回答下「每 200 字符增量写入」打爆 50 次配额、回归 ADR-014 一次性写入、暴露 cause 才定位真因 |
 
