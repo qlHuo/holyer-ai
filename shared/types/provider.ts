@@ -39,12 +39,28 @@ export interface ToolCall {
 }
 
 /**
+ * 工具执行上下文 — 会话级配置，runner 透传给每个工具的 execute()
+ *
+ * 工具保持通用（不感知业务），需要"会话级"信息时从 ctx 读，而不是把业务逻辑写进工具。
+ * 目前只服务知识库检索的范围约束（[knowledge-base-search.ts]）：
+ * - kbIds: 限定检索范围（用户选了「指定知识库」）
+ * - disabledTools: 本轮要禁用的工具名（用户选了「关闭知识库引用」→ 剔除 search_knowledge_base）
+ */
+export interface ToolContext {
+  /** 限定 search_knowledge_base 的检索范围（custom 模式注入，空/未传则检索全部） */
+  kbIds?: string[]
+  /** 本轮要禁用的工具名（off 模式注入） */
+  disabledTools?: string[]
+}
+
+/**
  * 聊天选项接口，表示一次对话的配置选项，包括模型名称、温度、最大 token 数、可用工具和系统提示词
  * - model: 使用的 LLM 模型名称，例如 "gpt-4"
  * - temperature: 生成文本的随机程度，值越高生成的文本越随机，默认为 0.7
  * - maxTokens: 生成文本的最大 token 数，默认为 2048
  * - tools: 可用工具列表，LLM 可以根据需要调用这些工具
  * - systemPrompt: 系统提示词，用于指导 LLM 的行为和回答风格
+ * - toolContext: 会话级工具上下文，runner 透传给工具 execute（见 ToolContext）
 */
 export interface ChatOptions {
   model: string
@@ -54,6 +70,8 @@ export interface ChatOptions {
   systemPrompt?: string
   /** AbortSignal — Provider 实现层用它取消底层的 LLM API 调用 */
   signal?: AbortSignal
+  /** 会话级工具上下文，runner 逐轮透传给工具 execute */
+  toolContext?: ToolContext
 }
 
 // LLM 响应流接口，表示 LLM 生成的文本流，包含文本内容

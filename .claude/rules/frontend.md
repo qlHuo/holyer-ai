@@ -22,6 +22,36 @@ description: 前端开发规范 — Nuxt UI v4 组件用法、暗黑模式、路
 - Chat 组件套件：`ChatMessages`, `ChatMessage`, `ChatPrompt`, `ChatReasoning`, `ChatTool`, `ChatShimmer`
 - 其它常用组件：`UButton`, `UInput`, `UModal`, `USlideover`, `UDropdownMenu`, `UAvatar`
 
+## 组件复用：Nuxt UI 优先，禁止自造
+
+**硬约束**：Nuxt UI v4 能达成的交互，**禁止手写 `<div>`/`<button>`/`<span>` + lucide 图标去拼装一个"假组件"**。写任何选择、表单、弹层、提示类交互前，先问一句"Nuxt UI 有没有现成组件？"
+
+Nuxt UI v4 已覆盖的语义件（全覆盖时用它们，不自己写）：
+
+| 场景 | 用 Nuxt UI 组件 |
+|------|----------------|
+| 按钮 | `UButton`（`icon`/`label`/`trailing-icon`/`:color`/`:variant`/`size`） |
+| 输入/单行 | `UInput` |
+| 多行 | `UTextarea` |
+| 单选 | `URadioGroup`（`:items="[{value,label}]"` + `v-model`） |
+| 复选（单个） | `UCheckbox` |
+| 复选（一组） | `UCheckboxGroup`（`:items` + `v-model` 数组 + `#label` slot 自定义行） |
+| 下拉单选 | `USelectMenu` / `USelect` |
+| 下拉菜单/多级 | `UDropdownMenu` |
+| 弹层(点击/hover) | `UPopover`（`mode="click"|"hover"` + `#content`） |
+| 弹窗 | `UModal` |
+| 状态徽标 | `UBadge` / `UChip` |
+| 悬停提示 | `UTooltip` |
+
+**反例（本项目真实踩坑，09-08 已修正）**：知识库选择器 `ChatKnowledgeBaseSelector` 曾手写 `<span>` 触发 pill + `<button>` 行 + `i-lucide-check-square`/`i-lucide-square` 图标冒充勾选框 → 应改用 `UButton`（pill 触发）+ `URadioGroup`（模式）+ `UCheckboxGroup` 的 `#label` slot（库多选，保留彩色身份块）。
+
+**判断标准**：
+- 复选框就该是 `UCheckbox`，不是 `i-lucide-check-square` 图标
+- 单选就该是 `URadioGroup`，不是 `i-lucide-circle`/`i-lucide-circle-dot` 图标
+- 下拉就该是 `USelectMenu`/`UDropdownMenu`/`UPopover`，不是手写 `<div>` + `position:absolute` 弹层
+
+**允许的自定义范围**：纯布局容器（`flex`/`grid`/内边距）、Nuxt UI 确实未覆盖的极特殊交互。此时才允许原生元素/自定义组件，但交互状态（选中/勾选/展开）仍要用 Nuxt UI 或语义化的 `aria`，**不得用 lucide 图标冒充交互形态**。
+
 ## 表单规范
 
 **硬约束**：表单必须用 Nuxt UI v4 的 `<UForm>` 组件 + Zod Schema 校验，**禁止手写 `<div>` + `<input>` + 手动 validate**。

@@ -37,7 +37,7 @@ function handleClear() {
     :items="selectItems"
     value-key="value"
     :search-input="false"
-    :content="{ side: 'top', sideOffset: 6, collisionPadding: 8 }"
+    :content="{ side: 'top', align: 'start', sideOffset: 6, collisionPadding: 8 }"
     size="xs"
     color="neutral"
     variant="soft"
@@ -55,13 +55,13 @@ function handleClear() {
                font-medium leading-none transition-all select-none shrink-0"
         :class="activePrompt
           ? [
-            'border-(--ui-primary)/30 bg-(--ui-primary)/8 text-(--ui-primary)',
-            'hover:bg-(--ui-primary)/12 hover:border-(--ui-primary)/40',
+            'border-primary/30 bg-primary/8 text-primary',
+            'hover:bg-primary/12 hover:border-primary/40',
             'shadow-[0_0_8px_-3px_var(--ui-primary)]'
           ]
           : [
-            'border-(--ui-border) bg-(--ui-bg-elevated)/60 text-(--ui-text-dimmed)',
-            'hover:border-(--ui-border)/80 hover:text-(--ui-text) hover:bg-(--ui-bg-elevated)'
+            'border-default bg-elevated/60 text-dimmed',
+            'hover:border-default/80 hover:text-default hover:bg-elevated'
           ]"
       >
         <UIcon
@@ -76,8 +76,8 @@ function handleClear() {
           v-if="activePrompt"
           type="button"
           class="shrink-0 rounded-full p-0.5 -mr-0.5
-                 text-(--ui-primary)/60 hover:text-(--ui-primary)
-                 hover:bg-(--ui-primary)/10 transition-colors"
+                 text-primary/60 hover:text-primary
+                 hover:bg-primary/10 transition-colors"
           tabindex="-1"
           @click.stop.prevent="handleClear"
         >
@@ -97,11 +97,11 @@ function handleClear() {
 
     <!-- ========== 头部：标题 + 计数 ========== -->
     <template #content-top>
-      <div class="flex items-center justify-between px-3 py-2 border-b border-(--ui-border)">
-        <span class="text-xs text-(--ui-text-dimmed) font-medium">选择提示词</span>
+      <div class="flex items-center justify-between px-3 py-2 border-b border-default">
+        <span class="text-xs text-dimmed font-medium">选择提示词</span>
         <span
           v-if="promptStore.list.length > 0"
-          class="text-[10px] text-(--ui-text-dimmed)/60 tabular-nums"
+          class="text-[10px] text-dimmed/60 tabular-nums"
         >{{ promptStore.list.length }} 个可用</span>
       </div>
     </template>
@@ -111,14 +111,14 @@ function handleClear() {
       <div class="px-3 py-6 text-center">
         <UIcon
           name="i-lucide-bookmark"
-          class="w-6 h-6 mx-auto text-(--ui-text-dimmed)/30"
+          class="w-6 h-6 mx-auto text-dimmed/30"
         />
-        <p class="text-xs text-(--ui-text-dimmed) mt-2">
+        <p class="text-xs text-dimmed mt-2">
           暂无自定义提示词
         </p>
         <NuxtLink
           to="/prompts"
-          class="text-xs text-(--ui-primary) hover:underline mt-1 inline-block"
+          class="text-xs text-primary hover:underline mt-1 inline-block"
         >
           去创建
         </NuxtLink>

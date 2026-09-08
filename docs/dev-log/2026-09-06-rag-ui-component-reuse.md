@@ -22,7 +22,7 @@
 | 组件 | `app/components/rag/RagDocumentDeleteModal.vue` | 删文档确认 |
 | 修改 | `app/components/layout/LayoutSidebar.vue` | 加「知识库管理」入口（i-lucide-database） |
 
-**本次明确不做**：文档在线编辑（markdown 编辑器，复杂）— 已记录到 status/roadmap，后续单独实现；聊天页选库器 — 后续单独做（store 的 `kbOptions` 已预留）。
+**本次明确不做**：文档在线编辑（markdown 编辑器，复杂）— 已记录到 status/roadmap，后续单独实现；聊天页选库器 — 后续单独做（store 的 `kbOptions` 已预留）。→ 已于 2026-09-08 定稿方案，见 [聊天知识库选择器](2026-09-08-chat-knowledge-base-selector.md)。
 
 ## 二、候选公共组件清单（未来抽取，本次不抽）
 

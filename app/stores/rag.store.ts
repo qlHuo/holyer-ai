@@ -4,15 +4,15 @@
  * 分两态：
  * - 知识库态（一级页 /rag）：kbList / loading / loadError
  * - 文档态（二级页 /rag/:id）：currentKbId + documents / docsLoading / docsError
- *
- * kbOptions 供聊天选库器复用（届时镜像 ChatModelSelector 接入）。
  */
 import { ref } from 'vue'
 import type {
   KnowledgeBase,
   CreateKnowledgeBaseInput,
   DocumentSummary,
-  UploadDocumentInput
+  UploadDocumentInput,
+  ChatKbConfig,
+  KbReferenceMode
 } from '~~/shared/types/rag'
 import RagApi from '~/api/rag'
 
@@ -74,6 +74,40 @@ export const useRagStore = defineStore('rag', () => {
     }
   }
 
+  // ==================== 聊天选中态（知识库选择器） ====================
+
+  /** 聊天知识库引用模式：auto=LLM 自主检索全部（默认）；off=不引用；custom=限定到指定库 */
+  const kbMode = ref<KbReferenceMode>('auto')
+  /** 聊天选中的知识库 id 列表（custom 模式下生效） */
+  const selectedKbIds = ref<string[]>([])
+
+  /** 生效的选中库 id（与当前 kbList 取交集，剔除被删库的孤儿 id） */
+  const validSelectedKbIds = computed(() =>
+    selectedKbIds.value.filter(id => kbList.value.some(kb => kb.id === id))
+  )
+
+  /** 发送给后端的 kbConfig（useChat 发送时取用），类型与 ChatRequest / ChatBodySchema 同源 */
+  const kbConfig = computed<ChatKbConfig>(() => {
+    if (kbMode.value === 'off') return { mode: 'off' as const }
+    if (kbMode.value === 'custom') return { mode: 'custom' as const, kbIds: [...validSelectedKbIds.value] }
+    return { mode: 'auto' as const }
+  })
+
+  /** 切换聊天引用模式 */
+  function setKbMode(mode: KbReferenceMode) {
+    kbMode.value = mode
+  }
+
+  /** 整体覆盖选中的知识库（CheckboxGroup 等批量场景） */
+  function setKbIds(ids: string[]) {
+    selectedKbIds.value = ids
+  }
+
+  /** 清空选中的知识库 */
+  function clearKbSelection() {
+    selectedKbIds.value = []
+  }
+
   // ==================== 文档操作 ====================
 
   /** 设置当前库（二级页进入时） */
@@ -129,14 +163,6 @@ export const useRagStore = defineStore('rag', () => {
 
   // ==================== 派生 ====================
 
-  /** 知识库下拉选项（供聊天选库器复用） */
-  const kbOptions = computed(() => {
-    return kbList.value.map(kb => ({
-      label: kb.name,
-      value: kb.id
-    }))
-  })
-
   /** 当前库对象（二级页标题栏显示用） */
   const activeKb = computed(() => {
     return kbList.value.find(kb => kb.id === currentKbId.value) ?? null
@@ -150,8 +176,15 @@ export const useRagStore = defineStore('rag', () => {
     documents,
     docsLoading,
     docsError,
-    kbOptions,
     activeKb,
+    // 聊天选中态
+    kbMode,
+    selectedKbIds,
+    validSelectedKbIds,
+    kbConfig,
+    setKbMode,
+    setKbIds,
+    clearKbSelection,
     getKBs,
     createKB,
     updateKB,

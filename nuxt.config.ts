@@ -30,6 +30,10 @@ export default defineNuxtConfig({
     // '/': { prerender: true }
   },
 
+  devServer: {
+    https: true
+  },
+
   compatibilityDate: '2025-01-15',
 
   // Nitro 配置

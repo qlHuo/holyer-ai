@@ -17,12 +17,12 @@ import { addMessages, deleteLastAssistantGroup, getOrCreateConversation, updateC
 import { createLLMProvider } from '~~/server/service/llm/factory'
 import type { SSEChunk } from '~~/server/utils/sse'
 import type { ConversationDetail } from '~~/shared/types/conversation'
-import type { ToolCall } from '~~/shared/types/provider'
+import type { ToolCall, ToolContext } from '~~/shared/types/provider'
 import { createSSEResponse } from '~~/server/utils/sse'
 import { ChatBodySchema } from './schema'
 import { SSE_EVENT } from '~~/shared/types/sse'
 import { runAgentLoop } from '~~/server/service/agent/runner'
-import { toolRegistry } from '~~/server/service/agent/tools'
+import { toolRegistry, knowledgeBaseSearchTool } from '~~/server/service/agent/tools'
 
 export default defineEventHandler(async (event) => {
   const body = ChatBodySchema.parse(await readBody(event))
@@ -33,7 +33,8 @@ export default defineEventHandler(async (event) => {
     conversationId, // 创建新会话时为空
     systemPrompt,
     temperature,
-    maxTokens
+    maxTokens,
+    kbConfig
   } = body
 
   // 1. 获取/创建对话
@@ -141,12 +142,25 @@ export default defineEventHandler(async (event) => {
           ? [systemPrompt, dateContext, toolUsageGuidelines].filter(Boolean).join('\n\n')
           : systemPrompt
 
+        // 知识库引用分三种，落到工具执行上下文（toolContext）：
+        //   auto（默认）→ 不设约束，LLM 自主检索全部库
+        //   off          → 剔除 search_knowledge_base 工具（本次不引用知识库）
+        //   custom       → 把用户指定的 kbIds 传给检索工具，锁死范围（装饰器强约束）
+        let toolContext: ToolContext | undefined
+        if (kbConfig?.mode === 'off') {
+          // 复用工具单例的 name，避免与知识库检索工具改名时硬编码字符串静默漂移
+          toolContext = { disabledTools: [knowledgeBaseSearchTool.name] }
+        } else if (kbConfig?.mode === 'custom' && kbConfig.kbIds?.length) {
+          toolContext = { kbIds: kbConfig.kbIds }
+        }
+
         const chatOptions = {
           model,
           systemPrompt: effectiveSystemPrompt,
           temperature,
           maxTokens,
-          signal: llmAbortController.signal
+          signal: llmAbortController.signal,
+          toolContext
         }
 
         let lastFlushLength = 0

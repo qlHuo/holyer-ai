@@ -48,3 +48,16 @@ export interface UploadResult {
   document: DocumentSummary
   chunkCount: number
 }
+
+// ==================== 聊天知识库引用范围（Chat kbConfig 契约） ====================
+
+/** 聊天知识库引用模式：auto=LLM 自主检索全部（默认）；off=不引用；custom=限定到指定库 */
+export const KB_REFERENCE_MODES = ['auto', 'off', 'custom'] as const
+export type KbReferenceMode = typeof KB_REFERENCE_MODES[number]
+
+/** 聊天请求体 kbConfig —— FE store / ChatRequest、服务端 ChatBodySchema 的单一契约源 */
+export interface ChatKbConfig {
+  mode: KbReferenceMode
+  /** custom 模式下用户指定的知识库 id 列表（空/未传 = 无约束，等同 auto 全库） */
+  kbIds?: string[]
+}

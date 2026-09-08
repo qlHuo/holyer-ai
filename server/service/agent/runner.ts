@@ -200,7 +200,11 @@ export async function* runAgentLoop(
         stream = await provider.chat(memory.getAll(), {
           ...options,
           // 预算耗尽后不带 tools，强制 LLM 只输出最终回答
-          tools: budgetExhausted ? [] : toolRegistry.getDefinitions()
+          // disabledTools（如知识库「关闭引用」）从定义里剔除，LLM 就不会看到/调用它们
+          tools: budgetExhausted
+            ? []
+            : toolRegistry.getDefinitions()
+                .filter(tool => !options.toolContext?.disabledTools?.includes(tool.name))
         })
       } catch (error) {
         // 非内容审核错误 → 原样抛出
@@ -370,8 +374,8 @@ export async function* runAgentLoop(
               }
             }
 
-            // 未命中 → 实际执行并写入缓存（传入合并后的取消信号）
-            const result = await tool.execute(args, runSignal)
+            // 未命中 → 实际执行并写入缓存（传入合并后的取消信号 + 会话级工具上下文）
+            const result = await tool.execute(args, runSignal, options.toolContext)
             toolCache.set(cacheKey, { result, success: true })
             return {
               toolCallId: tc.id,

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { KB_REFERENCE_MODES } from '~~/shared/types/rag'
 
 const MessageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant', 'tool']),
@@ -19,7 +20,13 @@ export const ChatBodySchema = z.object({
   conversationId: z.string().uuid().nullish(),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
-  maxTokens: z.number().int().positive().optional()
+  maxTokens: z.number().int().positive().optional(),
+  // 知识库引用配置：auto=LLM 自主检索全部（默认）；off=本次不引用知识库；custom=限定到指定库
+  // mode 取值与 shared/types/rag 的 KbReferenceMode 同源（单一事实源）
+  kbConfig: z.object({
+    mode: z.enum(KB_REFERENCE_MODES),
+    kbIds: z.array(z.string()).optional()
+  }).optional()
 })
 
 // 从 Schema 推导 TypeScript 类型（无需手动写 interface）

@@ -347,7 +347,7 @@ search_knowledge_base(query, kbId?)
 
 | 维度 | 现在留什么口 | 何时兑现 |
 |------|-------------|---------|
-| 多知识库 | Schema 三层外键天然多库，工具 `kbId?` 可选 | 阶段 B 加选择器 |
+| 多知识库 | Schema 三层外键天然多库，工具 `kbId?` 可选 | 阶段 B 加选择器（已定稿，见 [聊天知识库选择器](2026-09-08-chat-knowledge-base-selector.md)） |
 | 多用户 | `knowledge_bases.user_id` 可空列 | 加 auth 时 |
 | Embedding 切换 | `chunks.embedding_model` 列，支持增量重算 | 换模型时 |
 | 检索策略演进 | `Retriever` 接口 + `SearchResult.source` 字段 | 混合检索/Rerank 时 |

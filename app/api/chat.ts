@@ -5,6 +5,7 @@
  * 用原生 fetch，返回 Response 对象供 useChat composable 逐块读取
  */
 import type { Message } from '~~/shared/types/provider'
+import type { ChatKbConfig } from '~~/shared/types/rag'
 
 export interface ChatRequest {
   model: string
@@ -14,6 +15,8 @@ export interface ChatRequest {
   systemPrompt?: string
   temperature?: number
   maxTokens?: number
+  /** 知识库引用配置：auto=LLM 自主检索全部（默认）；off=不引用；custom=限定到指定库（契约见 shared/types/rag 的 ChatKbConfig） */
+  kbConfig?: ChatKbConfig
 }
 
 export default {

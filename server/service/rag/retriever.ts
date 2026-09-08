@@ -24,7 +24,10 @@ export interface SearchResult {
 }
 
 export interface SearchOptions {
-  kbId?: string // 可选，按知识库过滤
+  /** 可选，按单个知识库过滤（兼容旧调用方） */
+  kbId?: string
+  /** 可选，按多个知识库过滤（自定义范围；kbId 与 kbIds 互斥时优先 kbIds） */
+  kbIds?: string[]
   topK?: number // 默认 5
 }
 
@@ -71,8 +74,11 @@ export async function searchChunks(
   const topK = options.topK ?? 5
   // pgvector 的向量字面量格式：[0.1,0.2,...]
   const vecStr = `[${queryVec.join(',')}]`
-  // 可选的知识库过滤（为空时查全库）
-  const kbFilter = options.kbId ? sql`WHERE c.kb_id = ${options.kbId}` : sql``
+  // 可选的知识库过滤（为空时查全库）：优先 kbIds[]（多库），其次 kbId（单库，兼容旧调用方）
+  const filterKbIds = options.kbIds?.length ? options.kbIds : (options.kbId ? [options.kbId] : [])
+  const kbFilter = filterKbIds.length
+    ? sql`WHERE c.kb_id IN (${sql.join(filterKbIds, sql`, `)})`
+    : sql``
 
   const result = await db.execute(sql`
     SELECT

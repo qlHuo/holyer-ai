@@ -36,6 +36,7 @@ export function useChat() {
   // ★ 必须在 useChat() 内部获取 — 模块顶层时 Pinia 尚未初始化
   const chatStore = useChatStore()
   const promptStore = usePromptStore()
+  const ragStore = useRagStore()
   /**
    * isSending — 按对话计算，不再全局锁
    *
@@ -86,7 +87,8 @@ export function useChat() {
           model: chatStore.selectedModel,
           message: [userMessage],
           conversationId: chatStore.currentConvId,
-          systemPrompt: promptStore.getSelectedPromptContent()
+          systemPrompt: promptStore.getSelectedPromptContent(),
+          kbConfig: ragStore.kbConfig
         },
         abortCtrl.signal
       )
@@ -151,7 +153,8 @@ export function useChat() {
         message: [],
         conversationId: chatStore.currentConvId,
         systemPrompt: promptStore.getSelectedPromptContent(),
-        regenerate: true
+        regenerate: true,
+        kbConfig: ragStore.kbConfig
       }, abortCtrl.signal)
       await consumeSSEStream(response, session)
     } catch (err: any) {

@@ -9,7 +9,7 @@
  */
 
 import type { ExecutableTool, ToolPermission } from '../types'
-import type { ToolDefinition } from '~~/shared/types/provider'
+import type { ToolContext, ToolDefinition } from '~~/shared/types/provider'
 import { db } from '~~/server/db'
 import { embedText } from '~~/server/service/rag/embeddings'
 import { searchChunks } from '~~/server/service/rag/retriever'
@@ -33,7 +33,7 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
     required: ['query']
   }
 
-  async execute(args: Record<string, unknown>): Promise<string> {
+  async execute(args: Record<string, unknown>, _signal?: AbortSignal, ctx?: ToolContext): Promise<string> {
     const query = String(args.query ?? '').trim()
     if (!query) return '错误：检索内容不能为空'
 
@@ -48,8 +48,18 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
       })
 
       // 3. 纯向量检索 top-5
-      const kbId = args.kbId ? String(args.kbId) : undefined
-      const results = await searchChunks(db, vec, { kbId, topK: 5 })
+      //    检索范围三层决定：会话级 ctx.kbIds（用户「指定库」，装饰器强约束）> LLM 传的 args.kbId（自动模式）> 全库
+      //    — 用户指定范围时，忽略 LLM 传的 kbId，从代码层面锁死，不依赖模型理解
+      //    — 未指定（自动）才采纳 LLM 的 args.kbId，或无参全库检索
+      const scopedKbIds = ctx?.kbIds?.length ? ctx.kbIds : undefined
+      const toolKbId = !scopedKbIds && args.kbId ? String(args.kbId) : undefined
+      const results = await searchChunks(
+        db,
+        vec,
+        scopedKbIds
+          ? { kbIds: scopedKbIds, topK: 5 }
+          : { ...(toolKbId ? { kbId: toolKbId } : {}), topK: 5 }
+      )
 
       if (results.length === 0) {
         return `未在知识库中找到与「${query}」相关的内容。`

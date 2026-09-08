@@ -137,10 +137,15 @@ function handleStop() {
 
         <!-- 下区：工具栏（模型选择 + 发送/停止） -->
         <div class="flex items-center justify-between px-3 pb-3 pt-2">
-          <!-- 左侧：模型选择 -->
+          <!-- 左侧：模型单独 + 分隔线 + 上下文（提示词/知识库）为一组 -->
           <div class="flex items-center gap-1">
             <ChatModelSelector />
+            <span
+              class="mx-1.5 h-4 w-px bg-border"
+              aria-hidden="true"
+            />
             <ChatPromptSelector />
+            <ChatKnowledgeBaseSelector />
           </div>
 
           <!-- 右侧：操作按钮 -->
