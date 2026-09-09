@@ -92,7 +92,8 @@ async function main() {
     const { chunkCount } = await ingestDocument(db, config, {
       kbId: kb.id,
       title,
-      content
+      content,
+      sourceType: 'local' // 灌库脚本来源
     })
 
     totalChunks += chunkCount

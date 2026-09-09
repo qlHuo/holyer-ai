@@ -57,7 +57,7 @@ export const documents = pgTable('documents', {
   id: uuid('id').defaultRandom().primaryKey(),
   kbId: uuid('kb_id').references(() => knowledgeBases.id, { onDelete: 'cascade' }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
-  sourceType: varchar('source_type', { length: 50 }).notNull().default('markdown'), // 预留：格式扩展（PDF/Word）
+  sourceType: varchar('source_type', { length: 50 }).notNull().default('markdown'), // 来源通道：local 灌库 / github 引入 / manual 手动（'markdown' 为历史灌库遗留默认）
   content: text('content').notNull(), // 原始 markdown
   createdAt: timestamp('created_at').defaultNow().notNull()
 }, table => ({

@@ -98,7 +98,8 @@ async function handleSubmit({ data }: { data: UploadFormState }) {
     const result = await ragStore.uploadDocument({
       kbId: props.kbId,
       title: data.title,
-      content: content.value
+      content: content.value,
+      sourceType: 'manual' // 手动上传来源
     })
     toast.add({ title: `已入库，切成 ${result.chunkCount} 块`, color: 'success', icon: 'i-lucide-check' })
     emit('close')

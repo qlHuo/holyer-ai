@@ -21,12 +21,17 @@ export interface CreateKnowledgeBaseInput {
   description?: string
 }
 
+// 文档来源通道（原"格式位"改造——需求只做 markdown，格式轴已死，改为记录来源）：
+// local=本地灌库脚本 / github=GitHub 引入 / manual=手动上传（未来手动新建）。
+// DB 中历史 'markdown' 行在读取边界统一归一化为 local。
+export type DocumentSourceType = 'local' | 'github' | 'manual'
+
 // 文档列表项（不含原文，原文走 GET /api/rag/documents/:id 下载）
 export interface DocumentSummary {
   id: string
   kbId: string
   title: string
-  sourceType: string
+  sourceType: DocumentSourceType
   createdAt: string
   chunkCount: number
 }
@@ -41,6 +46,10 @@ export interface UploadDocumentInput {
   kbId: string
   title: string
   content: string
+  /** 来源通道，缺省服务端落 'manual' */
+  sourceType?: DocumentSourceType
+  /** true=同名覆盖（先成功入库新文档再删旧）；缺省/undefined=保持 409 */
+  overwrite?: boolean
 }
 
 // POST /api/rag/documents 返回值（UI 展示「切成 N 块」用）

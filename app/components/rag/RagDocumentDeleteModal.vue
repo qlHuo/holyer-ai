@@ -51,13 +51,13 @@ async function handleDelete() {
           />
         </div>
         <div>
-          <p class="text-sm text-(--ui-text)">
+          <p class="text-sm text-default">
             确定要删除文档
           </p>
-          <p class="text-sm font-semibold text-(--ui-text-highlighted) mt-1">
+          <p class="text-sm font-semibold text-highlighted mt-1">
             "{{ deletingDoc?.title }}"
           </p>
-          <p class="text-xs text-(--ui-text-dimmed) mt-2">
+          <p class="text-xs text-dimmed mt-2">
             将级联删除该文档的全部向量切片，此操作不可撤销
           </p>
         </div>

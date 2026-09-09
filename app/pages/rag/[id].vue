@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { DocumentSummary } from '~~/shared/types/rag'
 import { kbInitial, kbAvatarClasses } from '~/utils/kbAvatar'
+// 显式 import：避免依赖 Nuxt 自动组件注册的扫描时序（新建文件需重启才进注册清单）
+import GitHubImportModal from '~/components/rag/GitHubImportModal.vue'
 
 const chatStore = useChatStore()
 const ragStore = useRagStore()
@@ -39,6 +41,13 @@ function openUpload() {
 
 function closeUploadModal() {
   uploadModalOpen.value = false
+}
+
+// ==================== GitHub 引入弹窗控制 ====================
+const githubModalOpen = ref(false)
+
+function openGithubImport() {
+  githubModalOpen.value = true
 }
 
 // ==================== 删除弹窗控制 ====================
@@ -106,6 +115,15 @@ function handleBackToKbList() {
         </div>
         <div class="flex items-center gap-2 ml-auto">
           <UButton
+            icon="i-lucide-github"
+            variant="outline"
+            color="neutral"
+            size="sm"
+            @click="openGithubImport"
+          >
+            从 GitHub 引入
+          </UButton>
+          <UButton
             icon="i-lucide-upload"
             color="primary"
             size="sm"
@@ -172,16 +190,26 @@ function handleBackToKbList() {
         <p class="text-sm">
           暂无文档
         </p>
-        <UButton
-          size="sm"
-          color="primary"
-          variant="outline"
-          icon="i-lucide-upload"
-          class="mt-2"
-          @click="openUpload"
-        >
-          上传 .md 开始构建
-        </UButton>
+        <div class="mt-2 flex flex-wrap items-center justify-center gap-2">
+          <UButton
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-github"
+            @click="openGithubImport"
+          >
+            从 GitHub 仓库引入
+          </UButton>
+          <UButton
+            size="sm"
+            color="primary"
+            variant="outline"
+            icon="i-lucide-upload"
+            @click="openUpload"
+          >
+            上传本地 .md
+          </UButton>
+        </div>
       </div>
 
       <!-- 文档行列表（直角容器） -->
@@ -197,6 +225,13 @@ function handleBackToKbList() {
         />
       </div>
     </div>
+
+    <!-- ========== GitHub 引入弹窗 ========== -->
+    <GitHubImportModal
+      :open="githubModalOpen"
+      :kb-id="kbId"
+      @close="githubModalOpen = false"
+    />
 
     <!-- ========== 上传弹窗 ========== -->
     <RagUploadDocumentModal

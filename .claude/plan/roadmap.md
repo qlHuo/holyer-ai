@@ -152,13 +152,13 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 > 实施方案：[2026-09-02 rag-phase-b-implementation](../../docs/dev-log/2026-09-02-rag-phase-b-implementation.md)（M0 安全收窄前置 → M1 上传 API → M2 UI+选库器 → M3 图片端到端 → M4 GitHub 引入）
 >
-> **阶段 B 进度（2026-09-08）**：M0 + M1 ✅（3.5 上传 API + KB CRUD + ingest service 抽出，2026-09-03）；**M2 前半（3.6 知识库 UI）已交付**（2026-09-06，独立实现未抽公共组件，复用清单见 [09-06 dev-log](../../docs/dev-log/2026-09-06-rag-ui-component-reuse.md)）：建/改/删库、文档上传(同名 409)/列表/下载/删除；**文档在线编辑（markdown）预留**单独实现；**聊天选库器（M2 后半）待做**。**3.8/M3 图片端到端**：G3a（retriever 带出 images）/G3b（工具拼图片 markdown）/白名单提取 + 注入 URL 拒绝三环节随 09-03 产品化提交。**端到端验收通过（2026-09-08）**：对话检索命中可正常返回、渲染白名单内图片。**3.7 GitHub 文档引入（M4）待做**。
+> **阶段 B 进度（2026-09-09）**：M0 + M1 ✅（3.5 上传 API + KB CRUD + ingest service 抽出，2026-09-03）；**M2 ✅**：前半 3.6 知识库 UI（2026-09-06，建/改/删库、上传 409/列表/下载/删除；文档在线编辑预留单独实现），后半**聊天知识库选择器**（2026-09-09，三态 pill「自动/不引用/指定库」+ 后端 `kbConfig` + 装饰器锁 `allowedKbIds`/off 剔除工具，全 Nuxt UI 原生组件，设计见 [09-08 dev-log](../../docs/dev-log/2026-09-08-chat-knowledge-base-selector.md)）；**3.8/M3 图片端到端**：G3a（retriever 带出 images）/G3b（工具拼图片 markdown）/白名单提取 + 注入 URL 拒绝三环节随 09-03 产品化提交，**端到端验收通过（2026-09-08）**。**剩 M4 = 3.7 GitHub 文档引入（⬜ 待做）**——完成后阶段 B 收官。
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
 | 3.5 | 上传 API | `POST /api/rag/documents` — 与灌库脚本复用同一套 service，脚本保留作批量导入调试工具 | ✅ (2026-09-03) |
 | 3.6 | 知识库 UI | 建库/编辑/删除、上传 .md、文档列表/下载/删除（级联删向量）。**文档在线编辑预留**（先交付上传/列表/下载/删除） | ✅ (2026-09-06) |
-| 3.7 | GitHub 文档引入 | 拉取仓库 .md 手动同步，复用上传管道。**相对路径图片必须转绝对 raw URL**（`./img/a.png` → `raw.githubusercontent.com/...`），否则前端渲染 404 | ⬜ |
+| 3.7 | GitHub 文档引入 | 从公开 GitHub 仓库批量拉 .md 入库（复用上传管道）。**仅公开仓库浏览器直连零 token**、冲突策略覆盖/跳过（覆盖=同步更新）、相对图路径转绝对 raw URL、sourceType 记来源。需求定稿与实施方案见 [09-09 dev-log](../../docs/dev-log/2026-09-09-github-doc-import-plan.md) | ⬜ |
 | 3.8 | 图片展示 + 白名单渲染 | 检索结果带出 `images`；[markdown.ts](../../app/utils/markdown.ts) image 规则校验 `env.allowedImages`（本轮检索结果集合），不在集合内降级为文字。**同时堵住文档 prompt injection 诱导外链请求的既有缺口**（详见[决策 7](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)） | ✅ (2026-09-08) |
 
 ### 阶段 C：质量增强

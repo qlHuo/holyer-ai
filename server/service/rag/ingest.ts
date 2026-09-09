@@ -29,7 +29,7 @@ export interface IngestDocumentInput {
   title: string
   /** 原始 markdown 全文 */
   content: string
-  /** 来源类型，默认 'markdown'（预留格式扩展） */
+  /** 来源通道：local / github / manual，默认 'manual'（灌库脚本与 GitHub 引入显式传值） */
   sourceType?: string
 }
 
@@ -57,7 +57,7 @@ export async function ingestDocument(
     kbId,
     title,
     content,
-    sourceType: input.sourceType ?? 'markdown'
+    sourceType: input.sourceType ?? 'manual'
   }).returning()
   const docId = doc!.id
 

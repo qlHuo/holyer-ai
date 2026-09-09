@@ -97,7 +97,7 @@ function openKb(kb: KnowledgeBase) {
         <div
           v-for="i in 8"
           :key="i"
-          class="rounded-(--radius-lg) border border-default p-3.5 md:p-4 lg:p-5 space-y-3"
+          class="rounded-lg border border-default p-3.5 md:p-4 lg:p-5 space-y-3"
           :class="{
             'hidden lg:block': i >= 3 && i <= 4,
             'hidden 2xl:block': i >= 5

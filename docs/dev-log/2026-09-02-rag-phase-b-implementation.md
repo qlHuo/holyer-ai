@@ -275,4 +275,5 @@ UI 填 owner/repo
 - [RAG 知识库完整设计](2026-08-19-rag-knowledge-base-design.md) — 决策 1/7、Schema、扩展性
 - [图片展示边界](2026-08-26-rag-image-display-boundary.md) — 决策 7 论证与三层边界
 - [阶段 A 落地](2026-08-31-rag-stage-a-implementation.md) · [上线部署](2026-08-31-neon-rag-deployment.md) · [subrequest 超限](2026-09-01-cf-workers-subrequest-limit.md)
+- [GitHub 文档引入：需求定稿与实施方案](2026-09-09-github-doc-import-plan.md) — 本文 M4 的细化定稿（仅公开仓库、覆盖=同步、sourceType 来源通道等）
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 3 阶段 B 任务 3.5–3.8

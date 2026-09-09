@@ -9,8 +9,13 @@
 import { db } from '~~/server/db'
 import { knowledgeBases, documents, chunks } from '~~/server/db/schema'
 import { and, desc, eq, count } from 'drizzle-orm'
-import type { DocumentSummary, DocumentDetail, UploadResult, UploadDocumentInput } from '~~/shared/types/rag'
+import type { DocumentSummary, DocumentSourceType, DocumentDetail, UploadResult, UploadDocumentInput } from '~~/shared/types/rag'
 import { ingestDocument } from './ingest'
+
+/** 读取边界归一化来源：历史 'markdown' 行（老格式位遗留）及其它未知值 → local */
+function toSourceType(value: string): DocumentSourceType {
+  return value === 'github' || value === 'manual' ? value : 'local'
+}
 
 /** 文档行 → 摘要（chunkCount 由外部 count Map 注入） */
 function toSummary(
@@ -21,7 +26,7 @@ function toSummary(
     id: row.id,
     kbId: row.kbId,
     title: row.title,
-    sourceType: row.sourceType,
+    sourceType: toSourceType(row.sourceType),
     createdAt: row.createdAt.toISOString(),
     chunkCount: counts.get(row.id) ?? 0
   }
@@ -64,7 +69,7 @@ export async function getDocument(id: string): Promise<DocumentDetail | null> {
     id: row.id,
     kbId: row.kbId,
     title: row.title,
-    sourceType: row.sourceType,
+    sourceType: toSourceType(row.sourceType),
     content: row.content,
     createdAt: row.createdAt.toISOString(),
     chunkCount: cnt ? Number(cnt.n) : 0
@@ -80,7 +85,9 @@ export async function deleteDocument(id: string): Promise<boolean> {
 /**
  * 上传文档：查重 → 入库 → 返回摘要
  * - 知识库不存在 → 404
- * - 同库同名文档已存在 → 409（向量是内容复制品，重复入库只增开销不改召回）
+ * - 同库同名文档已存在：
+ *     overwrite=false（缺省）→ 409（向量是内容复制品，重复入库只增开销不改召回）
+ *     overwrite=true → 放行：先成功 ingest 新文档，再删旧文档（安全顺序，中途失败不丢旧数据）
  */
 export async function createDocument(input: UploadDocumentInput): Promise<UploadResult> {
   const kb = await db.select({ id: knowledgeBases.id }).from(knowledgeBases)
@@ -91,8 +98,12 @@ export async function createDocument(input: UploadDocumentInput): Promise<Upload
 
   const dup = await db.select({ id: documents.id }).from(documents)
     .where(and(eq(documents.kbId, input.kbId), eq(documents.title, input.title))).limit(1)
+  let existingId: string | null = null
   if (dup.length > 0) {
-    throw createError({ statusCode: 409, message: '同名文档已存在，请修改标题或删除旧文档后重试' })
+    if (!input.overwrite) {
+      throw createError({ statusCode: 409, message: '同名文档已存在，请修改标题或删除旧文档后重试' })
+    }
+    existingId = dup[0]!.id
   }
 
   // embedding 凭据与 search 工具同源（runtimeConfig 的 NUXT_EMBEDDING_*）
@@ -102,13 +113,18 @@ export async function createDocument(input: UploadDocumentInput): Promise<Upload
     embeddingBaseUrl: config.embeddingBaseUrl
   }, input)
 
+  // 覆盖模式：新文档已成功入库才删旧（FK 级联清旧向量）
+  if (existingId) {
+    await deleteDocument(existingId)
+  }
+
   const detail = await getDocument(docId)
   return {
     document: detail ?? {
       id: docId,
       kbId: input.kbId,
       title: input.title,
-      sourceType: 'markdown',
+      sourceType: 'manual',
       createdAt: new Date().toISOString(),
       chunkCount
     },

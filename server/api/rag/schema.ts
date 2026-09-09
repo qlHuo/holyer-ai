@@ -14,7 +14,9 @@ export const updateKnowledgeBaseSchema = createKnowledgeBaseSchema
 export const createDocumentSchema = z.object({
   kbId: z.string().uuid('kbId 需为 UUID'),
   title: z.string().min(1, '标题不能为空').max(255, '标题不能超过 255 个字符'),
-  content: z.string().min(1, '内容不能为空').max(500_000, '内容过长（超过 500KB）')
+  content: z.string().min(1, '内容不能为空').max(500_000, '内容过长（超过 500KB）'),
+  sourceType: z.enum(['local', 'github', 'manual']).optional(),
+  overwrite: z.boolean().optional()
 })
 
 // UUID 路径/查询参数

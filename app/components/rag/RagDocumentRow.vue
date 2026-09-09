@@ -55,6 +55,16 @@ async function download(doc: DocumentSummary) {
       <p class="text-xs text-dimmed mt-0.5 truncate">
         <span class="text-primary font-medium">{{ doc.chunkCount }}</span>
         个切片 · {{ formatDate(doc.createdAt) }}
+        <span
+          v-if="doc.sourceType === 'github'"
+          class="inline-flex items-center gap-0.5 text-dimmed"
+          title="来源：GitHub 引入"
+        >
+          · <UIcon
+            name="i-lucide-github"
+            class="w-3 h-3"
+          /> GitHub
+        </span>
       </p>
     </div>
 
