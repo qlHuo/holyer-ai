@@ -18,6 +18,7 @@ import { eq } from 'drizzle-orm'
 import type { DbClient } from '../../db'
 import { documents, chunks } from '../../db/schema'
 import { parseMarkdown, chunkSections } from './chunker'
+import { toIndexedText } from './tokenizer'
 import { embedTexts, EMBEDDING_MODEL } from './embeddings'
 import type { EmbeddingConfig } from './embeddings'
 
@@ -78,7 +79,9 @@ export async function ingestDocument(
       vectors.push(...await embedTexts(batch.map(c => c.content), config))
     }
 
-    // 4. 一次多行 INSERT 全部 chunks（含 images 元数据，不参与向量化）
+    // 4. 一次多行 INSERT 全部 chunks（含 images 元数据 + 分词结果 content_tokens，均不参与向量化）
+    //    content_tokens 与检索侧 toQueryText 同源（都走 tokenizer），保证索引与查询在同一分词空间。
+    //    content_tsv 是生成列，由 PG 自动从 content_tokens 派生，无需在此写入。
     if (chunkRows.length > 0) {
       await db.insert(chunks).values(
         chunkRows.map((c, i) => ({
@@ -86,6 +89,7 @@ export async function ingestDocument(
           kbId,
           chunkIndex: c.chunkIndex,
           content: c.content,
+          contentTokens: toIndexedText(c.content),
           embedding: vectors[i],
           embeddingModel: EMBEDDING_MODEL,
           images: c.images

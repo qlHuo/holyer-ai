@@ -1,4 +1,5 @@
-import { pgTable, uuid, varchar, text, jsonb, timestamp, integer, index, vector } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, text, jsonb, timestamp, integer, index, vector, customType } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 // 对话会话
 export const conversations = pgTable('conversations', {
@@ -42,6 +43,11 @@ export const prompts = pgTable('prompts', {
 // 切片图片元数据（URL 进元数据列，不进向量，见 RAG 设计决策 7）
 export type ChunkImage = { url: string, alt: string }
 
+// drizzle-orm 无 tsvector 类型，用 customType 兜底（仅用于迁移 DDL 生成；运行时查询走 raw SQL）
+const tsvector = customType<{ data: string, driverData: string }>({
+  dataType() { return 'tsvector' }
+})
+
 // 知识库
 export const knowledgeBases = pgTable('knowledge_bases', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -74,8 +80,14 @@ export const chunks = pgTable('chunks', {
   embedding: vector('embedding', { dimensions: 1024 }), // 1024 维向量（pgvector）
   embeddingModel: varchar('embedding_model', { length: 100 }), // 预留：模型切换时识别旧模型
   contextualText: text('contextual_text'), // 阶段 C：Contextual Retrieval 预生成上下文
-  images: jsonb('images').$type<ChunkImage[]>() // 图片元数据（不参与向量化）
+  images: jsonb('images').$type<ChunkImage[]>(), // 图片元数据（不参与向量化）
+  // 全文检索：分词结果（空格分隔），由 tokenizer.toIndexedText 写入。可空无 default —— NULL 是回填游标
+  contentTokens: text('content_tokens'),
+  // 全文检索：生成列，自动从 content_tokens 派生（IMMUTABLE 表达式，满足生成列要求）
+  // ⚠️ 表达式用裸文本 'content_tokens'：若重命名该列，必须同步改这里（drizzle-kit 不会替你改）
+  contentTsv: tsvector('content_tsv').generatedAlwaysAs(sql`to_tsvector('simple', content_tokens)`)
 }, table => ({
   docIdx: index('idx_chunks_doc_id').on(table.docId),
-  kbIdx: index('idx_chunks_kb_id').on(table.kbId)
+  kbIdx: index('idx_chunks_kb_id').on(table.kbId),
+  tsvIdx: index('idx_chunks_content_tsv').using('gin', table.contentTsv)
 }))

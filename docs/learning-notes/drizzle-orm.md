@@ -250,6 +250,37 @@ return deleted.length > 0
 - `.returning()` 在 DELETE 中也有效，返回被删除的行
 - 用 `.length > 0` 判断是否删到了东西，比 `row` 判空更直观
 
+### 批量回填模式（keyset 分页 + 批量 UPDATE）
+
+给已有表补一个新列（如 3.9 给 `chunks` 补 `content_tokens`）时的标准套路，见 `scripts/backfill-tokens.ts`：
+
+```typescript
+// 1. keyset 分页取一批（不是 OFFSET！）
+const cond = FORCE ? sql`TRUE` : sql`content_tokens IS NULL`
+const after = lastId ? sql`AND id > ${lastId}::uuid` : sql``
+const rows = await db.execute(sql`
+  SELECT id, content FROM chunks WHERE ${cond} ${after} ORDER BY id LIMIT 200
+`)
+
+// 2. 一条语句批量回写（VALUES + JOIN）
+const values = sql.join(rows.map(r => sql`(${r.id}::uuid, ${r.tokens}::text)`), sql`, `)
+await db.execute(sql`
+  UPDATE chunks SET content_tokens = v.tokens
+  FROM (VALUES ${values}) AS v(id, tokens)
+  WHERE chunks.id = v.id
+`)
+```
+
+**三个要点**：
+
+| 要点 | 为什么 |
+|---|---|
+| **用 keyset（`id > lastId`）而不是 `OFFSET`** | 回填会**改变结果集**：`WHERE col IS NULL` 处理完一批，这些行就不再匹配。此时 `OFFSET 200` 取下一页会**跳过**原来的第 201–400 行 → 静默漏掉一半数据 |
+| **批量 UPDATE（VALUES + JOIN）而不是逐行** | neon-http 下**每次 DB 往返 = 1 个 CF subrequest**（免费层 50/请求）。200 行逐条 = 200 次往返 |
+| **`WHERE col IS NULL` 当游标 = 幂等** | 跑第二遍自然是 0 行。所以**不要**给该列加 `NOT NULL` / `default`，否则游标失效 |
+
+**裸 `db.execute(sql\`…\`)` 的双驱动差异**：postgres-js 直接返回行数组，neon-http 返回 `{ rows }`，需要一行归一化（见 `backfill-tokens.ts` 的 `extractRows`）。用 Drizzle 类型化查询构造器（`db.select()` 等）时它内部已处理，无此问题。
+
 ---
 
 ## 常用运算符

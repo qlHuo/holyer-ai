@@ -148,26 +148,35 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 > **卡点**：10 个问题召回命中率 >80% 才进阶段 B。不达标先调分块/检索策略——先把最不确定的「检索质量」跑通，避免 UI 做完发现检索是垃圾。
 
-### 阶段 B：产品化
+### 阶段 B：产品化 ✅ 已完成（2026-09-09 收官）
 
 > 实施方案：[2026-09-02 rag-phase-b-implementation](../../docs/dev-log/2026-09-02-rag-phase-b-implementation.md)（M0 安全收窄前置 → M1 上传 API → M2 UI+选库器 → M3 图片端到端 → M4 GitHub 引入）
 >
-> **阶段 B 进度（2026-09-09）**：M0 + M1 ✅（3.5 上传 API + KB CRUD + ingest service 抽出，2026-09-03）；**M2 ✅**：前半 3.6 知识库 UI（2026-09-06，建/改/删库、上传 409/列表/下载/删除；文档在线编辑预留单独实现），后半**聊天知识库选择器**（2026-09-09，三态 pill「自动/不引用/指定库」+ 后端 `kbConfig` + 装饰器锁 `allowedKbIds`/off 剔除工具，全 Nuxt UI 原生组件，设计见 [09-08 dev-log](../../docs/dev-log/2026-09-08-chat-knowledge-base-selector.md)）；**3.8/M3 图片端到端**：G3a（retriever 带出 images）/G3b（工具拼图片 markdown）/白名单提取 + 注入 URL 拒绝三环节随 09-03 产品化提交，**端到端验收通过（2026-09-08）**。**剩 M4 = 3.7 GitHub 文档引入（⬜ 待做）**——完成后阶段 B 收官。
+> **阶段 B 进度（2026-09-09）**：M0 + M1 ✅（3.5 上传 API + KB CRUD + ingest service 抽出，2026-09-03）；**M2 ✅**：前半 3.6 知识库 UI（2026-09-06，建/改/删库、上传 409/列表/下载/删除；文档在线编辑预留单独实现），后半**聊天知识库选择器**（2026-09-09，三态 pill「自动/不引用/指定库」+ 后端 `kbConfig` + 装饰器锁 `allowedKbIds`/off 剔除工具，全 Nuxt UI 原生组件，设计见 [09-08 dev-log](../../docs/dev-log/2026-09-08-chat-knowledge-base-selector.md)）；**3.8/M3 图片端到端**：G3a（retriever 带出 images）/G3b（工具拼图片 markdown）/白名单提取 + 注入 URL 拒绝三环节随 09-03 产品化提交，**端到端验收通过（2026-09-08）**；**M4 = 3.7 GitHub 文档引入 ✅（2026-09-09，端到端验证通过）**：`GitHubImportModal` 三阶段编排（填仓库→勾选清单→批量导入）+ `github.ts` 浏览器直连三接口、覆盖/跳过冲突策略、相对图路径转绝对 raw URL、`sourceType: 'github'` 记来源（需求与设计见 [09-09 dev-log](../../docs/dev-log/2026-09-09-github-doc-import-plan.md)）。**阶段 B 收官（2026-09-09）**。剩阶段 C 质量增强。
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
 | 3.5 | 上传 API | `POST /api/rag/documents` — 与灌库脚本复用同一套 service，脚本保留作批量导入调试工具 | ✅ (2026-09-03) |
 | 3.6 | 知识库 UI | 建库/编辑/删除、上传 .md、文档列表/下载/删除（级联删向量）。**文档在线编辑预留**（先交付上传/列表/下载/删除） | ✅ (2026-09-06) |
-| 3.7 | GitHub 文档引入 | 从公开 GitHub 仓库批量拉 .md 入库（复用上传管道）。**仅公开仓库浏览器直连零 token**、冲突策略覆盖/跳过（覆盖=同步更新）、相对图路径转绝对 raw URL、sourceType 记来源。需求定稿与实施方案见 [09-09 dev-log](../../docs/dev-log/2026-09-09-github-doc-import-plan.md) | ⬜ |
+| 3.7 | GitHub 文档引入 | 从公开 GitHub 仓库批量拉 .md 入库（复用上传管道）。**仅公开仓库浏览器直连零 token**、冲突策略覆盖/跳过（覆盖=同步更新）、相对图路径转绝对 raw URL、sourceType 记来源。需求定稿与实施方案见 [09-09 dev-log](../../docs/dev-log/2026-09-09-github-doc-import-plan.md) | ✅ (2026-09-09) |
 | 3.8 | 图片展示 + 白名单渲染 | 检索结果带出 `images`；[markdown.ts](../../app/utils/markdown.ts) image 规则校验 `env.allowedImages`（本轮检索结果集合），不在集合内降级为文字。**同时堵住文档 prompt injection 诱导外链请求的既有缺口**（详见[决策 7](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)） | ✅ (2026-09-08) |
 
 ### 阶段 C：质量增强
 
+> **实施顺序（2026-09-14 定，按「改动半径」排序）**：**3.9 → 3.11 → 3.10**
+> - **3.9 先做** — 只改 [retriever.ts](../../server/service/rag/retriever.ts) + 加索引列，**不触发重新 embedding**，风险最小
+> - **3.11 次之** — 元数据 + 渲染侧（citation、`sourceUrl`），一次轻量回填，不动向量
+> - **3.10 最后** — 需**全量重新分块 + 重新 embedding**（所有 chunk 重算），必须等语料/分块稳定后再做，否则返工白花钱；提前做 3.11 可让这次重灌一次写齐 `heading_path`/`source_url`
+>
+> **进度**：3.9 ✅ 已完成（2026-09-15，本地；线上迁移待手动执行）。
+>
+> 每步的背景/需求/方案/流程详见 [阶段 C 实施规划](../../docs/dev-log/2026-09-14-rag-stage-c-plan.md)。
+
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 3.9 | 混合检索 | 向量 + 全文关键词（tsvector）+ RRF 融合排序 | ⬜ |
-| 3.10 | Contextual Retrieval | 每 chunk 预生成上下文（个人语料几百 chunk，一次性成本极低） | ⬜ |
-| 3.11 | 引用溯源 | citation 回链原文，答案可追溯 | ⬜ |
+| 3.9 | 混合检索 | 向量 + 全文关键词（tsvector）+ RRF 融合排序；只改 retriever、加索引列。**中文分词方案是先决风险**——PostgreSQL 原生 tsvector 不分中文，倾向 `Intl.Segmenter`（Edge 原生、零依赖）在入库期预分词 | ✅ (2026-09-15) |
+| 3.11 | 引用溯源 | citation 回链原文（标题路径 + docId#chunkIndex），前端渲染可点击；一并设计 `sourceUrl`（3.7 GitHub 来源回链）。需补 `chunks.heading_path` 结构化列（现仅拼进 content 前缀） | ⬜ |
+| 3.10 | Contextual Retrieval | 每 chunk 预生成上下文后**全量重建向量**；`chunks.contextual_text` 列已预留。关键约束：生成走离线脚本（上传 API 受 CF 50 subrequest 限，边生成边入库会爆配额） | ⬜ |
 
 > **产品功能分层**（详见 [需求分析](requirements.md)）：
 > - **现阶段（Phase 3）**：知识库 CRUD（新建/上传/下载/删除，删文档级联删向量）+ GitHub 文档引入（手动同步，复用上传管道）

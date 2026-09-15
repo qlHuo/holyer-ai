@@ -402,6 +402,7 @@ search_knowledge_base(query, kbId?)
 - [需求分析](../../.claude/plan/requirements.md) — 「知识分散」痛点
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 3 RAG（2026-08-25 与 MCP 对调，RAG 先行）
 - [知识库图片展示边界](2026-08-26-rag-image-display-boundary.md) — 决策 7 的完整论证与竞品分析
+- [RAG 阶段 C 实施规划](2026-09-14-rag-stage-c-plan.md) — 本文决策 3/4/6 的分步实施与排序（3.9 → 3.11 → 3.10）
 - [pgvector 笔记](../learning-notes/pgvector.md) — 向量列/标量列关系、索引与维度约束
 - [Phase 2 审查](../../docs/dev-log/2026-08-18-phase2-review.md) — 工具系统现状
 - [Prompt 评测-调优闭环](../../docs/dev-log/2026-08-17-prompt-eval-tuning-loop.md) — 评估集驱动思路（RAG 评估集可复用此方法论）

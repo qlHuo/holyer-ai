@@ -12,7 +12,7 @@ import type { ExecutableTool, ToolPermission } from '../types'
 import type { ToolContext, ToolDefinition } from '~~/shared/types/provider'
 import { db } from '~~/server/db'
 import { embedText } from '~~/server/service/rag/embeddings'
-import { searchChunks } from '~~/server/service/rag/retriever'
+import { hybridSearch } from '~~/server/service/rag/retriever'
 
 export class KnowledgeBaseSearchTool implements ExecutableTool {
   readonly name = 'search_knowledge_base'
@@ -47,15 +47,16 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
         embeddingBaseUrl: config.embeddingBaseUrl
       })
 
-      // 3. 纯向量检索 top-5
+      // 3. 混合检索（向量 + 全文 + RRF 融合）top-5
       //    检索范围三层决定：会话级 ctx.kbIds（用户「指定库」，装饰器强约束）> LLM 传的 args.kbId（自动模式）> 全库
       //    — 用户指定范围时，忽略 LLM 传的 kbId，从代码层面锁死，不依赖模型理解
       //    — 未指定（自动）才采纳 LLM 的 args.kbId，或无参全库检索
       const scopedKbIds = ctx?.kbIds?.length ? ctx.kbIds : undefined
       const toolKbId = !scopedKbIds && args.kbId ? String(args.kbId) : undefined
-      const results = await searchChunks(
+      const results = await hybridSearch(
         db,
         vec,
+        query,
         scopedKbIds
           ? { kbIds: scopedKbIds, topK: 5 }
           : { ...(toolKbId ? { kbId: toolKbId } : {}), topK: 5 }
@@ -66,16 +67,20 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
       }
 
       // 4. 格式化结果（带来源，供 LLM 引用溯源）
+      //    来源标签取代数字分数：混合检索的 RRF 分量级约 0.02，直接展示「相似度 0.02」会被 LLM 误读为「不相关」。
       //    命中 chunk 的附图以 markdown 拼在片段后（仅绝对 http(s) URL；相对路径丢弃，防请求应用源）。
       //    这样结果文本经 TOOL_END 落库 + 进 memory：LLM 可见并可引用图片，前端也能从结果
-      //    提取出本轮白名单（见 app/utils/allowedImages.ts）。
+      //    提取出本轮白名单（见 app/utils/allowedImages.ts）—— ⚠️ 图片 markdown 行不可改动格式。
       return results
         .map((r, i) => {
           const imageLines = r.images
             .filter(img => /^https?:\/\//i.test(img.url))
             .map(img => `\n![${img.alt}](${img.url})`)
             .join('')
-          return `${i + 1}. [来源：${r.documentTitle}]（相似度 ${r.score.toFixed(2)}）\n${r.content}${imageLines}`
+          const sourceTag = r.source === 'keyword'
+            ? '（关键词精确命中）'
+            : r.source === 'both' ? '（关键词+语义）' : ''
+          return `${i + 1}. [来源：${r.documentTitle}]${sourceTag}\n${r.content}${imageLines}`
         })
         .join('\n\n')
     } catch (err) {

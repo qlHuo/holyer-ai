@@ -53,3 +53,4 @@ Matryoshka 这个词本身就是比喻（俄罗斯套娃）。它的关键特性
 
 - [pgvector 笔记](pgvector.md) — 数据库层面：vector 列类型、维度不可逆、距离运算符
 - [RAG 知识库完整设计](../dev-log/2026-08-19-rag-knowledge-base-design.md) — 决策 2 Embedding 选型与维度锁定的完整论证
+- [混合检索：向量 / 全文 / RRF](hybrid-retrieval.md) — 检索算法层：向量召回的作用与局限、与全文召回互补

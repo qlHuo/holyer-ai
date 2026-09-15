@@ -21,10 +21,16 @@ knowledge_bases（知识库）      ← 顶层：一个知识库
 ## 完整 Schema 代码
 
 ```ts
-import { pgTable, uuid, varchar, text, jsonb, timestamp, integer, index, vector } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, text, jsonb, timestamp, integer, index, vector, customType } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 // 切片图片元数据（URL 进元数据列，不进向量）
 export type ChunkImage = { url: string, alt: string }
+
+// drizzle-orm 无 tsvector 类型，customType 兜底（仅用于生成迁移 DDL；运行时查询走 raw SQL）
+const tsvector = customType<{ data: string, driverData: string }>({
+  dataType() { return 'tsvector' }
+})
 
 export const knowledgeBases = pgTable('knowledge_bases', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -38,7 +44,7 @@ export const documents = pgTable('documents', {
   id: uuid('id').defaultRandom().primaryKey(),
   kbId: uuid('kb_id').references(() => knowledgeBases.id, { onDelete: 'cascade' }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
-  sourceType: varchar('source_type', { length: 50 }).notNull().default('markdown'), // 预留：格式扩展
+  sourceType: varchar('source_type', { length: 50 }).notNull().default('markdown'), // 来源通道（local/github/manual；'markdown' 为历史遗留默认）
   content: text('content').notNull(), // 原始 markdown
   createdAt: timestamp('created_at').defaultNow().notNull()
 }, table => ({
@@ -54,10 +60,14 @@ export const chunks = pgTable('chunks', {
   embedding: vector('embedding', { dimensions: 1024 }), // 1024 维向量（pgvector）
   embeddingModel: varchar('embedding_model', { length: 100 }), // 预留：模型切换
   contextualText: text('contextual_text'), // 阶段 C：Contextual Retrieval
-  images: jsonb('images').$type<ChunkImage[]>() // 图片元数据（不参与向量化）
+  images: jsonb('images').$type<ChunkImage[]>(), // 图片元数据（不参与向量化）
+  contentTokens: text('content_tokens'), // 3.9 全文检索：分词结果（原料），可空无 default —— NULL 是回填游标
+  contentTsv: tsvector('content_tsv') // 3.9 全文检索：生成列（成品），PG 自动从 content_tokens 派生
+    .generatedAlwaysAs(sql`to_tsvector('simple', content_tokens)`)
 }, table => ({
   docIdx: index('idx_chunks_doc_id').on(table.docId),
-  kbIdx: index('idx_chunks_kb_id').on(table.kbId)
+  kbIdx: index('idx_chunks_kb_id').on(table.kbId),
+  tsvIdx: index('idx_chunks_content_tsv').using('gin', table.contentTsv)
 }))
 ```
 
@@ -73,8 +83,29 @@ export const chunks = pgTable('chunks', {
 | `content` | 切片文本 | **参与向量化**的内容（区别于 documents.content 原文） |
 | `embedding` | `vector(1024)` | 向量列，检索靠它；和 content 是同一行的两个列 |
 | `embeddingModel` | 用了哪个模型 | 预留：不同模型向量空间不兼容，换模型时识别旧数据 |
-| `contextualText` | 预生成上下文 | 阶段 C Contextual Retrieval，现在空着 |
-| `images` | 图片元数据 | 决策 7：URL 不进向量，阶段 A 不碰 |
+| `contextualText` | 预生成上下文 | 阶段 C 3.10 Contextual Retrieval，现在空着 |
+| `images` | 图片元数据 | 决策 7：URL 不进向量，阶段 B 已兑现（白名单渲染） |
+| `contentTokens` 🆕 | 分词结果（**原料**） | 3.9：应用写入，空格分隔的词元串 |
+| `contentTsv` 🆕 | `tsvector`（**成品**） | 3.9：**生成列**，从 `content_tokens` 自动派生 + GIN 索引 |
+
+## 3.9 全文检索两列：原料与成品
+
+`content_tokens` 与 `content_tsv` 是**一对**：前者是原料（应用写入），后者是成品（PG 派生）。分清「哪个阶段碰哪个列」是理解这块的钥匙：
+
+| 阶段 | 碰哪个列 | 谁在用 |
+|---|---|---|
+| 新文档入库 | **写** `content_tokens` | `ingest.ts`（经 `tokenizer.toIndexedText`） |
+| 存量回填 | **读写** `content_tokens` | `scripts/backfill-tokens.ts` |
+| 入库/回填之后 | `content_tsv` **自动生成** | PostgreSQL（生成列） |
+| **检索** | **只读** `content_tsv` | `retriever.ts` 的 `searchByKeyword` |
+
+> 一句话：**`content_tokens` 只活在写入阶段；检索永远只读 `content_tsv`。** 中间那一跳由生成列自动完成。
+
+- **为什么必须两列**：PostgreSQL 不认识中文 —— `to_tsvector('simple', 中文原文)` 会把整段当一个 token。所以中文切词必须在 JS 侧（`Intl.Segmenter`）先做，切好的串存 `content_tokens`，再交给 PG 转 `tsvector`。
+- **为什么用生成列**：`UPDATE content_tokens` 时 PG 自动重算 `content_tsv`，不存在「列更新了、索引没跟上」。代价：**不能直接写 `content_tsv`**（会报错），且表达式必须 IMMUTABLE（所以写二参 `to_tsvector('simple', x)`）。
+- **写/查必须同源**：`tokenizer.ts` 的 `toIndexedText`（写）与 `toQueryText`（查）是同一个实现 —— 否则两边不在同一分词空间，检索**静默失效**（不报错）。改分词规则要递增 `TOKENIZER_VERSION` 并 `--force` 全量重分词。
+
+> 原理详见 [混合检索笔记](hybrid-retrieval.md) 第四、五节。
 
 ## 新语法点（通用 Drizzle 语法见 [[drizzle-orm]]）
 
@@ -112,15 +143,16 @@ kbId: uuid('kb_id').references(() => knowledgeBases.id, { onDelete: 'cascade' })
 
 `userId` / `sourceType` / `embeddingModel` / `images` 四个列**现在都不填**，但建表时就加了。原因：**给已有表加列要写迁移，建表时多写一行几乎零成本**——设计文档的硬性要求「建表时一次加齐」。
 
-| 预留列 | 表 | 何时兑现 |
+| 预留列 | 表 | 兑现情况 |
 |--------|----|---------|
-| `user_id` | knowledge_bases | 加 auth、多用户隔离 |
-| `source_type` | documents | 支持 PDF/Word 时 |
-| `embedding_model` | chunks | 换 embedding 模型时增量重算 |
-| `images` | chunks | 阶段 B 图片展示 |
+| `user_id` | knowledge_bases | ⬜ 加 auth、多用户隔离 |
+| `source_type` | documents | ✅ **语义已改**为「来源通道」`local`/`github`/`manual`（2026-09-09）—— 原设想的 PDF/Word 已明确不做 |
+| `embedding_model` | chunks | ⬜ 换 embedding 模型时增量重算 |
+| `images` | chunks | ✅ 阶段 B 已兑现（图片白名单渲染） |
 
 ## 相关文档
 
+- [混合检索：向量 / 全文 / RRF](hybrid-retrieval.md) — `content_tokens`/`content_tsv` 在检索链路里的用法、RRF 融合
 - [[drizzle-orm]] — 通用建表语法（pgTable、类型函数、修饰符、索引）
 - [[pgvector]] — 向量列 vs 标量列、距离运算符、为什么顺序扫描优于索引
 - [RAG 知识库完整设计](../dev-log/2026-08-19-rag-knowledge-base-design.md) — 三表的设计论证

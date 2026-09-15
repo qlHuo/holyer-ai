@@ -1,6 +1,6 @@
 # 文档索引
 
-> 75 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 77 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 开发日志（46 篇）
+## 开发日志（47 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,7 +35,8 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
-| 09-09 | [github-doc-import-plan](dev-log/2026-09-09-github-doc-import-plan.md) | **GitHub 文档引入：需求定稿与实施方案（3.7/M4）** — 仅公开仓库浏览器直连零 token、sourceType 格式位→来源通道、覆盖策略=同步能力、图相对 URL 改写规则、组件级批量运行态 |
+| 09-14 | [rag-stage-c-plan](dev-log/2026-09-14-rag-stage-c-plan.md) | **RAG 阶段 C 实施规划：三步拆解与排序** — 按「改动半径」排 3.9 混合检索 → 3.11 引用溯源 → 3.10 Contextual Retrieval；每步含背景/需求/方案/流程；中文分词 `Intl.Segmenter`、citation 白名单、3.10 全量重灌与 CF 配额约束 |
+| 09-09 | [github-doc-import-plan](dev-log/2026-09-09-github-doc-import-plan.md) | **GitHub 文档引入：需求定稿与实施方案（3.7/M4）** — 仅公开仓库浏览器直连零 token、sourceType 格式位→来源通道、覆盖策略=同步能力、图相对 URL 改写规则、组件级批量运行态（✅ 已实现并验证） |
 | 09-08 | [chat-knowledge-base-selector](dev-log/2026-09-08-chat-knowledge-base-selector.md) | **聊天知识库选择器：交互设计与检索强度决策** — 检索"三约束维度"（范围/是否/采用）、指定库=装饰器锁范围、四问结论、全局单值状态模型、pill 三态面板 |
 | 09-06 | [rag-ui-component-reuse](dev-log/2026-09-06-rag-ui-component-reuse.md) | **RAG 知识库 UI 实现 + 公共组件复用清单** — 3.6 知识库管理 UI 交付、prompts/rag 成对重复盘点、候选抽取清单（待 UI 稳定后单独做专项） |
 | 09-02 | [rag-phase-b-implementation](dev-log/2026-09-02-rag-phase-b-implementation.md) | **RAG 阶段 B 产品化实施方案** — 上传 API / 知识库 UI / 聊天选库器 / GitHub 浏览器编排引入 / 图片白名单端到端；G1-G4 缺口盘点、CF subrequest 铁律、M0-M4 里程碑 |
@@ -120,7 +121,7 @@
 
 ---
 
-## 学习笔记（10 篇）
+## 学习笔记（11 篇）
 
 `docs/learning-notes/` — 新技术知识点梳理。
 
@@ -130,12 +131,13 @@
 | [cloudflare-edge-notes](learning-notes/cloudflare-edge-notes.md) | Cloudflare Workers Edge Runtime 限制与应对 |
 | [web-streams-api](learning-notes/web-streams-api.md) | **Web Streams API 详解** — ReadableStream、TextEncoder、Response |
 | [drizzle-kit](learning-notes/drizzle-kit.md) | **Drizzle Kit CLI 工具笔记** — 配置、push/generate/migrate/studio 命令、本地/生产工作流 |
-| [drizzle-orm](learning-notes/drizzle-orm.md) | **Drizzle ORM API 笔记** — Schema 定义、CRUD 操作、`.returning()`、双驱动、分层架构（以 prompts 为例） |
+| [drizzle-orm](learning-notes/drizzle-orm.md) | **Drizzle ORM API 笔记** — Schema 定义、CRUD 操作、`.returning()`、双驱动、分层架构、批量回填模式（keyset 分页 + 批量 UPDATE） |
 | [zod](learning-notes/zod.md) | **Zod 校验库笔记** — Schema 定义、`.parse()` vs `.safeParse()`、全局错误处理、三种数据来源校验 |
 | [prompt-engineering-standards](learning-notes/prompt-engineering-standards.md) | **业界提示词工程规范** — 模板框架（CO-STAR/CRISPE/五要素/ICIO）、方法论、工程化规范 + 适用边界 |
 | [pgvector](learning-notes/pgvector.md) | **pgvector 笔记** — 向量列 vs 标量列（各家术语对照）、向量与元数据「同一行」关联原理、距离运算符、索引换速度损召回、维度不可逆 |
 | [embedding-dimensions](learning-notes/embedding-dimensions.md) | **Embedding 维度与 Matryoshka** — 能力上限 vs 默认输出 vs 锁定维度、为什么低维不亏、为什么锁 1024、不可逆铁律 |
-| [rag-schema](learning-notes/rag-schema.md) | **RAG Schema** — 三表结构（knowledge_bases/documents/chunks）、vector 列、$type 标注、预留列设计 |
+| [rag-schema](learning-notes/rag-schema.md) | **RAG Schema** — 三表结构（knowledge_bases/documents/chunks）、vector 列、$type 标注、预留列设计、3.9 全文检索两列（原料 `content_tokens` / 成品 `content_tsv` 生成列） |
+| [hybrid-retrieval](learning-notes/hybrid-retrieval.md) | **混合检索：向量 / 全文 / RRF** — 两种召回的作用与局限、精确词盲区、全文检索实现机制（原料/成品两列、与普通 SQL 的区别）、RRF 公式与数字例子、top-K 与 RRF 辨析、RAG 检索三代演进（Naive/Advanced/Agentic） |
 
 ---
 
@@ -167,5 +169,5 @@
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) · [codegraph](claude-tips/codegraph.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) · [工具预算](dev-log/2026-08-31-agent-tool-budget.md) · [工具调用 UI](dev-log/2026-08-03-agent-toolcall-ui-redesign.md) |
-| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [聊天选库器](dev-log/2026-09-08-chat-knowledge-base-selector.md) · [GitHub 引入定稿](dev-log/2026-09-09-github-doc-import-plan.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
+| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [聊天选库器](dev-log/2026-09-08-chat-knowledge-base-selector.md) · [GitHub 引入定稿](dev-log/2026-09-09-github-doc-import-plan.md) · [阶段C规划](dev-log/2026-09-14-rag-stage-c-plan.md) · [混合检索](learning-notes/hybrid-retrieval.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |
