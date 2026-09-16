@@ -190,6 +190,8 @@ export type DbClient = typeof db
 >
 > 💡 这里用 `useRuntimeConfig()` 而非 `process.env.DATABASE_URL`。原因是：① Nuxt 4 标准 pattern，无需装 `@types/node` 解决类型问题；② Nitro 原生管理，在 Cloudflare Workers 中更可靠；③ 所有环境变量在 `nuxt.config.ts` 中集中声明，便于维护。
 
+> 📌 **2026-09 更新**：下方用 `push` 建表是当时的做法。**现在请改用 `generate` + `migrate`** —— `push` 不写迁移账本，混用会导致 `migrate` 从 `0000` 重放并报错（本项目已踩过一次）。详见 [Drizzle Kit 笔记](../learning-notes/drizzle-kit.md)。
+
 **验证**：
 ```bash
 npx drizzle-kit push     # 推送 Schema 到 Neon

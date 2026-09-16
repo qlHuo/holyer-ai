@@ -35,7 +35,8 @@
       "Bash(mkdir *)",
       "Bash(type *)",
       "Bash(which *)",
-      "mcp__codegraph__*"
+      "mcp__codegraph__*",
+      "Bash(node -e ' *)"
     ],
     "deny": [
       "Read(.env)",

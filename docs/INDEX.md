@@ -130,7 +130,7 @@
 | [nuxt4-notes](learning-notes/nuxt4-notes.md) | Nuxt 4 学习笔记 |
 | [cloudflare-edge-notes](learning-notes/cloudflare-edge-notes.md) | Cloudflare Workers Edge Runtime 限制与应对 |
 | [web-streams-api](learning-notes/web-streams-api.md) | **Web Streams API 详解** — ReadableStream、TextEncoder、Response |
-| [drizzle-kit](learning-notes/drizzle-kit.md) | **Drizzle Kit CLI 工具笔记** — 配置、push/generate/migrate/studio 命令、本地/生产工作流 |
+| [drizzle-kit](learning-notes/drizzle-kit.md) | **Drizzle Kit CLI 工具笔记** — 配置、四命令对比、**账本（ledger）机制与 push/migrate 混用陷阱**、PG schema/search_path、baseline 已有库、一次 schema 变更的完整落地清单 |
 | [drizzle-orm](learning-notes/drizzle-orm.md) | **Drizzle ORM API 笔记** — Schema 定义、CRUD 操作、`.returning()`、双驱动、分层架构、批量回填模式（keyset 分页 + 批量 UPDATE） |
 | [zod](learning-notes/zod.md) | **Zod 校验库笔记** — Schema 定义、`.parse()` vs `.safeParse()`、全局错误处理、三种数据来源校验 |
 | [prompt-engineering-standards](learning-notes/prompt-engineering-standards.md) | **业界提示词工程规范** — 模板框架（CO-STAR/CRISPE/五要素/ICIO）、方法论、工程化规范 + 适用边界 |

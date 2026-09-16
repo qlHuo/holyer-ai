@@ -22,6 +22,8 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ### 2. 推送表结构
 
+> 📌 **2026-09-16 追记**：这一步用的 `push` **不写迁移账本**，是后来 `migrate` 报 `relation already exists` 的根源（已补 baseline 修复）。**现在新增/修改表结构请改用 `generate` + `migrate`**，见 [Drizzle Kit 笔记](../learning-notes/drizzle-kit.md)。
+
 ```powershell
 $env:NUXT_DATABASE_URL = "postgresql://...-pooler...neon.tech/db?sslmode=require"
 npx drizzle-kit push

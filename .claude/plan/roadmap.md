@@ -231,8 +231,9 @@ npx nuxi build
 # 4. 本地模拟 Cloudflare 环境
 npx wrangler pages dev dist/
 
-# 5. 数据库迁移
-npx drizzle-kit push
+# 5. 数据库迁移（改过 schema 时；本地与线上各跑一次）
+npx drizzle-kit generate
+npx drizzle-kit migrate
 
 # 6. 端到端验证项
 # - 切换模型（app/constants/models.ts 中的 MODELS 列表）对话正常

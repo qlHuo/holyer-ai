@@ -174,7 +174,7 @@ export const chunks = pgTable('chunks', {
 })
 ```
 
-> ⚠️ **待验证**：本项目安装的 Drizzle 版本是否支持 `vector` 类型（该类型在较新版本引入），以及 `drizzle-kit push` 能否自动处理 `CREATE EXTENSION vector`。**在 Phase 3 任务 3.1 实际建表时确认**，若不支持则手动写 SQL 迁移。
+> ✅ **已解决（2026-08-30 / 08-31 建表时确认）**：Drizzle 支持 `vector` 类型列；但 **`CREATE EXTENSION vector` 必须手工先执行** —— 迁移文件里不含扩展启用，扩展没装就建表会报 `type "vector" does not exist`。详见 [本地库迁移 Docker](../dev-log/2026-08-30-local-db-docker-migration.md) 与 [RAG 上线 Neon](../dev-log/2026-08-31-neon-rag-deployment.md)。
 
 ---
 

@@ -91,8 +91,8 @@ pnpm dev
 npx nuxi typecheck
 
 # 数据库迁移
-npx drizzle-kit push      # 推送 Schema
 npx drizzle-kit generate  # 生成迁移文件
+npx drizzle-kit migrate   # 应用迁移（本地/线上各一次）
 ```
 
 ### 目录结构

@@ -11,9 +11,8 @@
 ```bash
 npx nuxi dev                    # 开发服务器 (http://localhost:3000)
 npx nuxi build                  # 构建 Cloudflare Workers 版本（nitro.preset: cloudflare-module）
-npx drizzle-kit push            # 推送 Schema 到 Neon
-npx drizzle-kit generate        # 生成迁移文件
-npx drizzle-kit migrate         # 执行迁移
+npx drizzle-kit generate        # 生成迁移文件（改完 schema 后，提交 Git）
+npx drizzle-kit migrate         # 应用迁移（本地/线上各一次）。不用 push，见 .claude/rules/database.md
 npx nuxi typecheck              # TypeScript 类型检查
 ```
 

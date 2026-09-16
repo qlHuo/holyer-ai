@@ -58,8 +58,20 @@ const sql = neon(process.env.DATABASE_URL!)
 
 ## 迁移
 
+**标准流程**（改完 `schema.ts` 后；**本地和线上各跑一次 `migrate`**）：
+
 ```bash
-npx drizzle-kit generate   # 生成迁移文件
-npx drizzle-kit migrate    # 执行迁移
-npx drizzle-kit push       # 开发阶段快速推送（跳过迁移文件）
+npx drizzle-kit generate   # 1. 生成迁移文件（提交 Git）
+npx drizzle-kit migrate    # 2. 应用（按「账本」增量执行，自动记账）
 ```
+
+指向线上时**用内联传参**，别改 `.env`（否则下次本地开发会连线上库）：
+
+```bash
+NUXT_DATABASE_URL="<Neon 池化 URL>" npx drizzle-kit migrate
+```
+
+❌ **不再使用 `drizzle-kit push`** —— 它直接改结构但**不记账**（不写 `drizzle.__drizzle_migrations`）。一旦混用，账本与库脱节：之后 `migrate` 会从 `0000` 重放并报 `already exists`，需先做 baseline 补救（本项目 2026-08 已踩过一次）。
+
+> 原理、baseline 步骤、「一次 schema 变更的完整落地清单」见 [Drizzle Kit 笔记](../../docs/learning-notes/drizzle-kit.md)。
+> **顺序铁律**：DDL → 回填数据 → 部署代码。先部署代码而列还不存在，会直接写入报错。
