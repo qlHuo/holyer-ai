@@ -358,8 +358,12 @@ select:focus-visible,
 }
 
 /* 方括号用伪元素补，不写进链接文本 —— 文本里写成 [[1]](…) 会与 markdown 引用式链接语法歧义 */
-.citation-chip::before { content: '['; }
-.citation-chip::after { content: ']'; }
+.citation-chip::before {
+  content: '[';
+}
+.citation-chip::after {
+  content: ']';
+}
 
 .citation-chip:hover {
   background-color: color-mix(in srgb, var(--ui-primary) 24%, transparent);
