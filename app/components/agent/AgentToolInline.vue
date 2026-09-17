@@ -10,10 +10,19 @@
  */
 
 import type { AgentToolCallItem } from '~/types/agent'
+import { stripCitationTrailer } from '#shared/citation'
 
 const props = defineProps<{
   toolCalls: AgentToolCallItem[]
 }>()
+
+/**
+ * 展示用的工具输出：剥掉检索工具开头的 citation 元数据块。
+ * 那段 JSON 只服务前端解析（见 shared/citation.ts），展示出来纯属噪音。
+ */
+function displayResult(result: string | undefined): string {
+  return stripCitationTrailer(result)
+}
 
 /** 工具元数据：中文标签 + Lucide 图标 */
 const TOOL_META: Record<string, { label: string, icon: string }> = {
@@ -186,7 +195,7 @@ const headerText = computed(() => {
             <div class="tool-detail-label">
               输出
             </div>
-            <pre class="tool-detail-content">{{ tc.result || '（无输出）' }}</pre>
+            <pre class="tool-detail-content">{{ displayResult(tc.result) || '（无输出）' }}</pre>
           </div>
         </div>
       </div>

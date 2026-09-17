@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AgentToolCallItem } from '~/types/agent'
+import type { CitationMeta } from '#shared/citation'
 import { collectAllowedImagesFromTools } from '~/utils/allowedImages'
+import { buildCitationIndex, emptyCitationIndex, isExternalSource } from '~/utils/citations'
 
 const props = defineProps<{
   /** 聊天消息内容 */
@@ -22,6 +24,38 @@ const chatStore = useChatStore()
 const allowedImages = computed(() =>
   props.role === 'assistant' ? collectAllowedImagesFromTools(props.tools) : new Set<string>()
 )
+
+/** 可引用的来源白名单来自 store（**对话级**，全消息共享一次计算）——见 chat.store 的 citationSources */
+const citations = computed(() => chatStore.citationSources)
+
+/**
+ * 引用索引 —— **唯一一份**：正文渲染（chip 编号）与底部来源列表都读它。
+ * 分两处各算一遍必然漂移（一个扫正文、一个扫来源集合，条件稍有出入就对不上号）。
+ */
+const citationIndex = computed(() =>
+  props.role === 'assistant' ? buildCitationIndex(props.content, citations.value) : emptyCitationIndex()
+)
+
+// ==================== citation 点击 ====================
+
+/** 预览弹层状态（本地即可：同一时刻只会有一个 chip 被点） */
+const previewOpen = ref(false)
+const previewSource = ref<CitationMeta | null>(null)
+
+/** 点击分流：有可信原文链接 → 新窗口打开 GitHub；否则 → 打开系统内文档预览 */
+function handleCitationClick(key: string) {
+  const source = citations.value.get(key)
+  if (!source) return
+
+  if (isExternalSource(source)) {
+    // noopener：被打开的页面拿不到 window.opener，防 reverse tabnabbing
+    window.open(source.u!, '_blank', 'noopener,noreferrer')
+    return
+  }
+
+  previewSource.value = source
+  previewOpen.value = true
+}
 </script>
 
 <template>
@@ -59,6 +93,16 @@ const allowedImages = computed(() =>
         :content="content"
         :is-streaming="isStreaming ?? false"
         :allowed-images="allowedImages"
+        :citation-index="citationIndex"
+        @citation-click="handleCitationClick"
+      />
+
+      <!-- ===== 参考来源（引用溯源 3.11）=====
+           流式期间不渲染：列表会在生成过程中不断增长，观感很跳 -->
+      <ChatMessageSources
+        v-if="role === 'assistant' && !isStreaming && citationIndex.ordered.length > 0"
+        :sources="citationIndex.ordered"
+        @select="handleCitationClick"
       />
 
       <!-- ===== 用户消息纯文本 ===== -->
@@ -85,6 +129,14 @@ const allowedImages = computed(() =>
       v-if="isInitializing && role === 'assistant'"
       name="i-lucide-sparkles"
       class="inline-block w-4 h-4 text-(--ui-primary) animate-pulse"
+    />
+
+    <!-- ===== citation 预览弹层（点来源 chip 且无 GitHub 原文时打开） ===== -->
+    <ChatCitationPreviewSlideover
+      v-if="role === 'assistant'"
+      :open="previewOpen"
+      :source="previewSource"
+      @close="previewOpen = false"
     />
   </div>
 </template>

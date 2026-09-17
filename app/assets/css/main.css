@@ -337,6 +337,42 @@ select:focus-visible,
   }
 }
 
+/* ---- 引用溯源 chip（由 markdown-it 的 link_open renderer 生成，见 app/utils/markdown.ts） ----
+   必须放在全局：chip 由 v-html 注入，scoped 样式够不到；底部「参考来源」列表也复用同一个类 */
+
+.citation-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1em;
+  padding: 0 0.2em;
+  border-radius: var(--radius-xs);
+  background-color: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  color: var(--ui-primary);
+  font-size: 0.75em;
+  font-weight: var(--font-semibold);
+  line-height: 1.6;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast);
+}
+
+/* 方括号用伪元素补，不写进链接文本 —— 文本里写成 [[1]](…) 会与 markdown 引用式链接语法歧义 */
+.citation-chip::before { content: '['; }
+.citation-chip::after { content: ']'; }
+
+.citation-chip:hover {
+  background-color: color-mix(in srgb, var(--ui-primary) 24%, transparent);
+}
+
+/* 预览弹层滚到引用小节后给个一次性高亮，让用户看清「落在哪一段」 */
+.citation-preview-anchor {
+  border-radius: var(--radius-sm);
+  background-color: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ui-primary) 30%, transparent);
+  transition: background-color var(--duration-slow);
+}
+
 /* ---- 代码块容器（由 markdown-it 自定义 fence renderer 生成） ---- */
 
 .code-block-wrapper {

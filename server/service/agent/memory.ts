@@ -8,9 +8,25 @@
  */
 
 import type { Message } from '~~/shared/types/provider'
+import { stripCitationTrailer } from '#shared/citation'
 
 /** 默认保留最近的非 system 消息条数 */
 const DEFAULT_MAX_HISTORY = 40
+
+/**
+ * 剥掉 tool 消息里的 citation 元数据块（shared/citation.ts）。
+ *
+ * 工具结果文本要同时服务两端：前端解析它重建来源白名单，所以元数据必须留在落库文本里；
+ * 但 LLM 完全不需要它——每条 ~130-180 字符，且**每一轮 LLM 调用都会重发一次**上下文，
+ * 累积放大还可能被模型模仿输出。AgentMemory 是进 LLM 上下文的唯一闸口，
+ * 构造（跨轮历史）与 add（同请求后续轮）两处都在这里收口。
+ *
+ * 返回新对象而非原地改：入参可能来自调用方仍在使用的数组（如 index.post.ts 的 allMessages）。
+ */
+function withoutToolMeta(msg: Message): Message {
+  if (msg.role !== 'tool') return msg
+  return { ...msg, content: stripCitationTrailer(msg.content) }
+}
 
 export class AgentMemory {
   private systemMessages: Message[]
@@ -20,13 +36,13 @@ export class AgentMemory {
   constructor(messages: Message[], maxHistory: number = DEFAULT_MAX_HISTORY) {
     // 分离 system 消息和其他消息——system 消息永不被裁剪
     this.systemMessages = messages.filter(m => m.role === 'system')
-    this.historyMessages = messages.filter(m => m.role !== 'system')
+    this.historyMessages = messages.filter(m => m.role !== 'system').map(withoutToolMeta)
     this.maxHistory = maxHistory
   }
 
   /** 添加一条消息，自动触发裁剪检查 */
   add(msg: Message): void {
-    this.historyMessages.push(msg)
+    this.historyMessages.push(withoutToolMeta(msg))
     this.trim()
   }
 

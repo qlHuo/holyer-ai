@@ -14,6 +14,7 @@ import { z } from 'zod'
 import RagApi from '~/api/rag'
 import { ApiError } from '~/api/request'
 import {
+  buildBlobUrl,
   fetchDefaultBranch,
   fetchMdTree,
   fetchRawFile,
@@ -297,6 +298,8 @@ async function startImport() {
         title: item.title,
         content,
         sourceType: 'github',
+        // 引用溯源（3.11）：存原文回链，citation chip 点击时直接跳 GitHub 而非系统内副本
+        sourceUrl: buildBlobUrl({ owner, repo, branch, path: item.path }),
         overwrite: strategy.value === 'overwrite'
       })
       item.status = 'success'

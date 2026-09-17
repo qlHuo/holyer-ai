@@ -46,6 +46,7 @@ export const documents = pgTable('documents', {
   title: varchar('title', { length: 255 }).notNull(),
   sourceType: varchar('source_type', { length: 50 }).notNull().default('markdown'), // 来源通道（local/github/manual；'markdown' 为历史遗留默认）
   content: text('content').notNull(), // 原始 markdown
+  sourceUrl: text('source_url'), // 3.11：原文链接（仅 GitHub 引入有），引用回链用
   createdAt: timestamp('created_at').defaultNow().notNull()
 }, table => ({
   kbIdx: index('idx_documents_kb_id').on(table.kbId)
@@ -61,6 +62,7 @@ export const chunks = pgTable('chunks', {
   embeddingModel: varchar('embedding_model', { length: 100 }), // 预留：模型切换
   contextualText: text('contextual_text'), // 阶段 C：Contextual Retrieval
   images: jsonb('images').$type<ChunkImage[]>(), // 图片元数据（不参与向量化）
+  headingPath: jsonb('heading_path').$type<string[]>(), // 3.11：结构化标题路径（H1→当前节），引用溯源用
   contentTokens: text('content_tokens'), // 3.9 全文检索：分词结果（原料），可空无 default —— NULL 是回填游标
   contentTsv: tsvector('content_tsv') // 3.9 全文检索：生成列（成品），PG 自动从 content_tokens 派生
     .generatedAlwaysAs(sql`to_tsvector('simple', content_tokens)`)
@@ -85,6 +87,7 @@ export const chunks = pgTable('chunks', {
 | `embeddingModel` | 用了哪个模型 | 预留：不同模型向量空间不兼容，换模型时识别旧数据 |
 | `contextualText` | 预生成上下文 | 阶段 C 3.10 Contextual Retrieval，现在空着 |
 | `images` | 图片元数据 | 决策 7：URL 不进向量，阶段 B 已兑现（白名单渲染） |
+| `headingPath` 🆕 | 结构化标题路径 | 3.11：chunker 早就提取了它，但此前只被拼进 `content` 前缀就丢弃；现在另存一份结构化数据供引用溯源 |
 | `contentTokens` 🆕 | 分词结果（**原料**） | 3.9：应用写入，空格分隔的词元串 |
 | `contentTsv` 🆕 | `tsvector`（**成品**） | 3.9：**生成列**，从 `content_tokens` 自动派生 + GIN 索引 |
 
@@ -100,6 +103,18 @@ export const chunks = pgTable('chunks', {
 | **检索** | **只读** `content_tsv` | `retriever.ts` 的 `searchByKeyword` |
 
 > 一句话：**`content_tokens` 只活在写入阶段；检索永远只读 `content_tsv`。** 中间那一跳由生成列自动完成。
+
+## 3.11 新增两列：为什么用 jsonb 而不是数组
+
+`chunks.heading_path` 存的是字符串数组（H1→当前节的祖先链），但类型选了 `jsonb` 而非 PG 原生 `text[]`：
+
+- **双驱动形状差异**：本地 dev 走 `postgres-js`、生产走 `neon-http`，两者对部分 PG 类型的反序列化行为不完全一致。`images` 列已经踩过这条路——检索层的原始 SQL 里写着 `c.images::text`，取出来再在 JS 侧 `JSON.parse`，就是为了规避这个差异
+- **`text[]` 是本项目从未用过的类型**，两个驱动的数组返回形状未经验证；而 jsonb 的读写路径已被 `images` 在生产验证过
+- 代价：读取时要多一步 `::text` 再 parse。这点开销换掉一整类不确定性，划算
+
+`documents.source_url` 是普通 `text`，无此顾虑。
+
+> 存量数据的 `heading_path` 由回填脚本补齐。回填方式是**重新分块推导**而不是从 `content` 的标题前缀反推——前缀确实拼着 `headingPath.join(' > ')`，但正文首行恰好长成那个形状就会误判；重算是纯函数、完全确定性，且不重算 embedding。详见 [引用溯源落地记录](../dev-log/2026-09-17-citation-implementation.md)。
 
 - **为什么必须两列**：PostgreSQL 不认识中文 —— `to_tsvector('simple', 中文原文)` 会把整段当一个 token。所以中文切词必须在 JS 侧（`Intl.Segmenter`）先做，切好的串存 `content_tokens`，再交给 PG 转 `tsvector`。
 - **为什么用生成列**：`UPDATE content_tokens` 时 PG 自动重算 `content_tsv`，不存在「列更新了、索引没跟上」。代价：**不能直接写 `content_tsv`**（会报错），且表达式必须 IMMUTABLE（所以写二参 `to_tsvector('simple', x)`）。
@@ -149,6 +164,7 @@ kbId: uuid('kb_id').references(() => knowledgeBases.id, { onDelete: 'cascade' })
 | `source_type` | documents | ✅ **语义已改**为「来源通道」`local`/`github`/`manual`（2026-09-09）—— 原设想的 PDF/Word 已明确不做 |
 | `embedding_model` | chunks | ⬜ 换 embedding 模型时增量重算 |
 | `images` | chunks | ✅ 阶段 B 已兑现（图片白名单渲染） |
+| `heading_path` / `source_url` | chunks / documents | ✅ 阶段 C 3.11 兑现（引用溯源）——**不是预留列**，是这一阶段新增的 |
 
 ## 相关文档
 
@@ -156,4 +172,5 @@ kbId: uuid('kb_id').references(() => knowledgeBases.id, { onDelete: 'cascade' })
 - [[drizzle-orm]] — 通用建表语法（pgTable、类型函数、修饰符、索引）
 - [[pgvector]] — 向量列 vs 标量列、距离运算符、为什么顺序扫描优于索引
 - [RAG 知识库完整设计](../dev-log/2026-08-19-rag-knowledge-base-design.md) — 三表的设计论证
+- [引用溯源落地记录](../dev-log/2026-09-17-citation-implementation.md) — `heading_path` / `source_url` 两列的用途与回填方式
 - [本地开发库迁移 Docker](../dev-log/2026-08-30-local-db-docker-migration.md) — 启用 pgvector 的前置操作

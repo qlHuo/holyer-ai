@@ -10,6 +10,13 @@
  */
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
+import { type CitationIndex, emptyCitationIndex } from '~/utils/citations'
+
+/** citation chip 的内部 scheme（preprocess 生成 → link_open 拦截，不会被浏览器解析） */
+const KB_CITE_PREFIX = 'kb://cite/'
+
+/** 工具结果里给每个片段打的引用短 key：[kb:xxxxxxxxxxxx] */
+const CITATION_MARKER_RE = /\[kb:([0-9a-f]{12})\](?!\()/gi
 
 // ---------------------------------------------------------------------------
 // 单例
@@ -74,6 +81,18 @@ export function getMarkdownParser(): MarkdownIt {
     if (!token) return defaultLinkOpen(tokens, idx, options, env, self)
 
     const href = token.attrGet('href') ?? ''
+
+    // 引用溯源 chip（3.11）：preprocessMarkdown 只对**白名单内**的 key 生成这个 scheme，
+    // 白名单外的 key 原样留在正文里当纯文本 —— 所以这里只做纯改写、**永远返回 <a>**。
+    // 绝不能在此返回降级 HTML（如 <span>）：本规则的返回值与默认的 link_close（恒定吐 </a>）
+    // 配对，返回非 <a> 会产生 `...1</a>` 这类不配对标签。跳转交给 MarkdownContent 的点击委托。
+    if (href.startsWith(KB_CITE_PREFIX)) {
+      token.attrSet('href', '#') // 换成 #，避免浏览器尝试解析 kb: 协议
+      token.attrSet('class', 'citation-chip')
+      token.attrSet('data-citation', href.slice(KB_CITE_PREFIX.length))
+      token.attrSet('role', 'button')
+      return defaultLinkOpen(tokens, idx, options, env, self)
+    }
 
     // 外部链接（http/https）添加 target 和 rel
     if (href.startsWith('http://') || href.startsWith('https://')) {
@@ -171,12 +190,59 @@ export function getMarkdownParser(): MarkdownIt {
 // ---------------------------------------------------------------------------
 
 /**
+ * 行内代码段之外的部分做替换。
+ *
+ * 按反引号分段：`a `b` c` → ['a ', '`', 'b', '`', ' c']，遇到反引号段就翻转 inCode
+ * 状态。足以覆盖常见的单/多反引号行内代码，避免把代码里的 [kb:x] 也替换掉。
+ * （不追求与 markdown-it 的 inline code 规则完全一致 —— 差异仅表现为代码里少替换一次。）
+ */
+function replaceOutsideInlineCode(line: string, replace: (text: string) => string): string {
+  const segments = line.split(/(`+)/)
+  let inCode = false
+  return segments
+    .map((seg) => {
+      if (/^`+$/.test(seg)) {
+        inCode = !inCode
+        return seg
+      }
+      return inCode ? seg : replace(seg)
+    })
+    .join('')
+}
+
+/**
  * 在 Markdown 渲染前对原始内容做预处理
  *
- * Phase 1：直接返回原文，不做任何处理
- * Phase 2：可在此处解析 :::tool-call 等自定义语法，
- *          将其替换为 markdown-it 能识别的 token 或占位 HTML
+ * 引用溯源（3.11）：把**白名单内**的 `[kb:xxxxxxxx]` 替换为 `[n](kb://cite/xxxxxxxx)`，
+ * 由 link_open 渲染成可点击 chip。白名单外的 key（LLM 编造、或引用了上一轮检索的旧 key）
+ * **原样保留**为纯文本 —— 降级可见，而不是静默指错。
+ *
+ * 白名单过滤放在这里而非 link_open，是因为 link_open 的返回值必须与默认 link_close
+ * 配对（见该规则的注释）。
  */
-export function preprocessMarkdown(content: string): string {
-  return content
+export function preprocessMarkdown(content: string, citations?: CitationIndex): string {
+  const index = citations ?? emptyCitationIndex()
+  if (index.byKey.size === 0) return content
+
+  const replace = (text: string): string =>
+    text.replace(CITATION_MARKER_RE, (whole, key: string) => {
+      const n = index.byKey.get(key.toLowerCase())
+      return n ? `[${n}](${KB_CITE_PREFIX}${key.toLowerCase()})` : whole
+    })
+
+  const lines = content.split('\n')
+  let inFence = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!
+    // 围栏代码块（``` / ~~~）整段跳过，与 app/utils/github.ts 的图片改写同一套判定
+    if (/^\s*(`{3,}|~{3,})/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (inFence) continue
+    lines[i] = replaceOutsideInlineCode(line, replace)
+  }
+
+  return lines.join('\n')
 }

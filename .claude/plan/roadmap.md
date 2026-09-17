@@ -168,14 +168,15 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 > - **3.11 次之** — 元数据 + 渲染侧（citation、`sourceUrl`），一次轻量回填，不动向量
 > - **3.10 最后** — 需**全量重新分块 + 重新 embedding**（所有 chunk 重算），必须等语料/分块稳定后再做，否则返工白花钱；提前做 3.11 可让这次重灌一次写齐 `heading_path`/`source_url`
 >
-> **进度**：3.9 ✅ 已完成（2026-09-15，本地；线上迁移待手动执行）。
+> **进度（2026-09-17）**：3.9 ✅ **本地 + 线上全量落地**（建列 → 回填 → 补迁移账本 → 部署）。实测 concept 92% 持平、exact MRR 0.926→1.000。
+> 3.11 ✅ **实现与本地验证完成**（本地回填 2031 条零跳过、检索 A/B 无回归、端到端 LLM 标注与渲染链路全通）；**⚠️ 线上建列 + 回填待执行**——代码已 select 新列，未迁移前不可部署。阶段 C 完成 2/3，剩 3.10。
 >
 > 每步的背景/需求/方案/流程详见 [阶段 C 实施规划](../../docs/dev-log/2026-09-14-rag-stage-c-plan.md)。
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
 | 3.9 | 混合检索 | 向量 + 全文关键词（tsvector）+ RRF 融合排序；只改 retriever、加索引列。**中文分词方案是先决风险**——PostgreSQL 原生 tsvector 不分中文，倾向 `Intl.Segmenter`（Edge 原生、零依赖）在入库期预分词 | ✅ (2026-09-15) |
-| 3.11 | 引用溯源 | citation 回链原文（标题路径 + docId#chunkIndex），前端渲染可点击；一并设计 `sourceUrl`（3.7 GitHub 来源回链）。需补 `chunks.heading_path` 结构化列（现仅拼进 content 前缀） | ⬜ |
+| 3.11 | 引用溯源 | citation 回链原文（标题路径 + docId#chunkIndex），前端渲染可点击；一并设计 `sourceUrl`（3.7 GitHub 来源回链）。需补 `chunks.heading_path` 结构化列（现仅拼进 content 前缀）。**落地**：元数据缝进工具结果文本（零持久化重建白名单）+ chunkId 派生短 key + 偏移 0 锚定（详见 [落地记录](../../docs/dev-log/2026-09-17-citation-implementation.md) · [ADR-015](../../docs/decisions/015-citation-metadata-carrier.md)） | ✅ (2026-09-17) |
 | 3.10 | Contextual Retrieval | 每 chunk 预生成上下文后**全量重建向量**；`chunks.contextual_text` 列已预留。关键约束：生成走离线脚本（上传 API 受 CF 50 subrequest 限，边生成边入库会爆配额） | ⬜ |
 
 > **产品功能分层**（详见 [需求分析](requirements.md)）：

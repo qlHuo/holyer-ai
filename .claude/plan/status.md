@@ -1,32 +1,34 @@
 # 项目进度快照
 
-> 更新于 2026-09-16
+> 更新于 2026-09-17
 
 ## 当前状态
 
-**Phase 3 = RAG 知识库** — 阶段 A ✅ / 阶段 B ✅ 收官（2026-09-09）；**阶段 C 进行中**：3.9 混合检索 ✅ **本地 + 线上全量落地**，剩 **3.11 引用溯源 → 3.10 Contextual Retrieval**。
+**Phase 3 = RAG 知识库** — 阶段 A ✅ / 阶段 B ✅ 收官（2026-09-09）；**阶段 C 进行中（2/3）**：3.9 混合检索 ✅ 本地+线上、3.11 引用溯源 ✅ 本地（**线上待迁移**），剩 3.10 Contextual Retrieval。
 
 ## 近期完成
 
-- 3.9 混合检索**完整落地**（2026-09-16）— 本地：retriever 拆 `searchByVector`/`searchByKeyword`/`hybridSearch`(RRF) + `tokenizer.ts` + `content_tokens`/生成列 `content_tsv`/GIN + 回填脚本；线上：建列 → 回填 → 补账本 → 部署。**concept 92% 持平、exact MRR 0.926→1.000**
-- 顺手还清数据库欠账：线上/本地迁移账本（`drizzle.__drizzle_migrations`）从空补齐，以后 `generate`→`migrate` 可正常用（详见 [drizzle-kit 笔记](docs/learning-notes/drizzle-kit.md)）
-- 3.7 GitHub 文档引入（M4，2026-09-09）— 阶段 B 收官｜ M2 后半·聊天选库器（2026-09-09）
-- 3.8/M3 图片端到端验收（2026-09-08）｜ 3.6 知识库管理 UI（2026-09-06）
-- 3.5 上传 API + KB CRUD（2026-09-03）｜ 3.1-3.4 检索管道/灌库/Agentic 闭环（2026-08-31）
+- 3.11 引用溯源**实现与本地验证完成**（2026-09-17）— 元数据缝进工具结果文本（刷新可重建白名单、零新增持久化列）+ chunkId 派生短 key + 偏移 0 锚定。本地回填 2031 条零跳过，端到端 LLM 标注与渲染全通（详见 [落地记录](../../docs/dev-log/2026-09-17-citation-implementation.md) · [ADR-015](../../docs/decisions/015-citation-metadata-carrier.md)）
+- 3.11 自查修复三处（2026-09-17）— 读取边界的元数据泄露、白名单按轮收窄导致的跨轮引用悬空、短 key 12 位的连字符陷阱（会**静默清空白名单**）
+- 3.9 混合检索完整落地（2026-09-16）— concept 92% 持平、exact MRR 0.926→1.000；并补齐线上/本地迁移账本
+- 3.7 GitHub 文档引入（2026-09-09）｜ 3.8/M3 图片端到端验收（2026-09-08）
+- 3.6 知识库管理 UI（2026-09-06）｜ 3.5 上传 API + KB CRUD（2026-09-03）
 
 ## 下一步
 
-1. **[P0] 3.11 引用溯源** — `heading_path`/`source_url` + citation 渲染与白名单（详见 [实施规划](docs/dev-log/2026-09-14-rag-stage-c-plan.md)）
-2. **[P1] 3.10 Contextual Retrieval** — 需全量重算 embedding，压最后
-3. **[P1] Phase 4 MCP** — 开工先落 PromptSegment 抽象
+1. **[P0] 3.11 线上建列 + 回填** — ⚠️ 代码已 select 新列，**未迁移前线上不可部署**（顺序：DDL → 回填 → 部署）
+2. **[P0] 浏览器验收 3.11 前端** — chip/来源列表/预览弹层的观感与交互尚未人工看过
+3. **[P1] 3.10 Contextual Retrieval** — 需全量重算 embedding，压最后；验收清单要加「历史引用会集体失效」
+4. **[P1] Phase 4 MCP** — 开工先落 PromptSegment 抽象
 
 ## 阻塞 / 风险
 
-- 当前无阻塞项
-- ✅ `Intl.Segmenter` 在 CF Workers 可用（线上已验证，此前唯一未证实假设已排除）
-- ⏳ 待观察：分词 CPU 开销（实测 Node 上 1.89 KB/ms）—— 线上暂未触发限额，大文档上传时可留意 Dashboard CPU Time
+- ⚠️ **线上库缺 `heading_path` / `source_url` 两列，当前代码部署即报错**
+- 记录的召回基线（92%）在当前语料（111 篇 / 2031 片）上已不可复现（实测 83%）；**跨语料比百分比无意义，只有同语料 A/B 有效**
+- 引用正确性与引用率均无自动断言（记为 X4 后续项）
 
 ## 推迟项
 
-- 3.9 已知取舍：混合检索 top-5 会被「两路都靠前」的 chunk 占满，纯关键词独中的 chunk 可能被挤出（可调 `candidates`/`topK`）
-- 文档在线编辑、公共组件抽取等；todo.md 中 11 项待办，详见 [todo.md](todo.md)
+- 3.9 已知取舍：混合检索 top-5 会被「两路都靠前」的 chunk 占满
+- 3.11 相关：图片白名单是否也放宽到对话级、预览图片白名单范围偏大
+- 文档在线编辑、公共组件抽取等；todo.md 中 15 项待办，详见 [todo.md](todo.md)

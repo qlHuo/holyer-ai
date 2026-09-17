@@ -65,6 +65,9 @@ export const documents = pgTable('documents', {
   title: varchar('title', { length: 255 }).notNull(),
   sourceType: varchar('source_type', { length: 50 }).notNull().default('markdown'), // 来源通道：local 灌库 / github 引入 / manual 手动（'markdown' 为历史灌库遗留默认）
   content: text('content').notNull(), // 原始 markdown
+  // 引用溯源（3.11）：GitHub 引入时写 github.com/{owner}/{repo}/blob/{branch}/{path}，供 citation chip 回链原文。
+  // local/manual 来源为 NULL（历史 GitHub 文档导入时未记录 owner/repo，同样为 NULL）
+  sourceUrl: text('source_url'),
   createdAt: timestamp('created_at').defaultNow().notNull()
 }, table => ({
   kbIdx: index('idx_documents_kb_id').on(table.kbId)
@@ -81,6 +84,10 @@ export const chunks = pgTable('chunks', {
   embeddingModel: varchar('embedding_model', { length: 100 }), // 预留：模型切换时识别旧模型
   contextualText: text('contextual_text'), // 阶段 C：Contextual Retrieval 预生成上下文
   images: jsonb('images').$type<ChunkImage[]>(), // 图片元数据（不参与向量化）
+  // 引用溯源（3.11）：结构化标题路径（H1→当前节的祖先链，chunker 的 headingPath 原样落库）。
+  // 用 jsonb 而非 text[]：与 images 同一条已验证的读写路径（写入走 drizzle jsonb、读取经 ::text 后 JSON.parse），
+  // 规避 postgres-js / neon-http 双驱动对数组类型的返回形状差异。存量数据由 scripts/backfill-heading-path.ts 回填
+  headingPath: jsonb('heading_path').$type<string[]>(),
   // 全文检索：分词结果（空格分隔），由 tokenizer.toIndexedText 写入。可空无 default —— NULL 是回填游标
   contentTokens: text('content_tokens'),
   // 全文检索：生成列，自动从 content_tokens 派生（IMMUTABLE 表达式，满足生成列要求）

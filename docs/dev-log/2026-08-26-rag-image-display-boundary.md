@@ -194,5 +194,6 @@ _md.renderer.rules.image = function (tokens, idx, options, env, self) {
 - [RAG 知识库完整设计](2026-08-19-rag-knowledge-base-design.md) — 决策 7 是本文的方案落地形态
 - [pgvector 笔记](../learning-notes/pgvector.md) — 向量列与标量列的关系、检索时元数据如何被带出
 - [Agent 内容审核自愈](2026-08-06-agent-content-filter-self-healing.md) — 文本侧的内容安全机制
+- [引用溯源落地记录](2026-09-17-citation-implementation.md) — 3.11 沿用本文「按次白名单 + 凡可控字符串不作信任来源」的判据，并把「元数据与不可信正文共处一个字符串」这个新暴露面用「偏移 0 锚定」补上
 - [Markdown 与 Mermaid 实现](2026-07-01-markdown-mermaid-implementation.md) — 渲染管线现状
 - [实施路线图](../../.claude/plan/roadmap.md) — Phase 3 阶段 B

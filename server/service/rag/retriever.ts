@@ -25,11 +25,17 @@ export type SearchSource = 'vector' | 'keyword' | 'both'
 export interface SearchResult {
   chunkId: string
   documentId: string
+  /** 所属知识库 id（引用溯源：文档失效时跳回该库列表兜底） */
+  kbId: string
   documentTitle: string
   chunkIndex: number
   content: string
   /** 该 chunk 的图片元数据（决策 7：不参与向量化，随文带出供渲染） */
   images: ChunkImage[]
+  /** 结构化标题路径（H1→当前节），引用溯源展示「文档 › 小节」用；旧数据回填前为 null */
+  headingPath: string[] | null
+  /** 原文链接（仅 GitHub 引入的文档有），citation 点击回链 GitHub 原文用 */
+  sourceUrl: string | null
   /** 融合相关度分：hybrid 下为 RRF 分；searchByVector 下为余弦相似度 0~1 */
   score: number
   /** 命中来源 */
@@ -64,6 +70,8 @@ interface RawRow {
   content: string
   document_title: string
   images: string | null // jsonb 经 ::text 取出，规避双驱动 jsonb 返回形状差异
+  heading_path: string | null // 同上，jsonb 经 ::text 取出后由 parseHeadingPath 解析
+  source_url: string | null
   score: number | string
 }
 
@@ -83,6 +91,23 @@ function parseImages(text: string | null | undefined): ChunkImage[] {
     // 非法 JSON → 视为无图
   }
   return []
+}
+
+/**
+ * 解析 heading_path 文本（jsonb 经 ::text 取出）。
+ * 未回填的旧数据是 SQL NULL → null；非法结构 → null（降级为「只显示标题」）。
+ */
+function parseHeadingPath(text: string | null | undefined): string[] | null {
+  if (!text) return null
+  try {
+    const arr = JSON.parse(text) as unknown
+    if (Array.isArray(arr) && arr.length > 0 && arr.every(x => typeof x === 'string')) {
+      return arr as string[]
+    }
+  } catch {
+    // 非法 JSON → 视为无标题路径
+  }
+  return null
 }
 
 /** 知识库过滤条件：优先 kbIds[]（多库），其次 kbId（单库）；都为空 → 全库（TRUE） */
@@ -105,10 +130,13 @@ function mapRows(result: unknown, source: SearchSource): SearchResult[] {
     return {
       chunkId: row.id,
       documentId: row.doc_id,
+      kbId: row.kb_id,
       documentTitle: row.document_title,
       chunkIndex: row.chunk_index,
       content: row.content,
       images: parseImages(row.images),
+      headingPath: parseHeadingPath(row.heading_path),
+      sourceUrl: row.source_url ?? null,
       score,
       source,
       ...(source === 'vector' ? { similarity: score } : {})
@@ -139,7 +167,9 @@ export async function searchByVector(
       c.chunk_index,
       c.content,
       c.images::text AS images,
+      c.heading_path::text AS heading_path,
       d.title AS document_title,
+      d.source_url,
       1 - (c.embedding <=> ${vecStr}::vector) AS score
     FROM chunks c
     JOIN documents d ON d.id = c.doc_id
@@ -181,7 +211,9 @@ export async function searchByKeyword(
       c.chunk_index,
       c.content,
       c.images::text AS images,
+      c.heading_path::text AS heading_path,
       d.title AS document_title,
+      d.source_url,
       ts_rank_cd(c.content_tsv, q.query) AS score
     FROM chunks c
     JOIN documents d ON d.id = c.doc_id

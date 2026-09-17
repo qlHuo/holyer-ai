@@ -67,6 +67,18 @@ function encodePathSegments(...parts: string[]): string {
     .join('/')
 }
 
+/**
+ * 构造 GitHub 原文 blob 页面 URL（引用溯源 3.11，入库时随文档一起存 sourceUrl）
+ *
+ * 与图片改写走同一套路径编码（encodePathSegments），不要另写一份。
+ * 用 branch 而非 commit sha：仓库后续提交会让链接漂移，属已知取舍（见 roadmap 3.11）。
+ * host 固定 github.com —— 前端 citation 解析会校验 host 白名单，改这里要同步改
+ * app/utils/citations.ts 的 GITHUB_HOST。
+ */
+export function buildBlobUrl(ctx: { owner: string, repo: string, branch: string, path: string }): string {
+  return `https://github.com/${ctx.owner}/${ctx.repo}/blob/${encodePathSegments(ctx.branch, ctx.path)}`
+}
+
 /** GET /repos/{owner}/{repo} → 默认分支名（branch 未填时解析一次） */
 export async function fetchDefaultBranch(owner: string, repo: string): Promise<string> {
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`)

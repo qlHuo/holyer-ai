@@ -1,10 +1,10 @@
 # 文档索引
 
-> 77 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 79 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
-## 架构决策记录（14 篇）
+## 架构决策记录（15 篇）
 
 `docs/decisions/` — 涉及"选了 A 而不是 B"的不可逆技术决策。
 
@@ -24,10 +24,11 @@
 | ADR-012 | [012-llm-stream-chunk-type](decisions/012-llm-stream-chunk-type.md) | `chat()` 返回类型升级为 `ReadableStream<LLMStreamChunk>` |
 | ADR-013 | [013-prompt-naming](decisions/013-prompt-naming.md) | 统一命名为 Prompt（自定义提示词模板），Phase 2 第一步实现 |
 | ADR-014 | [014-agent-streaming-db-write](decisions/014-agent-streaming-db-write.md) | Agent 流式 DB 写入策略（一次性写入，已知让步） |
+| ADR-015 | [015-citation-metadata-carrier](decisions/015-citation-metadata-carrier.md) | 引用溯源：来源元数据缝进工具结果文本（不新增持久化列）+ 用 chunkId 派生的稳定短 key 作引用标识 |
 
 ---
 
-## 开发日志（47 篇）
+## 开发日志（48 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -35,6 +36,7 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 09-17 | [citation-implementation](dev-log/2026-09-17-citation-implementation.md) | **引用溯源落地：来源元数据、引用协议与安全边界** — 元数据缝进工具结果文本（零持久化重建白名单）、chunkId 派生短 key 而非自增序号、偏移 0 锚定 + 字段校验的四层安全模型、展示编号纯前端派生；含与规划的偏差、三层验证、4 个踩坑（12 位 key 的连字符陷阱会静默废掉整个功能） |
 | 09-14 | [rag-stage-c-plan](dev-log/2026-09-14-rag-stage-c-plan.md) | **RAG 阶段 C 实施规划：三步拆解与排序** — 按「改动半径」排 3.9 混合检索 → 3.11 引用溯源 → 3.10 Contextual Retrieval；每步含背景/需求/方案/流程；中文分词 `Intl.Segmenter`、citation 白名单、3.10 全量重灌与 CF 配额约束 |
 | 09-09 | [github-doc-import-plan](dev-log/2026-09-09-github-doc-import-plan.md) | **GitHub 文档引入：需求定稿与实施方案（3.7/M4）** — 仅公开仓库浏览器直连零 token、sourceType 格式位→来源通道、覆盖策略=同步能力、图相对 URL 改写规则、组件级批量运行态（✅ 已实现并验证） |
 | 09-08 | [chat-knowledge-base-selector](dev-log/2026-09-08-chat-knowledge-base-selector.md) | **聊天知识库选择器：交互设计与检索强度决策** — 检索"三约束维度"（范围/是否/采用）、指定库=装饰器锁范围、四问结论、全局单值状态模型、pill 三态面板 |
@@ -169,5 +171,5 @@
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) · [codegraph](claude-tips/codegraph.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) · [工具预算](dev-log/2026-08-31-agent-tool-budget.md) · [工具调用 UI](dev-log/2026-08-03-agent-toolcall-ui-redesign.md) |
-| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [聊天选库器](dev-log/2026-09-08-chat-knowledge-base-selector.md) · [GitHub 引入定稿](dev-log/2026-09-09-github-doc-import-plan.md) · [阶段C规划](dev-log/2026-09-14-rag-stage-c-plan.md) · [混合检索](learning-notes/hybrid-retrieval.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
+| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [聊天选库器](dev-log/2026-09-08-chat-knowledge-base-selector.md) · [GitHub 引入定稿](dev-log/2026-09-09-github-doc-import-plan.md) · [阶段C规划](dev-log/2026-09-14-rag-stage-c-plan.md) · **引用溯源**：[落地记录](dev-log/2026-09-17-citation-implementation.md) · [ADR-015](decisions/015-citation-metadata-carrier.md) · [混合检索](learning-notes/hybrid-retrieval.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

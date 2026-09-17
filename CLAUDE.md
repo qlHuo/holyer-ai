@@ -57,8 +57,6 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 **反例警示**：实现提示词管理时，表单直接用 `<div>` + `<input>` + `<textarea>` 手写，而项目已安装 Nuxt UI v4（内置 Form 组件）和 Zod（已在 API 端大量使用），这就是跳过了第 2 层。正确做法：`<UForm>` + `z.object({...})` + `useForm()`。
 
-详见 [代码生成优先级规则](.claude/rules/code-generation-priority.md)。
-
 ## 非做不可
 
 这些规则没有例外，违反会直接导致生产故障：
@@ -73,7 +71,7 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 Phase 1 + 1.5 + 2 全部完成 ✅（Phase 2 = Prompt 管理 + Agent Runtime + 工具系统，2026-08-18 全链路审查收尾）。
 
-下一步 **Phase 3 = RAG 知识库**——2026-08-25 与 MCP 对调后先行，从阶段 A「管道验证」起步（纯脚本，召回命中率 >80% 才做 UI）。MCP 顺延为 Phase 4。
+**Phase 3 = RAG 知识库**（2026-08-25 与 MCP 对调后先行）：阶段 A 管道验证 ✅、阶段 B 产品化 ✅（2026-09-09 收官）、**阶段 C 质量增强进行中 2/3** —— 3.9 混合检索 ✅（本地 + 线上）、3.11 引用溯源 ✅（本地，**线上建列与回填待执行**）、3.10 Contextual Retrieval 待做。MCP 顺延为 Phase 4。
 
 进度快照 [status.md](.claude/plan/status.md) · 全量规划 [roadmap](.claude/plan/roadmap.md) · 推迟项 [todo.md](.claude/plan/todo.md)。
 
@@ -86,5 +84,5 @@ Phase 1 + 1.5 + 2 全部完成 ✅（Phase 2 = Prompt 管理 + Agent Runtime + �
 ## 项目文档
 
 - **设计文档**：[需求分析](.claude/plan/requirements.md) · [架构设计](.claude/plan/architecture.md) · [实施路线图](.claude/plan/roadmap.md)
-- **文档索引**：[docs/INDEX.md](docs/INDEX.md) — 43 篇文档的中心索引（ADR、开发日志、学习笔记、技巧）
+- **文档索引**：[docs/INDEX.md](docs/INDEX.md) — 全部文档的中心索引（ADR、开发日志、学习笔记、技巧），篇数以该文件为准
 - **开发规则**：[`.claude/rules/`](.claude/rules/) — 前端、Edge Runtime、SSE、数据库专项规则

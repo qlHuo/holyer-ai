@@ -10,6 +10,8 @@
 
 import type { ExecutableTool, ToolPermission } from '../types'
 import type { ToolContext, ToolDefinition } from '~~/shared/types/provider'
+import type { CitationMeta } from '#shared/citation'
+import { buildCitationTrailer, citationKey } from '#shared/citation'
 import { db } from '~~/server/db'
 import { embedText } from '~~/server/service/rag/embeddings'
 import { hybridSearch } from '~~/server/service/rag/retriever'
@@ -17,6 +19,9 @@ import { hybridSearch } from '~~/server/service/rag/retriever'
 export class KnowledgeBaseSearchTool implements ExecutableTool {
   readonly name = 'search_knowledge_base'
   readonly description = '在用户的知识库中检索信息。输入检索查询（自然语言问题或关键词），返回最相关的文档片段（带来源文档标题）。适用于查找用户私有文档、项目资料、笔记等知识库内容。当用户的问题涉及自己的文档、项目资料时，应调用本工具检索并基于结果回答，而不是凭记忆猜测。当问题涉及多个独立方面（如同时涉及架构、数据库、部署）时，可在一轮内并行调用本工具多次（通常 2~4 次即可），分别检索不同方面；检索到足够信息后就直接回答，不要反复搜索同一主题。'
+    + '\n\n引用规范：每个片段以形如 [kb:3f9a2c1d4e5f] 的标识开头。当你使用了某个片段的信息时，请在该句末尾原样附上它的标识（如「……按标题语义分块 [kb:3f9a2c1d4e5f]」）；没用到的片段不要标注。若一句话综合了多个片段，可并列标注。'
+    + '\n注意：不要自己编写「参考来源」「参考资料」列表——系统会自动附加；也不要输出或提及结果开头的 ⟦src…⟧ 内容（那是系统元数据）。'
+
   readonly permission: ToolPermission = 'readonly'
   readonly parameters: Record<string, any> = {
     type: 'object',
@@ -35,7 +40,9 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
 
   async execute(args: Record<string, unknown>, _signal?: AbortSignal, ctx?: ToolContext): Promise<string> {
     const query = String(args.query ?? '').trim()
-    if (!query) return '错误：检索内容不能为空'
+    // ⚠️ 每条返回路径都必须带元数据块（哪怕是空数组）——「偏移 0 恒由工具自己写」
+    // 是伪造元数据防线的前提，见 shared/citation.ts 文件头
+    if (!query) return buildCitationTrailer([]) + '错误：检索内容不能为空'
 
     try {
       // 1. 读取 embedding 配置（runtimeConfig，对应 NUXT_EMBEDDING_* 环境变量）
@@ -63,16 +70,29 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
       )
 
       if (results.length === 0) {
-        return `未在知识库中找到与「${query}」相关的内容。`
+        return buildCitationTrailer([]) + `未在知识库中找到与「${query}」相关的内容。`
       }
 
-      // 4. 格式化结果（带来源，供 LLM 引用溯源）
-      //    来源标签取代数字分数：混合检索的 RRF 分量级约 0.02，直接展示「相似度 0.02」会被 LLM 误读为「不相关」。
-      //    命中 chunk 的附图以 markdown 拼在片段后（仅绝对 http(s) URL；相对路径丢弃，防请求应用源）。
-      //    这样结果文本经 TOOL_END 落库 + 进 memory：LLM 可见并可引用图片，前端也能从结果
-      //    提取出本轮白名单（见 app/utils/allowedImages.ts）—— ⚠️ 图片 markdown 行不可改动格式。
-      return results
-        .map((r, i) => {
+      // 4. 来源元数据（机器可读，供前端渲染 citation）+ 可读片段
+      //    - 元数据块固定放最前面并参与本工具的**所有**返回路径（防伪造，见 shared/citation.ts）
+      //    - 片段行首的 [kb:xxxx] 是稳定短 key（chunkId 前 8 位），LLM 引用时原样抄，
+      //      前端据此把回答里的 [kb:xxxx] 换成可点击 chip
+      //    - 来源标签取代数字分数：混合检索的 RRF 分量级约 0.02，直接展示「相似度 0.02」会被 LLM 误读为「不相关」
+      //    - 命中 chunk 的附图以 markdown 拼在片段后（仅绝对 http(s) URL；相对路径丢弃，防请求应用源），
+      //      前端从结果提取出本轮图片白名单（见 app/utils/allowedImages.ts）
+      //      ⚠️ 图片 markdown 行不可改动格式
+      const metas: CitationMeta[] = results.map(r => ({
+        k: citationKey(r.chunkId),
+        d: r.documentId,
+        b: r.kbId,
+        c: r.chunkIndex,
+        u: r.sourceUrl,
+        t: r.documentTitle,
+        h: r.headingPath
+      }))
+
+      const body = results
+        .map((r) => {
           const imageLines = r.images
             .filter(img => /^https?:\/\//i.test(img.url))
             .map(img => `\n![${img.alt}](${img.url})`)
@@ -80,11 +100,13 @@ export class KnowledgeBaseSearchTool implements ExecutableTool {
           const sourceTag = r.source === 'keyword'
             ? '（关键词精确命中）'
             : r.source === 'both' ? '（关键词+语义）' : ''
-          return `${i + 1}. [来源：${r.documentTitle}]${sourceTag}\n${r.content}${imageLines}`
+          return `[kb:${citationKey(r.chunkId)}] [来源：${r.documentTitle}]${sourceTag}\n${r.content}${imageLines}`
         })
         .join('\n\n')
+
+      return buildCitationTrailer(metas) + body
     } catch (err) {
-      return `检索失败：${err instanceof Error ? err.message : '未知错误'}`
+      return buildCitationTrailer([]) + `检索失败：${err instanceof Error ? err.message : '未知错误'}`
     }
   }
 

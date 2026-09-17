@@ -17,6 +17,7 @@ import type { Message, ToolCall } from '#shared/types/provider'
 import type { ConversationListItem } from '#shared/types/conversation'
 import type { AgentToolCallItem } from '~/types/agent'
 import ConversationApi from '~/api/conversations'
+import { collectCitationSources } from '~/utils/citations'
 
 /** 工具调用 UI 状态（流式场景，在渲染状态之上增加前端计时字段） */
 export interface AgentToolCallState extends AgentToolCallItem {
@@ -93,6 +94,19 @@ export const useChatStore = defineStore('chat', () => {
   )
 
   const hasMessages = computed(() => messages.value.length > 0)
+
+  /**
+   * 本对话可引用的来源白名单（key → 来源，引用溯源 3.11）
+   *
+   * 放在 store 而不是每个 MessageBody 各算一份：
+   * - 白名单是**对话级**的（LLM 的引用可以跨轮，见 collectCitationSources 的说明），
+   *   若每个气泡各算一份，N 条消息就是 N 次全量重扫
+   * - computed 有缓存，N 个消费者只算一次
+   *
+   * 依赖只有「tool 消息的 content」与「实时 agentToolCalls」——流式追加 assistant content
+   * 不会让它失效（appendStreamContent 只原地改最后一条 assistant 的 content）。
+   */
+  const citationSources = computed(() => collectCitationSources(messages.value, agentToolCalls.value))
 
   // ==================== 对话操作 ====================
 
@@ -374,6 +388,7 @@ export const useChatStore = defineStore('chat', () => {
     selectedModel,
     currentConversation,
     hasMessages,
+    citationSources,
     streamError,
     agentToolCalls,
     // Agent 工具调用

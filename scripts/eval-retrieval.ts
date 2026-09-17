@@ -15,8 +15,11 @@
  */
 
 import postgres from 'postgres'
-import { drizzle } from 'drizzle-orm/postgres-js'
+import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js'
+import { neon } from '@neondatabase/serverless'
+import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http'
 import { sql } from 'drizzle-orm'
+import type { DbClient } from '../server/db'
 import * as schema from '../server/db/schema'
 import { embedText } from '../server/service/rag/embeddings'
 import { searchByVector, searchByKeyword, hybridSearch } from '../server/service/rag/retriever'
@@ -98,9 +101,20 @@ function newStat(label: string): GroupStat {
   return { label, total: 0, docHit: 0, literalHit: 0, literalTotal: 0, mrrSum: 0 }
 }
 
+/**
+ * 引用溯源（3.11）字段的运行时可观测计数
+ *
+ * retriever 的两条 raw SQL 是手写列名，新增列没有类型安全兜底 —— 拼错列名只有运行时才炸。
+ * heading_path 是 jsonb、经 `::text` 取出后 JSON.parse，两个驱动（postgres-js / neon-http）
+ * 的返回形状差异也只能靠实跑发现。所以这里做一次真实断言：库覆盖率 100% 时，
+ * **检索结果里不该再出现 null 的 headingPath**；出现即说明加列/解析链路断了。
+ */
+let resultTotal = 0
+let headingNullInResults = 0
+
 /** 执行检索（vector/hybrid 需先算查询向量；keyword 不需要 embedding） */
 async function runSearch(
-  db: ReturnType<typeof drizzle<typeof schema>>,
+  db: DbClient,
   question: string,
   config: { embeddingApiKey: string, embeddingBaseUrl: string }
 ): Promise<SearchResult[]> {
@@ -111,7 +125,7 @@ async function runSearch(
 }
 
 async function runGroup(
-  db: ReturnType<typeof drizzle<typeof schema>>,
+  db: DbClient,
   stat: GroupStat,
   cases: EvalCase[],
   config: { embeddingApiKey: string, embeddingBaseUrl: string }
@@ -119,6 +133,12 @@ async function runGroup(
   for (const c of cases) {
     stat.total++
     const results = await runSearch(db, c.question, config)
+
+    // 引用溯源字段断言（见文件头的计数说明）
+    for (const r of results) {
+      resultTotal++
+      if (r.headingPath === null) headingNullInResults++
+    }
 
     // 文档命中 + MRR（首个命中项的名次）
     const hitIdx = results.findIndex(r => c.expected.some(k => r.documentTitle.includes(k)))
@@ -160,20 +180,40 @@ function summaryLine(stat: GroupStat): string {
 }
 
 async function main() {
-  const pool = postgres(DB_URL, { max: 10 })
-  const db = drizzle(pool, { schema })
+  // 建连接 —— 按目标库选驱动（Neon 走 HTTP，本地 Docker 走 TCP）。
+  // 两个驱动都跑一遍本脚本，才能同时验证 retriever 的两条 raw SQL 在两种返回形状下都正确。
+  const isNeon = DB_URL.includes('neon.tech')
+  let db: DbClient
+  let pool: ReturnType<typeof postgres> | undefined
+
+  if (isNeon) {
+    db = drizzleNeon(neon(DB_URL), { schema })
+  } else {
+    pool = postgres(DB_URL, { max: 10 })
+    db = drizzlePostgres(pool, { schema })
+  }
+
   const config = { embeddingApiKey: EMBEDDING_API_KEY, embeddingBaseUrl: EMBEDDING_BASE_URL }
 
   // 分词覆盖率（keyword/hybrid 依赖 content_tokens；缺列会导致全文路静默漏召）
+  // 顺带体检 heading_path 回填覆盖率（3.11；未回填时来源列表只能显示标题）
   const cov = await db.execute(sql`
-    SELECT count(*) AS total, count(*) FILTER (WHERE content_tokens IS NULL) AS pending FROM chunks
+    SELECT count(*) AS total,
+           count(*) FILTER (WHERE content_tokens IS NULL) AS pending,
+           count(*) FILTER (WHERE heading_path IS NULL) AS heading_pending
+    FROM chunks
   `)
-  const covRow = (('rows' in cov ? cov.rows : cov) as unknown as { total: number | string, pending: number | string }[])[0]
+  const covRow = (('rows' in cov ? cov.rows : cov) as unknown as {
+    total: number | string
+    pending: number | string
+    heading_pending: number | string
+  }[])[0]
   const total = Number(covRow?.total ?? 0)
   const pending = Number(covRow?.pending ?? 0)
+  const headingPending = Number(covRow?.heading_pending ?? 0)
 
-  console.log(`模式：${MODE}｜top-K：${TOP_K}`)
-  console.log(`用例：concept ${conceptCases.length} / exact ${exactCases.length}｜分词覆盖：${total - pending}/${total}${pending ? ' ⚠️ 有未回填行' : ''}\n`)
+  console.log(`驱动：${isNeon ? 'neon-http' : 'postgres-js'}｜模式：${MODE}｜top-K：${TOP_K}`)
+  console.log(`用例：concept ${conceptCases.length} / exact ${exactCases.length}｜分词覆盖：${total - pending}/${total}${pending ? ' ⚠️ 有未回填行' : ''}｜标题路径覆盖：${total - headingPending}/${total}${headingPending ? ' ⚠️ 待回填' : ''}\n`)
 
   console.log('—— conceptCases ——')
   const concept = newStat('concept')
@@ -187,7 +227,15 @@ async function main() {
   console.log(`concept：${summaryLine(concept)}`)
   console.log(`exact  ：${summaryLine(exact)}`)
 
-  await pool.end()
+  if (pool) await pool.end()
+
+  // 引用溯源字段断言（见文件头）：库里有值、检索结果却全是 null → 说明加列或解析链路断了
+  if (headingPending === 0 && headingNullInResults > 0) {
+    console.error(`\n❌ heading_path 断言失败：库覆盖率 100%，但 ${headingNullInResults}/${resultTotal} 条检索结果 headingPath 为 null`)
+    console.error('   检查 retriever 两条 SQL 的 c.heading_path::text、RawRow 列名、parseHeadingPath 解析')
+    process.exit(1)
+  }
+  console.log(`\nheading_path 断言：${resultTotal - headingNullInResults}/${resultTotal} 条检索结果带标题路径`)
 }
 
 main().catch((err) => {

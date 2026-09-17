@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
 import { getMarkdownParser, preprocessMarkdown } from '~/utils/markdown'
+import { type CitationIndex, emptyCitationIndex } from '~/utils/citations'
 
 const props = defineProps({
   /** 原始 Markdown 文本 */
@@ -20,8 +21,21 @@ const props = defineProps({
   allowedImages: {
     type: Set as PropType<Set<string>>,
     default: () => new Set<string>()
+  },
+  /**
+   * 引用索引（3.11）：正文里 `[kb:xxxxxxxx]` 标记 → 展示编号 + 来源。
+   * 缺省空索引 → 所有标记保持纯文本（普通聊天、或本轮没触发知识库检索）
+   */
+  citationIndex: {
+    type: Object as PropType<CitationIndex>,
+    default: () => emptyCitationIndex()
   }
 })
+
+const emit = defineEmits<{
+  /** 点击 citation chip（payload 为来源短 key，由上层解析成跳转目标） */
+  citationClick: [key: string]
+}>()
 
 const colorMode = useColorMode()
 const toast = useToast()
@@ -29,7 +43,7 @@ const toast = useToast()
 /** markdown-it 渲染后的 HTML */
 const renderedHtml = computed(() => {
   const md = getMarkdownParser()
-  const processed = preprocessMarkdown(props.content)
+  const processed = preprocessMarkdown(props.content, props.citationIndex)
   return md.render(processed, { allowedImages: props.allowedImages })
 })
 
@@ -156,9 +170,20 @@ watch([renderedHtml, () => props.isStreaming], async ([, streaming]) => {
 // 代码块复制
 // ---------------------------------------------------------------------------
 
-/** 点击委托：处理代码块复制按钮 */
+/** 点击委托：处理 citation chip 与代码块复制按钮 */
 function handleClick(e: MouseEvent) {
   const target = e.target as HTMLElement
+
+  // 引用溯源 chip（3.11）：href 已被 link_open 改成 #，实际跳转由上层决定
+  // （有 GitHub 原文 → 新窗口；否则打开系统内文档预览）
+  const chip = target.closest('[data-citation]') as HTMLElement | null
+  if (chip) {
+    e.preventDefault()
+    const key = chip.getAttribute('data-citation')
+    if (key) emit('citationClick', key)
+    return
+  }
+
   const btn = target.closest('.code-copy-btn') as HTMLElement | null
   if (!btn) return
 

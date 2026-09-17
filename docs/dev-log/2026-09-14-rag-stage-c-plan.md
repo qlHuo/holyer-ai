@@ -143,6 +143,17 @@ Schema 现状（[schema.ts:46-81](../../server/db/schema.ts#L46-L81)）：
 4. **工具 + Prompt**：格式化输出带 citation 标记（如 `[1] 标题 § 小节`），并在工具描述/prompt 要求 LLM 标注来源
 5. **前端**：`markdown.ts` 加 citation 渲染规则 + `allowedCitations` 白名单校验
 
+### 落地记录（2026-09-17）
+
+已实现并本地验证通过，详见 [引用溯源落地记录](2026-09-17-citation-implementation.md) 与 [ADR-015](../decisions/015-citation-metadata-carrier.md)。与本节设想的四处偏差：
+
+1. **引用标识不用「文档 id + 片段序号」，改成 chunkId 派生的稳定短 key** —— 让 LLM 抄 UUID 的可靠性太低；短 key 的另一层好处是「抄错即不在白名单 → 降级可见」，而序号方案下写错一位数字若恰好存在会**静默错引**
+2. **元数据块锚定在偏移 0**（本节未提）—— 元数据是信任锚，却与文档正文同处一个字符串，上传文档即可伪造。这条从「实现细节」上升成了安全前提
+3. **白名单从「本轮检索结果」放宽到「整个对话」** —— LLM 追问时常常不再检索、直接复用上一轮的引用标记，按轮收窄会让这些引用全部悬空
+4. **`heading_path` 用 jsonb 而非数组类型** —— 为本节未预见的原因：规避双驱动对数组类型的返回形状差异（`images` 列已验证过的路）
+
+另外：本节的「轻量回填」落地为**重新分块 + 逐条比对**（不是从前缀反推），本地 111 篇 / 2031 条零跳过。
+
 ---
 
 ## 3.10 Contextual Retrieval
@@ -188,6 +199,7 @@ Schema 现状（[schema.ts:46-81](../../server/db/schema.ts#L46-L81)）：
 - [RAG 阶段 A 落地](2026-08-31-rag-stage-a-implementation.md) — 12 问 92%、跨文件综合题 miss 留档
 - [RAG 阶段 B 实施方案](2026-09-02-rag-phase-b-implementation.md) — 三阶段衔接
 - [GitHub 文档引入定稿](2026-09-09-github-doc-import-plan.md) — `sourceUrl` 留给 3.11 的约定
+- [引用溯源落地记录](2026-09-17-citation-implementation.md) · [ADR-015](../decisions/015-citation-metadata-carrier.md) — 3.11 的实际落地、与本文的偏差、踩坑
 - [CF Workers subrequest 超限](2026-09-01-cf-workers-subrequest-limit.md) — 3.10 的配额铁律依据
 - [知识库图片展示边界](2026-08-26-rag-image-display-boundary.md) — 白名单渲染安全模型（citation 复用）
 - [pgvector 笔记](../learning-notes/pgvector.md) · [embedding-dimensions](../learning-notes/embedding-dimensions.md) · [rag-schema](../learning-notes/rag-schema.md)

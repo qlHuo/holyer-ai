@@ -19,7 +19,7 @@ function toSourceType(value: string): DocumentSourceType {
 
 /** 文档行 → 摘要（chunkCount 由外部 count Map 注入） */
 function toSummary(
-  row: { id: string, kbId: string, title: string, sourceType: string, createdAt: Date },
+  row: { id: string, kbId: string, title: string, sourceType: string, sourceUrl: string | null, createdAt: Date },
   counts: Map<string, number>
 ): DocumentSummary {
   return {
@@ -27,6 +27,7 @@ function toSummary(
     kbId: row.kbId,
     title: row.title,
     sourceType: toSourceType(row.sourceType),
+    sourceUrl: row.sourceUrl,
     createdAt: row.createdAt.toISOString(),
     chunkCount: counts.get(row.id) ?? 0
   }
@@ -39,6 +40,7 @@ export async function listDocuments(kbId: string): Promise<DocumentSummary[]> {
     kbId: documents.kbId,
     title: documents.title,
     sourceType: documents.sourceType,
+    sourceUrl: documents.sourceUrl,
     createdAt: documents.createdAt
   }).from(documents).where(eq(documents.kbId, kbId)).orderBy(desc(documents.createdAt))
 
@@ -51,28 +53,45 @@ export async function listDocuments(kbId: string): Promise<DocumentSummary[]> {
   return rows.map(row => toSummary(row, counts))
 }
 
-/** 文档详情（含原文 content，下载用）。不存在返回 null */
+/**
+ * 文档详情（含原文 content，下载/预览用）。不存在返回 null。
+ *
+ * chunks 那次查询不再用 count()，而是取出 images 列：一次拿齐 chunkCount（数组长度）、
+ * 以及 imageUrls（所有 chunk 图片 URL 的并集，供预览渲染时作图片白名单）。
+ * 仍是 2 次查询，不额外增加 CF subrequest。
+ */
 export async function getDocument(id: string): Promise<DocumentDetail | null> {
   const [row] = await db.select({
     id: documents.id,
     kbId: documents.kbId,
     title: documents.title,
     sourceType: documents.sourceType,
+    sourceUrl: documents.sourceUrl,
     content: documents.content,
     createdAt: documents.createdAt
   }).from(documents).where(eq(documents.id, id))
 
   if (!row) return null
 
-  const [cnt] = await db.select({ n: count() }).from(chunks).where(eq(chunks.docId, id))
+  const chunkRows = await db.select({ images: chunks.images }).from(chunks).where(eq(chunks.docId, id))
+
+  const imageUrls = new Set<string>()
+  for (const c of chunkRows) {
+    for (const img of c.images ?? []) {
+      if (/^https?:\/\//i.test(img.url)) imageUrls.add(img.url)
+    }
+  }
+
   return {
     id: row.id,
     kbId: row.kbId,
     title: row.title,
     sourceType: toSourceType(row.sourceType),
+    sourceUrl: row.sourceUrl,
     content: row.content,
+    imageUrls: [...imageUrls],
     createdAt: row.createdAt.toISOString(),
-    chunkCount: cnt ? Number(cnt.n) : 0
+    chunkCount: chunkRows.length
   }
 }
 
@@ -124,7 +143,8 @@ export async function createDocument(input: UploadDocumentInput): Promise<Upload
       id: docId,
       kbId: input.kbId,
       title: input.title,
-      sourceType: 'manual',
+      sourceType: input.sourceType ?? 'manual',
+      sourceUrl: input.sourceUrl || null,
       createdAt: new Date().toISOString(),
       chunkCount
     },

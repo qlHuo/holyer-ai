@@ -10,6 +10,7 @@ import { conversations, messages } from '~~/server/db/schema'
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import type { ConversationListItem, ConversationDetail } from './types'
 import type { Message } from '~~/shared/types/provider'
+import { stripCitationTrailer } from '#shared/citation'
 
 /**
  * @Description 查询会话列表
@@ -45,15 +46,21 @@ export async function getConversationList(): Promise<ConversationListItem[]> {
     .from(conversations)
     .orderBy(desc(conversations.updatedAt))
 
-  return rows.map(row => ({
-    id: row.id,
-    title: row.title,
-    model: row.model,
-    messageCount: row.messageCount,
-    lastPreview: row.lastPreview ? row.lastPreview.slice(0, 50) : null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString()
-  }))
+  return rows.map((row) => {
+    // 引用溯源（3.11）：tool 消息的 content 以 citation 元数据块开头。若最后一条恰好是
+    // tool 消息（Agent 检索后、最终回答还没开始生成就被中断——切换对话会主动 abort），
+    // 不剥就会在侧边栏露出一串 `⟦src[{"k":…` 的 JSON。**先剥再截断**，顺序不能反。
+    const preview = row.lastPreview ? stripCitationTrailer(row.lastPreview) : ''
+    return {
+      id: row.id,
+      title: row.title,
+      model: row.model,
+      messageCount: row.messageCount,
+      lastPreview: preview ? preview.slice(0, 50) : null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString()
+    }
+  })
 }
 
 /**
@@ -129,7 +136,9 @@ export async function searchMessages(query: string): Promise<MessageSearchResult
     conversationId: row.conversationId,
     conversationTitle: row.conversationTitle,
     role: row.role as Message['role'],
-    content: row.content,
+    // 引用溯源（3.11）：只剥展示用的 content，不参与 ILIKE 匹配（匹配仍走原文，
+    // 避免为了显示好看而在 SQL 里塞正则表达式）
+    content: stripCitationTrailer(row.content),
     createdAt: row.createdAt.toISOString()
   }))
 }

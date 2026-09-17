@@ -32,6 +32,8 @@ export interface DocumentSummary {
   kbId: string
   title: string
   sourceType: DocumentSourceType
+  /** 原文链接：仅 GitHub 引入的文档有（github.com/{owner}/{repo}/blob/{branch}/{path}），其余为 null */
+  sourceUrl: string | null
   createdAt: string
   chunkCount: number
 }
@@ -39,6 +41,12 @@ export interface DocumentSummary {
 // 文档详情（含原文 content，供下载/预览）
 export interface DocumentDetail extends DocumentSummary {
   content: string
+  /**
+   * 该文档所有 chunk 的图片 URL 并集（3.11 预览用）。
+   * 预览渲染整篇文档时需要一份「哪些图允许出图」的白名单——按文档来源限定，与检索侧
+   * allowedImages「按本轮检索结果限定」是同一条原则。
+   */
+  imageUrls: string[]
 }
 
 // 上传文档参数 — POST /api/rag/documents
@@ -48,6 +56,8 @@ export interface UploadDocumentInput {
   content: string
   /** 来源通道，缺省服务端落 'manual' */
   sourceType?: DocumentSourceType
+  /** 原文链接（仅 GitHub 引入传，供引用溯源回链）；缺省服务端落 NULL */
+  sourceUrl?: string
   /** true=同名覆盖（先成功入库新文档再删旧）；缺省/undefined=保持 409 */
   overwrite?: boolean
 }

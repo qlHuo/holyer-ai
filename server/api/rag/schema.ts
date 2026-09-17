@@ -16,6 +16,8 @@ export const createDocumentSchema = z.object({
   title: z.string().min(1, '标题不能为空').max(255, '标题不能超过 255 个字符'),
   content: z.string().min(1, '内容不能为空').max(500_000, '内容过长（超过 500KB）'),
   sourceType: z.enum(['local', 'github', 'manual']).optional(),
+  // 原文链接（仅 GitHub 引入传）。限制长度防超长字符串，服务端消费方（citation）还会再校验一次 host
+  sourceUrl: z.string().url('sourceUrl 需为合法 URL').max(500, 'sourceUrl 过长').optional(),
   overwrite: z.boolean().optional()
 })
 

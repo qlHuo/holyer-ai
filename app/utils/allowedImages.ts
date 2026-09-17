@@ -1,4 +1,5 @@
 import type { AgentToolCallItem } from '~/types/agent'
+import { stripCitationTrailer } from '#shared/citation'
 
 /**
  * 收集「允许渲染」的图片 URL 集合（白名单，RAG 设计决策 7 边界二）
@@ -18,7 +19,8 @@ export function collectAllowedImagesFromTools(tools?: AgentToolCallItem[]): Set<
   if (!tools) return set
   for (const t of tools) {
     if (t.name !== 'search_knowledge_base' || !t.result) continue
-    for (const m of t.result.matchAll(IMAGE_URL_RE)) {
+    // 先剥掉 citation 元数据块再扫（其字段里同样可能出现 markdown 图片语法，不该被当成本轮图片）
+    for (const m of stripCitationTrailer(t.result).matchAll(IMAGE_URL_RE)) {
       if (m[1]) set.add(m[1])
     }
   }

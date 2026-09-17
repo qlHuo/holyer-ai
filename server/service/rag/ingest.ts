@@ -32,6 +32,8 @@ export interface IngestDocumentInput {
   content: string
   /** 来源通道：local / github / manual，默认 'manual'（灌库脚本与 GitHub 引入显式传值） */
   sourceType?: string
+  /** 原文链接（仅 GitHub 引入传，供引用溯源回链）；缺省/空串 → 落 NULL */
+  sourceUrl?: string
 }
 
 export interface IngestResult {
@@ -58,7 +60,9 @@ export async function ingestDocument(
     kbId,
     title,
     content,
-    sourceType: input.sourceType ?? 'manual'
+    sourceType: input.sourceType ?? 'manual',
+    // 仅 GitHub 引入有值；空串归一为 NULL，避免前端拿到 '' 当成有效链接
+    sourceUrl: input.sourceUrl || null
   }).returning()
   const docId = doc!.id
 
@@ -92,7 +96,10 @@ export async function ingestDocument(
           contentTokens: toIndexedText(c.content),
           embedding: vectors[i],
           embeddingModel: EMBEDDING_MODEL,
-          images: c.images
+          images: c.images,
+          // 结构化标题路径落库（引用溯源 3.11）。注意 content 里仍保留 `${headingPath.join(' > ')}\n`
+          // 前缀参与向量化与全文索引 —— 那是召回质量的一部分，与本列并存、互不替代
+          headingPath: c.headingPath
         }))
       )
     }
