@@ -40,6 +40,8 @@ Nuxt 的 tsconfig 只覆盖 app/server/shared，`scripts/` 不在其中，且 `.
 
 12 问里唯一 miss 的是「说明项目整体流程」（跨文件综合题）。根因：纯向量检索对宽泛的综合查询力不从心，这正是阶段 C 混合检索 + Contextual Retrieval 要解决的。此题为已知难例留档。
 
+> **后续修正（2026-10-17）**：该题随后被确认是**无效用例**——它要求跨文档综合，而检索返回的是单个 chunk，没有唯一正确答案；`plan/architecture` 本身也以架构图/代码为主。阶段 C 的混合检索与 Contextual Retrieval 都未能（也不应）解决它。评测中已替换为「项目的目录结构是怎样的？」。详见 [负结果记录](2026-10-17-contextual-retrieval-negative-result.md)。
+
 ## 关键洞察
 
 - **评估集驱动**是阶段 A 的核心方法论：先用 12 问规则判定召回（无 LLM 裁判，复用 Prompt 评测思路），达标才投入 UI

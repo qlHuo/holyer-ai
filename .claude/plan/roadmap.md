@@ -131,7 +131,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 3：RAG 知识库（阶段 A 预计 2-3 天）
+## Phase 3：RAG 知识库 ✅ 已完成（2026-10-17）
 
 > 方案：[RAG 知识库完整设计](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)（语义分块 + 混合检索 + Contextual Retrieval + Agentic 工具，三阶段 MVP 实施）
 >
@@ -161,23 +161,22 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 3.7 | GitHub 文档引入 | 从公开 GitHub 仓库批量拉 .md 入库（复用上传管道）。**仅公开仓库浏览器直连零 token**、冲突策略覆盖/跳过（覆盖=同步更新）、相对图路径转绝对 raw URL、sourceType 记来源。需求定稿与实施方案见 [09-09 dev-log](../../docs/dev-log/2026-09-09-github-doc-import-plan.md) | ✅ (2026-09-09) |
 | 3.8 | 图片展示 + 白名单渲染 | 检索结果带出 `images`；[markdown.ts](../../app/utils/markdown.ts) image 规则校验 `env.allowedImages`（本轮检索结果集合），不在集合内降级为文字。**同时堵住文档 prompt injection 诱导外链请求的既有缺口**（详见[决策 7](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md)） | ✅ (2026-09-08) |
 
-### 阶段 C：质量增强
+### 阶段 C：质量增强 ✅ 已完成（2026-10-17，3.10 验证后不采用）
 
 > **实施顺序（2026-09-14 定，按「改动半径」排序）**：**3.9 → 3.11 → 3.10**
 > - **3.9 先做** — 只改 [retriever.ts](../../server/service/rag/retriever.ts) + 加索引列，**不触发重新 embedding**，风险最小
 > - **3.11 次之** — 元数据 + 渲染侧（citation、`sourceUrl`），一次轻量回填，不动向量
 > - **3.10 最后** — 需**全量重新分块 + 重新 embedding**（所有 chunk 重算），必须等语料/分块稳定后再做，否则返工白花钱；提前做 3.11 可让这次重灌一次写齐 `heading_path`/`source_url`
 >
-> **进度（2026-09-17）**：3.9 ✅ **本地 + 线上全量落地**（建列 → 回填 → 补迁移账本 → 部署）。实测 concept 92% 持平、exact MRR 0.926→1.000。
-> 3.11 ✅ **实现与本地验证完成**（本地回填 2031 条零跳过、检索 A/B 无回归、端到端 LLM 标注与渲染链路全通）；**⚠️ 线上建列 + 回填待执行**——代码已 select 新列，未迁移前不可部署。阶段 C 完成 2/3，剩 3.10。
+> **进度（2026-10-17）**：3.9 ✅ 本地 + 线上（exact MRR 0.926→1.000）；3.11 ✅ 本地 + 线上并验收；3.10 ✅ **完整实现并通过 A/B 验证，判定不采用**——本语料下 chunk 召回无提升、chunkMRR 0.808→0.642，Contextual BM25 为负收益（→0.556）。详见 [负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)。**阶段 C 收官，Phase 3 完成。**
 >
-> 每步的背景/需求/方案/流程详见 [阶段 C 实施规划](../../docs/dev-log/2026-09-14-rag-stage-c-plan.md)。
+> 每步的背景/需求/方案/流程详见 [阶段 C 实施规划](../../docs/dev-log/2026-09-14-rag-stage-c-plan.md)；3.10 的验证数据、回退记录与重实现要点见 [负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)。
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
 | 3.9 | 混合检索 | 向量 + 全文关键词（tsvector）+ RRF 融合排序；只改 retriever、加索引列。**中文分词方案是先决风险**——PostgreSQL 原生 tsvector 不分中文，倾向 `Intl.Segmenter`（Edge 原生、零依赖）在入库期预分词 | ✅ (2026-09-15) |
 | 3.11 | 引用溯源 | citation 回链原文（标题路径 + docId#chunkIndex），前端渲染可点击；一并设计 `sourceUrl`（3.7 GitHub 来源回链）。需补 `chunks.heading_path` 结构化列（现仅拼进 content 前缀）。**落地**：元数据缝进工具结果文本（零持久化重建白名单）+ chunkId 派生短 key + 偏移 0 锚定（详见 [落地记录](../../docs/dev-log/2026-09-17-citation-implementation.md) · [ADR-015](../../docs/decisions/015-citation-metadata-carrier.md)） | ✅ (2026-09-17) |
-| 3.10 | Contextual Retrieval | 每 chunk 预生成上下文后**全量重建向量**；`chunks.contextual_text` 列已预留。关键约束：生成走离线脚本（上传 API 受 CF 50 subrequest 限，边生成边入库会爆配额） | ⬜ |
+| 3.10 | Contextual Retrieval | 每 chunk 预生成上下文（`contextual_text`）后原地重算向量。**验证后不采用（2026-10-17）**：本语料下 chunk 召回无提升（11/12→11/12）、chunkMRR 0.808→0.642；把 blurb 纳入分词的 Contextual BM25 为明确负收益（chunk 命中 →10/12，chunkMRR →0.556）。根因：语料标题层级完整、headingPath 前缀已覆盖大部分上下文；原定靶子是跨文档综合题（无唯一 chunk 答案），属无效用例。**实现已完整回退**：生成器/回填脚本删除、`contextual_text` 数据清空（列保留）、`retriever.ts` 还原；仅保留 [负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)（含重实现要点）作为未来优化点 | ❌ (2026-10-17) |
 
 > **产品功能分层**（详见 [需求分析](requirements.md)）：
 > - **现阶段（Phase 3）**：知识库 CRUD（新建/上传/下载/删除，删文档级联删向量）+ GitHub 文档引入（手动同步，复用上传管道）

@@ -1,6 +1,6 @@
 # 文档索引
 
-> 79 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 82 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -28,16 +28,22 @@
 
 ---
 
-## 开发日志（48 篇）
+## 开发日志（51 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
+
+### 2026-10
+
+| 日期 | 文件 | 内容 |
+|------|------|------|
+| 10-17 | [contextual-retrieval-negative-result](dev-log/2026-10-17-contextual-retrieval-negative-result.md) | **Contextual Retrieval 验证结果：本语料下无收益，不采用** — 4 组配置 A/B（旧/新向量 × 旧/新分词）：chunk 召回无提升、chunkMRR 0.808→0.642；Contextual BM25 负收益（→0.556）；原定靶子是跨文档综合题，属无效用例。含根因（语料标题层级完整、headingPath 已覆盖上下文）、**完整回退记录**、未来重验条件与 3 个踩坑 |
 
 ### 2026-09
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
 | 09-17 | [citation-implementation](dev-log/2026-09-17-citation-implementation.md) | **引用溯源落地：来源元数据、引用协议与安全边界** — 元数据缝进工具结果文本（零持久化重建白名单）、chunkId 派生短 key 而非自增序号、偏移 0 锚定 + 字段校验的四层安全模型、展示编号纯前端派生；含与规划的偏差、三层验证、4 个踩坑（12 位 key 的连字符陷阱会静默废掉整个功能） |
-| 09-14 | [rag-stage-c-plan](dev-log/2026-09-14-rag-stage-c-plan.md) | **RAG 阶段 C 实施规划：三步拆解与排序** — 按「改动半径」排 3.9 混合检索 → 3.11 引用溯源 → 3.10 Contextual Retrieval；每步含背景/需求/方案/流程；中文分词 `Intl.Segmenter`、citation 白名单、3.10 全量重灌与 CF 配额约束 |
+| 09-14 | [rag-stage-c-plan](dev-log/2026-09-14-rag-stage-c-plan.md) | **RAG 阶段 C 实施规划：三步拆解与排序** — 按「改动半径」排 3.9 混合检索 → 3.11 引用溯源 → 3.10 Contextual Retrieval；每步含背景/需求/方案/流程；中文分词 `Intl.Segmenter`、citation 白名单、3.10 全量重灌与 CF 配额约束。**3.10 于 2026-10-17 验证后不采用并已回退** |
 | 09-09 | [github-doc-import-plan](dev-log/2026-09-09-github-doc-import-plan.md) | **GitHub 文档引入：需求定稿与实施方案（3.7/M4）** — 仅公开仓库浏览器直连零 token、sourceType 格式位→来源通道、覆盖策略=同步能力、图相对 URL 改写规则、组件级批量运行态（✅ 已实现并验证） |
 | 09-08 | [chat-knowledge-base-selector](dev-log/2026-09-08-chat-knowledge-base-selector.md) | **聊天知识库选择器：交互设计与检索强度决策** — 检索"三约束维度"（范围/是否/采用）、指定库=装饰器锁范围、四问结论、全局单值状态模型、pill 三态面板 |
 | 09-06 | [rag-ui-component-reuse](dev-log/2026-09-06-rag-ui-component-reuse.md) | **RAG 知识库 UI 实现 + 公共组件复用清单** — 3.6 知识库管理 UI 交付、prompts/rag 成对重复盘点、候选抽取清单（待 UI 稳定后单独做专项） |
@@ -54,7 +60,7 @@
 | 08-30 | [local-db-docker-migration](dev-log/2026-08-30-local-db-docker-migration.md) | **本地开发库迁移 Docker + pgvector 启用** — 原生 PG17 → Docker 官方镜像、装 vs 激活、compose 绑定项目、踩坑（PowerShell/端口/SCRAM） |
 | 08-26 | [rag-image-display-boundary](dev-log/2026-08-26-rag-image-display-boundary.md) | **知识库图片展示：为什么通用平台做不到** — 检索侧/呈现侧拆分、千问 DS Dify 四层原因、语料所有权规律、三层边界设计、既有图片渲染安全缺口 |
 | 08-18 | [phase2-review](dev-log/2026-08-18-phase2-review.md) | **Phase 2 全链路审查与收尾修复** — 8 层链路梳理、7 项问题分级、修复死代码/SSRF/error 落库等 7 项、后台切回残留推迟 |
-| 08-19 | [rag-knowledge-base-design](dev-log/2026-08-19-rag-knowledge-base-design.md) | **RAG 知识库功能完整设计方案** — 概念澄清（三层模型/两阶段数据流/Agentic RAG）、业界演进、语义分块/混合检索/Contextual Retrieval 四决策、Schema、三阶段实施 |
+| 08-19 | [rag-knowledge-base-design](dev-log/2026-08-19-rag-knowledge-base-design.md) | **RAG 知识库功能完整设计方案** — 概念澄清（三层模型/两阶段数据流/Agentic RAG）、业界演进、语义分块/混合检索/Contextual Retrieval 四决策、Schema、三阶段实施。**决策 4（Contextual Retrieval）于 2026-10-17 验证后未采用** |
 | 08-17 | [prompt-eval-tuning-loop](dev-log/2026-08-17-prompt-eval-tuning-loop.md) | **Prompt 评测-调优闭环实践** — 5 层 prompt 分布盘点、6 条工具描述审计、评测脚本落地、80%→100% 调优、评测鸡肋与规范反思 |
 | 08-06 | [agent-content-filter-self-healing](dev-log/2026-08-06-agent-content-filter-self-healing.md) | **Agent 内容审核拦截的自愈方案** — 并行试毒、精确剔除、渐进降级、Provider 复用模式、退化版子 Agent |
 | 08-06 | [agent-react-known-issues](dev-log/2026-08-06-agent-react-known-issues.md) | **Agent ReAct 已知问题记录** — 文本闪烁根因与前瞻窗口方案、工具结果未持久化、AbortSignal 未传递等 5 项问题 |
@@ -171,5 +177,5 @@
 | **设计规范** | [ADR-011](decisions/011-design-specification.md) |
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) · [codegraph](claude-tips/codegraph.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) · [工具预算](dev-log/2026-08-31-agent-tool-budget.md) · [工具调用 UI](dev-log/2026-08-03-agent-toolcall-ui-redesign.md) |
-| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [聊天选库器](dev-log/2026-09-08-chat-knowledge-base-selector.md) · [GitHub 引入定稿](dev-log/2026-09-09-github-doc-import-plan.md) · [阶段C规划](dev-log/2026-09-14-rag-stage-c-plan.md) · **引用溯源**：[落地记录](dev-log/2026-09-17-citation-implementation.md) · [ADR-015](decisions/015-citation-metadata-carrier.md) · [混合检索](learning-notes/hybrid-retrieval.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
+| **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [聊天选库器](dev-log/2026-09-08-chat-knowledge-base-selector.md) · [GitHub 引入定稿](dev-log/2026-09-09-github-doc-import-plan.md) · [阶段C规划](dev-log/2026-09-14-rag-stage-c-plan.md) · **Contextual Retrieval**：[负结果（不采用，含重实现要点）](dev-log/2026-10-17-contextual-retrieval-negative-result.md) · **引用溯源**：[落地记录](dev-log/2026-09-17-citation-implementation.md) · [ADR-015](decisions/015-citation-metadata-carrier.md) · [混合检索](learning-notes/hybrid-retrieval.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

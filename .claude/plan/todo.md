@@ -15,7 +15,7 @@
 ## 📝 工程改进
 
 - [ ] **引用溯源的引用率评测**（来自 3.11 评估）— 现有 `eval-prompt` 快照里没有 `search_knowledge_base`、判定只看首个 tool call 名字/参数，完全断言不到「回答是否标注了来源」。当前只人工验过 1 次（deepseek-v4-pro 标注正常），换模型/换问法可能不标。需要新 harness：真跑 Agent 循环 + DB + embedding，断言「可答问题至少出现一个可解析且属于白名单的 key」「无关问题不出现 citation」。对应横切关注点 X4。
-- [ ] **3.10 重灌会让历史引用集体失效**（来自 3.11 评估）— 引用存的是 docId 快照；3.10 全量重灌后所有 docId 换新，全部历史对话的 citation 会一起 404。预览弹层已有降级提示，但那一刻会集中爆发，**3.10 的验收清单里要加这一条**。
+- [x] ~~**3.10 重灌会让历史引用集体失效**~~（来自 3.11 评估）— **已关闭（2026-10-17）**：3.10 最终采用原地 UPDATE 方案，且 A/B 验证后不采用，从未发生重灌。
 - [ ] **API 单元测试** (来自 roadmap 1.31) — vitest + conversations CRUD 测试。推迟原因：conversations CRUD 无复杂业务逻辑，vitest + Nitro/Edge Runtime 集成成本高、个人项目无 CI 回归拦截需求。推迟到 Phase 2 Agent Runtime 有复杂逻辑（ReAct 循环、工具调用状态机）时再引入
 - [ ] **部署构建优化** 目前使用Cloudflare Workers，可能没有处理静态资源的CDN，后续考虑优化。
 - [ ] **PromptSegment 抽象落地**（源自 [07-09 提示词工程讨论](../../docs/dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) 2.2 节，仅设想未实现）— 当前 prompt 散落在 [index.post.ts](../../server/api/chat/index.post.ts)（dateContext + toolUsageGuidelines 硬编码）、system-prompt.ts、工具描述等 5 层。按设想建 `server/service/prompt/`（PromptSegment 接口 + buildPrompt() 按 priority 拼接）。推迟原因：当前 prompt 仅 2 段 + 4 工具，抽象收益不抵成本。触发点：MCP 注入工具描述、以及工具增多导致 toolUsageGuidelines 膨胀时（Agentic RAG 下检索结果走 tool 消息，不经过 system prompt 组装），片段涨到 5~6 段再落地。连带收益：解决评测脚本快照漂移（buildPrompt() 统一入口，评测直接 import 而非复制快照）。
@@ -26,3 +26,4 @@
 
 - [ ] **长期记忆系统** — 用户偏好记忆（跨对话提取偏好为结构化 profile）、长期记忆检索与上下文注入、记忆管理 UI。当前对话量少，Phase 2 先跑通 Agent 再说
 - [ ] **用户自定义 Agent（GPTs-like）** — 管理页面配置 System Prompt + 选模型 → 生成限定领域对话 Agent。前置依赖：Phase 2 Agent Runtime
+- [ ] **Contextual Retrieval 重验**（来自 2026-10-17 负结果）— 当前语料标题层级完整，3.10 无可测收益已关闭。触发点：① 出现无标题长文本语料（PDF/OCR 转出的文本）；② 引入 rerank 先解决「召回到但排序靠后」；③ 评测集扩到 50+ 题。**实现已回退，重验前需按负结果文档 §8「重实现要点」重建生成器与回填脚本**；数据与结论见 [负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)

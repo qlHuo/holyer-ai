@@ -48,28 +48,104 @@ if (!MODES.includes(argMode as Mode)) {
 }
 const MODE = argMode as Mode
 
+/**
+ * `--dump`：打印每题 top-1 的完整片段内容。
+ * 用途：为 conceptCases 人工挑 `mustContain`（chunk 级真值）时对照原文。
+ */
+const DUMP = process.argv.includes('--dump')
+
 interface EvalCase {
   question: string
   /** 期望命中的 documentTitle 关键字，命中任意一个即算「文档命中」 */
   expected: string[]
   /** 精确字面量：结果 content 中须出现该字符串（精确词用例用） */
   mustInclude?: string
+  /**
+   * chunk 级真值（3.10 引入）：正确片段里必然出现的字符串。
+   *
+   * 为什么需要它：`expected` 只判断「目标文档有没有进 top-5」，不管命中哪一片。
+   * 而 Contextual Retrieval 优化的是 **chunk 级排序**——它可能把正确片段从第 3 名提到
+   * 第 1 名，而文档级指标纹丝不动。没有这个字段，3.10 的效果测不出来。
+   *
+   * 选取原则：在目标文档中**有区分度**的一小段原文（别选通用词），且尽量来自
+   * 「能直接回答问题」的那一片。
+   *
+   * 可用数组表示「多个片段都算对」——典型场景是长表格/架构图被分块拆开，
+   * 正确答案不唯一。命中任意一个即算 chunk 命中，名次取最靠前的那条。
+   */
+  mustContain?: string | string[]
 }
 
-/** 概念理解类（阶段 A 的 12 题，一字不改以保住 92% 基线可比） */
+/**
+ * 概念理解类（阶段 A 的 12 题）。
+ * 2026-10-17 补 chunk 级真值（mustContain），并修正两处无效用例：
+ * Neon 题补上等价来源 technical-research；综合题替换为可测的目录结构题。
+ */
 const conceptCases: EvalCase[] = [
-  { question: '为什么项目选择 Neon 数据库而不是 Supabase？', expected: ['neon-drizzle'] },
-  { question: '为什么不用 Vercel AI SDK？', expected: ['vercel-ai-sdk'] },
-  { question: '国内模型 API 是怎么统一兼容的？', expected: ['model-compatibility'] },
-  { question: 'Cloudflare 的 SSE 为什么需要心跳机制？', expected: ['sse-implementation'] },
-  { question: '流式串话的根因是什么？', expected: ['stream-leakage-root-cause'] },
-  { question: 'pgvector 为什么几百个 chunk 不需要建索引？', expected: ['pgvector'] },
-  { question: 'embedding 维度为什么锁定 1024？', expected: ['embedding-dimensions'] },
-  { question: 'Drizzle 的 returning 有什么用？', expected: ['drizzle-orm'] },
-  { question: 'Agent 工具调用的文本闪烁怎么解决？', expected: ['agent-react-known-issues'] },
-  { question: 'RAG 为什么按 Markdown 标题语义分块？', expected: ['rag-knowledge-base-design'] },
-  { question: '说明项目整体的流程，包括前后端、数据库、部署', expected: ['plan/architecture'] },
-  { question: '说明流式输出的方案', expected: ['streaming-architecture', 'sse-implementation'] }
+  {
+    // technical-research 的「3.2 选择 Neon 的理由」含有完整答案，属于合法的等价来源。
+    question: '为什么项目选择 Neon 数据库而不是 Supabase？',
+    expected: ['neon-drizzle', 'technical-research'],
+    mustContain: '不锁定供应商，未来可迁移到 Supabase、自建 PG 等'
+  },
+  {
+    question: '为什么不用 Vercel AI SDK？',
+    expected: ['vercel-ai-sdk'],
+    mustContain: '手写核心模块本身就是学习目标'
+  },
+  {
+    question: '国内模型 API 是怎么统一兼容的？',
+    expected: ['model-compatibility'],
+    mustContain: '月之暗面 Kimi (Moonshot)'
+  },
+  {
+    question: 'Cloudflare 的 SSE 为什么需要心跳机制？',
+    expected: ['sse-implementation'],
+    mustContain: 'Cloudflare 100s 空闲超时切断连接'
+  },
+  {
+    question: '流式串话的根因是什么？',
+    expected: ['stream-leakage-root-cause'],
+    mustContain: 'B 的消息变成了 A 对话正在生成的内容'
+  },
+  {
+    question: 'pgvector 为什么几百个 chunk 不需要建索引？',
+    expected: ['pgvector'],
+    mustContain: '索引换的是速度，代价是召回率'
+  },
+  {
+    question: 'embedding 维度为什么锁定 1024？',
+    expected: ['embedding-dimensions'],
+    mustContain: '支持 2560 不代表要用满'
+  },
+  {
+    question: 'Drizzle 的 returning 有什么用？',
+    expected: ['drizzle-orm'],
+    mustContain: '在 DELETE 中也有效，返回被删除的行'
+  },
+  {
+    question: 'Agent 工具调用的文本闪烁怎么解决？',
+    expected: ['agent-react-known-issues'],
+    mustContain: '读到 tool_calls 时整体丢弃'
+  },
+  {
+    question: 'RAG 为什么按 Markdown 标题语义分块？',
+    expected: ['rag-knowledge-base-design'],
+    mustContain: '每块天然是一个语义完整的小节'
+  },
+  {
+    // 替换原来的「说明项目整体的流程…」——那是跨文档综合题，单个 chunk 无法独立回答，
+    // 作为检索用例没有唯一正确答案（2026-10-17 Contextual Retrieval 验证时确认）。
+    // 换成一道有明确正确片段的题，真正可测。
+    question: '项目的目录结构是怎样的？',
+    expected: ['plan/architecture'],
+    mustContain: 'Nuxt 4 前端目录'
+  },
+  {
+    question: '说明流式输出的方案',
+    expected: ['streaming-architecture', 'sse-implementation'],
+    mustContain: '把不同的流统一成一种流'
+  }
 ]
 
 /**
@@ -95,10 +171,14 @@ interface GroupStat {
   literalHit: number
   literalTotal: number
   mrrSum: number
+  /** chunk 级真值断言（仅定义了 mustContain 的用例） */
+  chunkTotal: number
+  chunkHit: number
+  chunkMrrSum: number
 }
 
 function newStat(label: string): GroupStat {
-  return { label, total: 0, docHit: 0, literalHit: 0, literalTotal: 0, mrrSum: 0 }
+  return { label, total: 0, docHit: 0, literalHit: 0, literalTotal: 0, mrrSum: 0, chunkTotal: 0, chunkHit: 0, chunkMrrSum: 0 }
 }
 
 /**
@@ -156,11 +236,37 @@ async function runGroup(
       if (literalOk) stat.literalHit++
     }
 
+    // chunk 级真值（3.10）：正确片段是否进了 top-K、排第几
+    const needles = c.mustContain
+      ? (Array.isArray(c.mustContain) ? c.mustContain : [c.mustContain])
+      : []
+    const chunkIdx = needles.length
+      ? results.findIndex(r => needles.some(n => r.content.includes(n)))
+      : -1
+    if (needles.length) {
+      stat.chunkTotal++
+      if (chunkIdx >= 0) {
+        stat.chunkHit++
+        stat.chunkMrrSum += 1 / (chunkIdx + 1)
+      }
+    }
+
     if (hitIdx >= 0) {
       const marks = [`#${hitIdx + 1} ${results[hitIdx]!.documentTitle}`]
       if (literalOk === true) marks.push(`含「${c.mustInclude}」`)
       else if (literalOk === false) marks.push(`⚠️ 无「${c.mustInclude}」`)
+
+      // 文档命中但 chunk 未命中 —— 正是文档级指标看不见的那类退化
+      if (needles.length) {
+        if (chunkIdx >= 0) marks.push(`片段 #${chunkIdx + 1}`)
+        else marks.push('⚠️ 文档命中但正确片段不在 top-K')
+      }
+
       console.log(`✅ ${c.question}\n   → ${marks.join('｜')}`)
+      if (DUMP) {
+        const top = results[hitIdx]!
+        console.log(`   [chunk#${top.chunkIndex}] ${top.content.replace(/\s+/g, ' ').slice(0, 900)}`)
+      }
     } else {
       console.log(`❌ ${c.question}`)
       console.log(`   期望：${c.expected.join(' / ')}`)
@@ -176,7 +282,13 @@ function summaryLine(stat: GroupStat): string {
   const literal = stat.literalTotal
     ? `, 字面量 ${stat.literalHit}/${stat.literalTotal} (${Math.round(stat.literalHit / stat.literalTotal * 100)}%)`
     : ''
-  return `${stat.docHit}/${stat.total} (${docRate}%)${literal}｜MRR ${mrr}`
+  // chunk 级指标（3.10）：文档级看不出的排序改善，只有这里能反映
+  const chunkRate = stat.chunkTotal ? Math.round(stat.chunkHit / stat.chunkTotal * 100) : 0
+  const chunkMrr = stat.chunkTotal ? (stat.chunkMrrSum / stat.chunkTotal).toFixed(3) : '0.000'
+  const chunk = stat.chunkTotal
+    ? `, chunk ${stat.chunkHit}/${stat.chunkTotal} (${chunkRate}%)｜chunkMRR ${chunkMrr}`
+    : ''
+  return `${stat.docHit}/${stat.total} (${docRate}%)${literal}${chunk}｜文档MRR ${mrr}`
 }
 
 async function main() {

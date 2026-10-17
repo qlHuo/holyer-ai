@@ -60,7 +60,7 @@ export const chunks = pgTable('chunks', {
   content: text('content').notNull(), // 切片文本（参与向量化）
   embedding: vector('embedding', { dimensions: 1024 }), // 1024 维向量（pgvector）
   embeddingModel: varchar('embedding_model', { length: 100 }), // 预留：模型切换
-  contextualText: text('contextual_text'), // 阶段 C：Contextual Retrieval
+  contextualText: text('contextual_text'), // 阶段 C 预留；3.10 验证后未采用（列保留）
   images: jsonb('images').$type<ChunkImage[]>(), // 图片元数据（不参与向量化）
   headingPath: jsonb('heading_path').$type<string[]>(), // 3.11：结构化标题路径（H1→当前节），引用溯源用
   contentTokens: text('content_tokens'), // 3.9 全文检索：分词结果（原料），可空无 default —— NULL 是回填游标
@@ -85,7 +85,7 @@ export const chunks = pgTable('chunks', {
 | `content` | 切片文本 | **参与向量化**的内容（区别于 documents.content 原文） |
 | `embedding` | `vector(1024)` | 向量列，检索靠它；和 content 是同一行的两个列 |
 | `embeddingModel` | 用了哪个模型 | 预留：不同模型向量空间不兼容，换模型时识别旧数据 |
-| `contextualText` | 预生成上下文 | 阶段 C 3.10 Contextual Retrieval，现在空着 |
+| `contextualText` | 预生成上下文 | 阶段 C 3.10 预留；2026-10-17 完整验证后**未采用并已回退**，列保留作为未来优化点 |
 | `images` | 图片元数据 | 决策 7：URL 不进向量，阶段 B 已兑现（白名单渲染） |
 | `headingPath` 🆕 | 结构化标题路径 | 3.11：chunker 早就提取了它，但此前只被拼进 `content` 前缀就丢弃；现在另存一份结构化数据供引用溯源 |
 | `contentTokens` 🆕 | 分词结果（**原料**） | 3.9：应用写入，空格分隔的词元串 |

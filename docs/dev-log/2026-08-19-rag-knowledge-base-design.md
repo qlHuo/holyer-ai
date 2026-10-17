@@ -178,6 +178,8 @@ Phase 2（Agent Runtime + 工具系统）已于 2026-08-18 全链路审查收尾
 
 **成本权衡**：每 chunk 一次 LLM 调用有成本，但个人语料几百 chunk，一次性成本极低。作为**阶段 C 增强项**，MVP 先跑通再加。
 
+> **⚠️ 验证结果（2026-10-17）**：本决策已完整实现并做 A/B，**在本项目语料下无可测收益**——chunk 召回无提升、chunkMRR 下降，Contextual BM25 为负收益。判定不采用并已回退。原因：语料标题层级完整，`headingPath` 前缀已覆盖大部分上下文。详见 [负结果记录](2026-10-17-contextual-retrieval-negative-result.md)。
+
 ### 决策 5：Agentic 化 —— search_knowledge_base 工具
 
 实现 `ExecutableTool` 接口，注册进 ToolRegistry：
@@ -390,7 +392,7 @@ search_knowledge_base(query, kbId?)
 - RAG 的胜负手在检索质量（分块、混合检索、Contextual Retrieval），LLM 生成反而不是瓶颈
 - 写入与查询两阶段解耦 → 检索可独立于 LLM 先做先测
 - 语义分块 + 混合检索是 2024 起标配，纯向量 + 固定切块已不够看
-- Contextual Retrieval 是近年性价比最高的单点提升，个人语料最值得抄
+- ~~Contextual Retrieval 是近年性价比最高的单点提升，个人语料最值得抄~~ → **2026-10-17 验证修正**：在「标题层级完整、chunk 自包含」的语料上无可测收益，已不采用并回退
 - 检索工具接入现有 Agent 系统是零侵入的（复用 ToolRegistry，2 文件 + 1 行代码）——方案合理性的最硬证据
 - 图片支持是两个问题：检索侧（靠图找图，难）与呈现侧（随文带图，易）。我们要的效果在呈现侧，**不需要任何图片理解能力**（2026-08-26）
 

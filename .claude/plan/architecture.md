@@ -255,8 +255,9 @@ interface MCPClient {
 > 📋 **完整方案**：[RAG 知识库完整设计](../../docs/dev-log/2026-08-19-rag-knowledge-base-design.md) — 语义分块、混合检索、Contextual Retrieval、Agentic 工具、三阶段 MVP 实施路径
 
 ```
-【写入】文档上传 → 语义分块(按标题层级) → (Contextual Retrieval 预生成上下文)
+【写入】文档上传 → 语义分块(按标题层级)
          → Embeddings (qwen3.7-text-embedding 1024d) → pgvector 存储
+         (Contextual Retrieval 为阶段 C 预留优化；2026-10-17 验证后未采用并已回退)
 
 【查询】search_knowledge_base 工具 → 混合检索(向量 + tsvector 全文, RRF 融合)
          → top-k 片段(带来源) → 注入上下文 → LLM 生成(带 citation)
