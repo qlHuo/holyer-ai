@@ -239,6 +239,8 @@ Skill 即 Markdown 文件：Frontmatter 定义元数据，正文是 System Promp
 
 ### 3.4 MCP Client
 
+> 📋 **概念与版本现状**：[MCP 概念澄清](../../docs/dev-log/2026-10-18-mcp-concept-clarification.md) — 当前规范 2026-07-28 已移除 `initialize` 握手与会话，下面的 `connect()` 不应理解为"建立长连接"，而应按无状态请求理解；"HTTP + SSE" 为旧叫法，现行传输名为 Streamable HTTP。
+
 支持 HTTP + SSE 传输（Cloudflare Workers 不支持 stdio 子进程）：
 
 ```ts

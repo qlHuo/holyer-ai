@@ -4,12 +4,12 @@
 
 ## 当前状态
 
-**Phase 3 = RAG 知识库 ✅ 已完成**（阶段 A/B/C 全部收官）。3.10 Contextual Retrieval 已完整实现并通过 A/B 验证，**判定不采用**——本语料下无可测收益；**实现与数据已回退到动手前状态**，仅保留文档作为未来优化点。下一步进入 **Phase 4 = MCP**。
+**Phase 3 = RAG 知识库 ✅ 已完成**（阶段 A/B/C 全部收官）。3.10 Contextual Retrieval 完整实现并 A/B 验证后**判定不采用**，实现与数据已回退到动手前状态。**下一阶段：Phase 4 = MCP**。
 
 ## 近期完成
 
-- 3.10 完整实现 + A/B 验证，判定不采用（2026-10-17）— chunk 召回 11/12→11/12、chunkMRR 0.808→0.642；Contextual BM25 负收益（chunk→10/12，MRR→0.556）（[负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)）
-- 评测体系修正（2026-10-17）— concept 加 chunk 级断言、修正两个无效用例；修复后基线 **12/12、chunkMRR 0.825**
+- 3.10 实现 + A/B 验证，判定不采用（2026-10-17）— chunk 召回无提升，chunkMRR 0.808→0.642；Contextual BM25 负收益（[负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)）
+- 评测体系修正（2026-10-17）— 补 chunk 级断言、修正无效用例，基线 12/12、chunkMRR 0.825
 - 3.11 引用溯源线上落地 + 浏览器验收（2026-09-17）
 - 3.9 混合检索完整落地（2026-09-16）— exact MRR 0.926→1.000
 - 3.7 GitHub 文档引入（2026-09-09）｜ 3.8 图片端到端验收（2026-09-08）
@@ -20,15 +20,14 @@
 2. **[P1] MCP Client** — HTTP/SSE 传输（Edge 无子进程，不支持 stdio）
 3. **[P1] MCP 管理界面** — 连接/断开服务器、工具列表
 4. **[P2] 垂直场景框架 + 示例场景**
-5. **[P2] 语料变化后的检索复评** — 3.10 代码保留，出现无标题长文本语料时可解冻
+5. **[P2] 检索复评** — 语料扩充或引入 rerank 后重跑评测（基线随语料失效）
 
 ## 阻塞 / 风险
 
 - **当前无阻塞项**
-- 3.10 已完整回退：生成器/回填脚本删除、`contextual_text` 数据清空（列保留，阶段 A 既有）、`retriever.ts` 还原；检索回到基线
+- 3.10 已完整回退：生成器/回填脚本删除、`contextual_text` 数据清空（列保留）、`retriever.ts` 还原
 - 评测基线（chunkMRR 0.825）只在当前语料有效，扩充语料后需重跑
-- todo.md 中 15 项待办
 
 ## 推迟项
 
-3.10 的重验条件（无标题长文本语料 / rerank / 更克制的 blurb / 更大评测集）见 [负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)。
+todo.md 中有 15 项待办，详见 [todo.md](todo.md)。

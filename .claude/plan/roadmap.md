@@ -195,6 +195,8 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 4.3 | 垂直场景框架 | 场景模板 + 快速创建机制 | ⬜ |
 | 4.4 | 示例场景 | 代码审查助手 | ⬜ |
 
+> 📋 **概念前置**：[MCP 概念澄清](../../docs/dev-log/2026-10-18-mcp-concept-clarification.md) — 工具调用 / MCP / ExecutableTool 三层边界、接入判据、2026-07-28 规范无状态化。注意任务表中的 "HTTP/SSE" 是旧叫法，现行传输为 **Streamable HTTP**。
+>
 > **前置联动**：MCP 注入外部工具描述会让 `toolUsageGuidelines` 膨胀，这是 [todo.md](todo.md) 中 PromptSegment 抽象的既定触发点——本 Phase 开工时一并落地。
 
 ---

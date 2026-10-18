@@ -305,3 +305,4 @@ parameters: {
 - [Phase 2 Agent 系统设计方案](../../.claude/plan/phase2-agent-design.md) — 整体架构决策
 - [Provider 升级与工具系统实施方案](../../.claude/plan/provider-upgrade-and-tool-system.md) — Provider 层工具转发
 - [网络搜索工具后端选型](2026-08-04-web-search-backend-selection.md) — web_search 工具从 Brave 到 Tavily 的完整踩坑
+- [MCP 概念澄清](2026-10-18-mcp-concept-clarification.md) — MCP 作为工具的第二个来源，以及 `ExecutableTool` 为何几乎不用改（真正要改的是注册表作用域）

@@ -69,9 +69,11 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 ## 当前进度
 
-Phase 1 + 1.5 + 2 全部完成 ✅（Phase 2 = Prompt 管理 + Agent Runtime + 工具系统，2026-08-18 全链路审查收尾）。
+Phase 1 + 1.5 + 2 + 3 全部完成 ✅（Phase 2 = Prompt 管理 + Agent Runtime + 工具系统，2026-08-18 全链路审查收尾）。
 
-**Phase 3 = RAG 知识库**（2026-08-25 与 MCP 对调后先行）：阶段 A 管道验证 ✅、阶段 B 产品化 ✅（2026-09-09 收官）、**阶段 C 质量增强进行中 2/3** —— 3.9 混合检索 ✅（本地 + 线上）、3.11 引用溯源 ✅（本地，**线上建列与回填待执行**）、3.10 Contextual Retrieval 待做。MCP 顺延为 Phase 4。
+**Phase 3 = RAG 知识库 ✅（2026-10-17 收官）**：阶段 A 管道验证 ✅、阶段 B 产品化 ✅（2026-09-09）、阶段 C 质量增强 ✅ —— 3.9 混合检索 ✅（本地 + 线上）、3.11 引用溯源 ✅（本地 + 线上）、3.10 Contextual Retrieval **验证后不采用**（本语料无收益，实现已回退，见[负结果记录](docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)）。
+
+**下一阶段：Phase 4 = MCP**（HTTP/SSE 传输 + 管理界面 + 垂直场景框架），开工前置：PromptSegment 抽象。
 
 进度快照 [status.md](.claude/plan/status.md) · 全量规划 [roadmap](.claude/plan/roadmap.md) · 推迟项 [todo.md](.claude/plan/todo.md)。
 
