@@ -187,7 +187,8 @@ MCP 的设计不关心两端部署在哪。**判断标准不是"是不是远程"
 
 ## 相关文档
 
-- [Phase 4 路线图](../../.claude/plan/roadmap.md) — MCP Client / 管理界面 / 垂直场景
+- [Phase 4A MCP 接入技术设计](../../.claude/plan/phase4-mcp-design.md) — 主流程、模块边界、数据模型与实施拆分
+- [Phase 4 路线图](../../.claude/plan/roadmap.md) — Phase 4A（MCP）/ 4B（垂直场景）拆分
 - [架构设计 · MCP Client](../../.claude/plan/architecture.md) — 接口草案（注意其中的 "HTTP/SSE" 为旧叫法）
 - [Agent 工具系统实现详解](2026-07-29-agent-tool-system-implementation.md) — `ExecutableTool` 与 ToolRegistry 的由来
 - [Agent ReAct 完整流程](2026-08-05-agent-react-full-flow.md) — 工具调用循环的现有实现

@@ -160,6 +160,7 @@
 | [architecture.md](../.claude/plan/architecture.md) | 架构设计 — 目录结构、核心模块、扩展性 |
 | [roadmap.md](../.claude/plan/roadmap.md) | 实施路线图 — Phase 1-4 任务分解与状态 |
 | [phase2-agent-design.md](../.claude/plan/phase2-agent-design.md) | **Phase 2 Agent 系统设计方案** — 6 个架构决策、Provider 精简、ReAct 循环、Prompt 系统、学习路径 |
+| [phase4-mcp-design.md](../.claude/plan/phase4-mcp-design.md) | **Phase 4A MCP 接入技术设计** — 主流程（管理侧探测/快照、对话装配、工具调用、Prompt 拼装）、模块边界、数据模型、9 项关键决策、安全边界、M0–M5 里程碑 |
 
 ---
 

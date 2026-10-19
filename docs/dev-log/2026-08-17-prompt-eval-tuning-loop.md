@@ -44,8 +44,8 @@
 采用**快照版（方式 A）**而非抽取公共函数（方式 B），理由：要「最快拿到基线数据」且**不碰线上代码**。代价是快照会漂移（见关键洞察 4）。
 
 - `cases.mjs`：10 个 case，声明「期望工具 + 期望参数」，覆盖负例（闲聊不调工具）+ 4 个工具 + 模糊 case
-- `run.mjs`：快照 system prompt + 工具定义 → fetch OpenAI 兼容接口（`stream: false`）→ 规则判定（工具名对不对 + 参数对不对）
-- 跑法：`node --env-file=.env scripts/eval-prompt/run.mjs`
+- `run.ts`：快照工具定义 → fetch OpenAI 兼容接口（`stream: false`）→ 规则判定（工具名对不对 + 参数对不对）
+- 跑法（2026-10-19 迁移后）：`npx tsx --env-file=.env scripts/eval-prompt/run.ts`。system prompt 已改为直接复用 `server/service/system-prompt/`，不再复制；工具定义仍是快照
 - 判定维度**只有**「工具选择 + 参数」，不评测答案质量、多工具协作、拒绝场景
 
 ### 4. 调优闭环实战（80% → 100%）

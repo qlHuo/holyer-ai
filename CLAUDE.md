@@ -57,6 +57,15 @@ npx nuxi typecheck              # TypeScript 类型检查
 
 **反例警示**：实现提示词管理时，表单直接用 `<div>` + `<input>` + `<textarea>` 手写，而项目已安装 Nuxt UI v4（内置 Form 组件）和 Zod（已在 API 端大量使用），这就是跳过了第 2 层。正确做法：`<UForm>` + `z.object({...})` + `useForm()`。
 
+**通用能力优先用成熟库**：日期时间、解析、编码、加密、表单校验等领域，优先引入经过验证且仍在维护的开源库，不要自己实现。选型时检查：
+
+- Edge Runtime 兼容（无 `fs` / `child_process` 等 Node 内置模块）
+- 仍在维护（moment 已进入维护模式，新项目选 dayjs / date-fns / Luxon）
+- 包体积可控、可 tree-shake；优先复用项目已安装的库
+- 一次性的简单操作（如 `Intl` 能直接完成）不必为此引入重型依赖
+
+**utils 边界**：`server/utils/` 只放无业务语义的通用工具（SSE 包装、AbortSignal 合并、URL 安全判断等）；带业务含义的逻辑放 `server/service/`。
+
 ## 非做不可
 
 这些规则没有例外，违反会直接导致生产故障：

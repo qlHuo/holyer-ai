@@ -1,8 +1,8 @@
 /**
  * Prompt 评测运行器 — 快照版
  *
- * 跑法（Node 22，零依赖）：
- *   node --env-file=.env scripts/eval-prompt/run.mjs
+ * 跑法（Node 22 + tsx）：
+ *   npx tsx --env-file=.env scripts/eval-prompt/run.ts
  *
  * 可选环境变量：
  *   EVAL_MODEL        要测的模型 ID（默认 deepseek-v4-pro）
@@ -13,13 +13,12 @@
  *   NUXT_MODEL_BASE_URL   OpenAI 兼容接口地址
  *   NUXT_MODEL_API_KEY    API Key
  *
- * ⚠️ 注意：本文件是「快照」，system prompt 与工具定义复制自
- *   server/api/chat/index.post.ts（dateContext + toolUsageGuidelines）
- *   和 server/service/agent/tools/builtin/*.ts。
- *   若线上改了这些文件，需要同步本快照，否则测的不是真实 prompt。
+ * ⚠️ 注意：system prompt 直接复用 server/service/system-prompt/（不再复制），
+ *   只有工具定义仍是快照（复制自 server/service/agent/tools/builtin/*.ts）。
+ *   若内置工具定义变化，需要同步本文件的 TOOLS，否则测的不是真实工具集。
  */
-
 import { cases } from './cases.mjs'
+import { buildSystemPrompt } from '../../server/service/system-prompt'
 
 const BASE_URL = (process.env.NUXT_MODEL_BASE_URL || '').replace(/\/+$/, '')
 const API_KEY = process.env.NUXT_MODEL_API_KEY || ''
@@ -27,27 +26,8 @@ const MODEL = process.env.EVAL_MODEL || 'deepseek-v4-pro'
 const TEMPERATURE = process.env.EVAL_TEMPERATURE !== undefined ? Number(process.env.EVAL_TEMPERATURE) : 0
 
 // ────────────────────────────────────────────────────────────
-// 快照 1：system prompt（对应 index.post.ts 的 dateContext + toolUsageGuidelines）
-// ────────────────────────────────────────────────────────────
-function buildSystemPrompt() {
-  const now = new Date()
-  const dateContext = `## 当前时间
-今天是 ${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日（周${['日', '一', '二', '三', '四', '五', '六'][now.getDay()]}），当前时间是 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}（北京时间 UTC+8）。
-搜索实时信息时，请使用上述日期作为参考，不要使用过期的年份。`
-
-  const toolUsageGuidelines = `## 工具调用准则
-你可以使用工具来辅助回答问题。按以下规则选择是否调用及调用哪个工具：
-- 涉及实时信息、最新资讯、事实核查 → 调用 web_search
-- 需要读取某个具体网页的内容 → 调用 web_fetch（需提供完整 URL）
-- 涉及多位数字的算术运算 → 调用 calculator
-- 日常问候、闲聊、常识性问题 → 不要调用工具，直接回答
-- 用户明确要求「查询 / 搜索 / 查一下 / 最新」等信息时，应调用 web_search 获取最新结果，不要仅凭记忆回答`
-
-  return `${dateContext}\n\n${toolUsageGuidelines}`
-}
-
-// ────────────────────────────────────────────────────────────
-// 快照 2：3 个工具定义（对应 tools/builtin/*.ts 的 toDefinition()）
+// 快照：工具定义（对应 tools/builtin/*.ts 的 toDefinition()）
+// system prompt 不在此复制，统一由 server/service/system-prompt/ 生成
 // ────────────────────────────────────────────────────────────
 const TOOLS = [
   {
@@ -94,6 +74,13 @@ const TOOLS = [
   }
 ]
 
+/** 用与线上相同的拼装逻辑生成 system prompt（工具名取自下面的快照） */
+function buildSnapshotSystemPrompt(): string {
+  return buildSystemPrompt({
+    toolNames: TOOLS.map(tool => tool.function.name)
+  })
+}
+
 // ────────────────────────────────────────────────────────────
 // 调用 LLM（OpenAI 兼容，非流式）
 // ────────────────────────────────────────────────────────────
@@ -103,7 +90,7 @@ async function ask(userMessage) {
     stream: false,
     temperature: TEMPERATURE,
     messages: [
-      { role: 'system', content: buildSystemPrompt() },
+      { role: 'system', content: buildSnapshotSystemPrompt() },
       { role: 'user', content: userMessage }
     ],
     tools: TOOLS
@@ -179,7 +166,7 @@ async function main() {
         model: MODEL,
         temperature: TEMPERATURE,
         messages: [
-          { role: 'system', content: buildSystemPrompt() },
+          { role: 'system', content: buildSnapshotSystemPrompt() },
           { role: 'user', content: cases[0].userMessage }
         ],
         tools: TOOLS

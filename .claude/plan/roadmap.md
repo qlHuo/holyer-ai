@@ -124,7 +124,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 | 编号 | 关注点 | 内容 | 介入时机 |
 |------|--------|------|---------|
-| X1 | 提示词工程 | ReAct 指令模板、工具描述调优、`PromptSegment` 抽象层（`server/service/prompt/`）、上下文预算管理、评估集驱动迭代 | Phase 2–4 |
+| X1 | 提示词工程 | ReAct 指令模板、工具描述调优、`PromptSegment` 抽象层（`server/service/system-prompt/`）、上下文预算管理、评估集驱动迭代 | Phase 2–4 |
 | X2 | 可观测性 | 工具调用日志、ReAct 循环追踪、Token 消耗统计 | Phase 2–3 |
 | X3 | 安全护栏 | 工具权限分级（只读/读写/危险）、危险操作确认、输出过滤 | Phase 2 |
 | X4 | 行为评估 | Agent 用例测试集、工具调用正确性验证 | Phase 2–4 |
@@ -186,18 +186,31 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 4：MCP + 垂直场景框架（预计 2-3 天）
+## Phase 4A：MCP 接入（设计定稿，待实施）
+
+> 📋 **技术设计**：[phase4-mcp-design.md](phase4-mcp-design.md) — 主流程、模块边界、数据模型、关键决策与里程碑
+> 📋 **概念背景**：[MCP 概念澄清](../../docs/dev-log/2026-10-18-mcp-concept-clarification.md) — 工具调用 / MCP / ExecutableTool 三层边界；2026-07-28 规范无状态化
 
 | 编号 | 任务 | 内容 | 状态 |
 |------|------|------|:--:|
-| 4.1 | MCP Client | HTTP/SSE 传输（Edge 无子进程，不支持 stdio） | ⬜ |
-| 4.2 | MCP 管理界面 | 连接/断开服务器、工具列表 | ⬜ |
-| 4.3 | 垂直场景框架 | 场景模板 + 快速创建机制 | ⬜ |
-| 4.4 | 示例场景 | 代码审查助手 | ⬜ |
+| 4A.0 | PromptSegment | 系统提示词分段拼装（MCP 工具描述膨胀的前置） | ✅ |
+| 4A.1 | MCP Client | Streamable HTTP 单端点；2026 现代格式 + legacy 握手降级；仅 tools | ⬜ |
+| 4A.2 | 工具适配 + 请求级注册表 | 快照 → `ExecutableTool`；注册表按请求构建 | ⬜ |
+| 4A.3 | MCP 管理界面 | 配置 / 探测 / 工具列表 / 启停 / 刷新 | ⬜ |
+| 4A.4 | 安全与可靠性 | SSRF、超时、结果截断、失败隔离、工具上限 | ⬜ |
 
-> 📋 **概念前置**：[MCP 概念澄清](../../docs/dev-log/2026-10-18-mcp-concept-clarification.md) — 工具调用 / MCP / ExecutableTool 三层边界、接入判据、2026-07-28 规范无状态化。注意任务表中的 "HTTP/SSE" 是旧叫法，现行传输为 **Streamable HTTP**。
->
-> **前置联动**：MCP 注入外部工具描述会让 `toolUsageGuidelines` 膨胀，这是 [todo.md](todo.md) 中 PromptSegment 抽象的既定触发点——本 Phase 开工时一并落地。
+> **范围约束**：本期仅 `tools` 原语；不做 resources / prompts / MCP Apps / stdio / OAuth / 写操作审批。
+
+---
+
+## Phase 4B：垂直场景（MCP 之后）
+
+| 编号 | 任务 | 内容 | 状态 |
+|------|------|------|:--:|
+| 4B.1 | 垂直场景框架 | 预设组合：Prompt + 工具集 + 知识库 + 模型参数 | ⬜ |
+| 4B.2 | 示例场景 | 代码审查助手 | ⬜ |
+
+> **定位**：垂直场景是"打包方式"，不是 Agent 核心能力。它依赖 4A 提供可配置的 MCP 工具集。
 
 ---
 

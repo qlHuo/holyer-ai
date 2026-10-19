@@ -1,13 +1,16 @@
 # 项目进度快照
 
-> 更新于 2026-10-17
+> 更新于 2026-10-19
 
 ## 当前状态
 
-**Phase 3 = RAG 知识库 ✅ 已完成**（阶段 A/B/C 全部收官）。3.10 Contextual Retrieval 完整实现并 A/B 验证后**判定不采用**，实现与数据已回退到动手前状态。**下一阶段：Phase 4 = MCP**。
+**Phase 3 = RAG 知识库 ✅ 已完成**（阶段 A/B/C 全部收官）。3.10 Contextual Retrieval 完整实现并 A/B 验证后**判定不采用**，实现与数据已回退到动手前状态。
+
+**下一阶段：Phase 4A = MCP 接入**。技术设计已定稿（[phase4-mcp-design.md](phase4-mcp-design.md)），范围收敛为 `tools` 原语 + Streamable HTTP；垂直场景拆为 Phase 4B 后置。
 
 ## 近期完成
 
+- 4A.0 PromptSegment 抽象（2026-10-19）— 系统提示词改为按段拼装（`server/service/system-prompt/`）；修正线上 `dateContext` 时区偏移（Workers 为 UTC）；评测脚本改为复用同一实现并迁至 `run.ts`
 - 3.10 实现 + A/B 验证，判定不采用（2026-10-17）— chunk 召回无提升，chunkMRR 0.808→0.642；Contextual BM25 负收益（[负结果记录](../../docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)）
 - 评测体系修正（2026-10-17）— 补 chunk 级断言、修正无效用例，基线 12/12、chunkMRR 0.825
 - 3.11 引用溯源线上落地 + 浏览器验收（2026-09-17）
@@ -16,11 +19,12 @@
 
 ## 下一步
 
-1. **[P0] Phase 4 开工：PromptSegment 抽象** — MCP 注入外部工具描述前的既定触发点
-2. **[P1] MCP Client** — HTTP/SSE 传输（Edge 无子进程，不支持 stdio）
-3. **[P1] MCP 管理界面** — 连接/断开服务器、工具列表
-4. **[P2] 垂直场景框架 + 示例场景**
-5. **[P2] 检索复评** — 语料扩充或引入 rerank 后重跑评测（基线随语料失效）
+1. **[P0] 4A.1 MCP Client** — Streamable HTTP 单端点；现代 + legacy 握手降级
+2. **[P1] 4A.2 工具适配 + 请求级注册表**
+3. **[P1] 4A.3 MCP 管理界面**
+4. **[P1] 4A.4 安全与可靠性兜底**
+5. **[P2] Phase 4B 垂直场景框架 + 示例场景**
+6. **[P2] 检索复评** — 语料扩充或引入 rerank 后重跑评测（基线随语料失效）
 
 ## 阻塞 / 风险
 

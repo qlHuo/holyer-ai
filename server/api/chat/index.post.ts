@@ -19,6 +19,7 @@ import type { SSEChunk } from '~~/server/utils/sse'
 import type { ConversationDetail } from '~~/shared/types/conversation'
 import type { ToolCall, ToolContext } from '~~/shared/types/provider'
 import { createSSEResponse } from '~~/server/utils/sse'
+import { buildSystemPrompt } from '~~/server/service/system-prompt'
 import { ChatBodySchema } from './schema'
 import { SSE_EVENT } from '~~/shared/types/sse'
 import { runAgentLoop } from '~~/server/service/agent/runner'
@@ -120,27 +121,12 @@ export default defineEventHandler(async (event) => {
         // 原「纯聊天路径」else 分支是死代码，已删除；保留此判断作为「零工具模式」的未来扩展点。
         const toolDefinitions = toolRegistry.getDefinitions()
 
-        // 有工具可用时，追加工具调用准则到 system prompt（防止 LLM 对"你好"也调工具）
-        const now = new Date()
-        const dateContext = `
-          ## 当前时间
-          今天是 ${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日（周${['日', '一', '二', '三', '四', '五', '六'][now.getDay()]}），当前时间是 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}（北京时间 UTC+8）。
-          搜索实时信息时，请使用上述日期作为参考，不要使用过期的年份。
-        `
-
-        const toolUsageGuidelines = `
-          ## 工具调用准则
-          你可以使用工具来辅助回答问题。按以下规则选择是否调用及调用哪个工具：
-          - 涉及实时信息、最新资讯、事实核查 → 调用 web_search
-          - 需要读取某个具体网页的内容 → 调用 web_fetch（需提供完整 URL）
-          - 涉及多位数字的算术运算 → 调用 calculator
-          - 日常问候、闲聊、常识性问题 → 不要调用工具，直接回答
-          - 用户明确要求「查询 / 搜索 / 查一下 / 最新」等信息时，应调用 web_search 获取最新结果，不要仅凭记忆回答
-        `
-
-        const effectiveSystemPrompt = toolDefinitions.length > 0
-          ? [systemPrompt, dateContext, toolUsageGuidelines].filter(Boolean).join('\n\n')
-          : systemPrompt
+        // 有工具可用时，追加时间与工具调用准则（防止 LLM 对"你好"也调工具）。
+        // 拼装规则见 server/service/system-prompt/：按 priority 稳定排序，空段自动丢弃。
+        const effectiveSystemPrompt = buildSystemPrompt({
+          userPrompt: systemPrompt,
+          toolNames: toolDefinitions.map(tool => tool.name)
+        })
 
         // 知识库引用分三种，落到工具执行上下文（toolContext）：
         //   auto（默认）→ 不设约束，LLM 自主检索全部库

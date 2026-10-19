@@ -61,6 +61,8 @@ const context = `基于以下文档回答问题，文档内容：...`
 
 核心概念：统一的 `PromptSegment` 接口 + 按优先级拼装的 `buildPrompt()`。
 
+> 落地说明（2026-10-19）：最终目录命名为 `server/service/system-prompt/`（与已有的 `prompts/` 用户提示词库区分），实现简化为 `types.ts` / `build.ts` / `segments.ts` / `date-context.ts`，未拆 `segments/` 子目录。下方为当时的设想结构。
+
 ```
 server/service/prompt/
 ├── builder.ts        <- 核心：按优先级拼接 prompt 片段
