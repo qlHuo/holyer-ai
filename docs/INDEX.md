@@ -1,6 +1,6 @@
 # 文档索引
 
-> 83 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
+> 84 篇项目文档的中心索引。新增文档后更新此文件（也可通过 `/doc-consolidate` 自动维护）。
 
 ---
 
@@ -28,7 +28,7 @@
 
 ---
 
-## 开发日志（52 篇）
+## 开发日志（53 篇）
 
 `docs/dev-log/` — 深层讨论、核心概念澄清、设计推演、Bug 排查。
 
@@ -36,6 +36,7 @@
 
 | 日期 | 文件 | 内容 |
 |------|------|------|
+| 10-21 | [mcp-implementation-walkthrough](dev-log/2026-10-21-mcp-implementation-walkthrough.md) | **MCP 接入实现全链路解读** — 从 `/api/chat` 到 SSE 的逐步 trace：配置读取 → `listTools` 协商 → adapter 翻译 → 请求级注册表 → PromptSegment → ReAct 循环 → `tools/call` → 结果回填 → DB/SSE/前端；含数据形状变化表、取消信号/名称映射/两个 `disabledTools` 三条贯穿线、`list` vs `call` 时机、当前边界与关键洞察 |
 | 10-18 | [mcp-concept-clarification](dev-log/2026-10-18-mcp-concept-clarification.md) | **MCP 概念澄清：工具调用、协议与接入边界** — 三层模型（工具调用 / MCP / ExecutableTool 是缝不是协议）、模型永远不知道 MCP 存在、五个常见误解纠正、`tools/list` 在 LLM 之前、接入边界判据（所有权/发布周期/客户端多样性而非"是否远程"）、2026-07-28 规范无状态化（移除握手中/会话/续传，天然契合 Workers）、管理页只能接 MCP 端点且验证靠探测 |
 | 10-17 | [contextual-retrieval-negative-result](dev-log/2026-10-17-contextual-retrieval-negative-result.md) | **Contextual Retrieval 验证结果：本语料下无收益，不采用** — 4 组配置 A/B（旧/新向量 × 旧/新分词）：chunk 召回无提升、chunkMRR 0.808→0.642；Contextual BM25 负收益（→0.556）；原定靶子是跨文档综合题，属无效用例。含根因（语料标题层级完整、headingPath 已覆盖上下文）、**完整回退记录**、未来重验条件与 3 个踩坑 |
 
@@ -180,5 +181,5 @@
 | **工程化** | [ADR-010](decisions/010-eslint-over-prettier.md) · [code-standards-setup](dev-log/2026-06-02-code-standards-setup.md) · [cicd-setup](dev-log/2026-06-02-cicd-setup.md) · [zod](learning-notes/zod.md) · [codegraph](claude-tips/codegraph.md) |
 | **Agent 开发** | [方案设计](../.claude/plan/phase2-agent-design.md) · [ADR-012](decisions/012-llm-stream-chunk-type.md) · [ADR-013](decisions/013-prompt-naming.md) · [ADR-014](decisions/014-agent-streaming-db-write.md) · [P0 分析](dev-log/2026-07-28-agent-tool-system-p0-analysis.md) · [实现详解](dev-log/2026-07-29-agent-tool-system-implementation.md) · [完整流程](dev-log/2026-08-05-agent-react-full-flow.md) · [已知问题](dev-log/2026-08-06-agent-react-known-issues.md) · [搜索后端选型](dev-log/2026-08-04-web-search-backend-selection.md) · [内容审核自愈](dev-log/2026-08-06-agent-content-filter-self-healing.md) · [prompt-engineering](dev-log/2026-07-09-prompt-engineering-and-phase2-planning.md) · [评测调优](dev-log/2026-08-17-prompt-eval-tuning-loop.md) · [业界规范](learning-notes/prompt-engineering-standards.md) · [工具预算](dev-log/2026-08-31-agent-tool-budget.md) · [工具调用 UI](dev-log/2026-08-03-agent-toolcall-ui-redesign.md) |
 | **RAG 知识库** | [完整设计](dev-log/2026-08-19-rag-knowledge-base-design.md) · [图片展示边界](dev-log/2026-08-26-rag-image-display-boundary.md) · [阶段A落地](dev-log/2026-08-31-rag-stage-a-implementation.md) · [上线部署](dev-log/2026-08-31-neon-rag-deployment.md) · [subrequest 超限](dev-log/2026-09-01-cf-workers-subrequest-limit.md) · [阶段B实施方案](dev-log/2026-09-02-rag-phase-b-implementation.md) · [聊天选库器](dev-log/2026-09-08-chat-knowledge-base-selector.md) · [GitHub 引入定稿](dev-log/2026-09-09-github-doc-import-plan.md) · [阶段C规划](dev-log/2026-09-14-rag-stage-c-plan.md) · **Contextual Retrieval**：[负结果（不采用，含重实现要点）](dev-log/2026-10-17-contextual-retrieval-negative-result.md) · **引用溯源**：[落地记录](dev-log/2026-09-17-citation-implementation.md) · [ADR-015](decisions/015-citation-metadata-carrier.md) · [混合检索](learning-notes/hybrid-retrieval.md) · [rag-schema](learning-notes/rag-schema.md) · [pgvector](learning-notes/pgvector.md) · [embedding-dimensions](learning-notes/embedding-dimensions.md) · [ADR-003](decisions/003-neon-drizzle.md) |
-| **MCP** | [概念澄清](dev-log/2026-10-18-mcp-concept-clarification.md) · [Phase 4 路线图](../.claude/plan/roadmap.md) · [架构 3.4](../.claude/plan/architecture.md) · [CodeGraph 实例](claude-tips/codegraph.md) |
+| **MCP** | [概念澄清](dev-log/2026-10-18-mcp-concept-clarification.md) · [实现全链路](dev-log/2026-10-21-mcp-implementation-walkthrough.md) · [技术设计](../.claude/plan/phase4-mcp-design.md) · [Phase 4 路线图](../.claude/plan/roadmap.md) · [架构 3.4](../.claude/plan/architecture.md) · [CodeGraph 实例](claude-tips/codegraph.md) |
 | **部署运维** | [ADR-004](decisions/004-cloudflare-pages.md) · [cloudflare-worker-build-oom](dev-log/2026-07-05-cloudflare-worker-build-oom.md) |

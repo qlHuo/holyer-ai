@@ -16,7 +16,8 @@
 import type { Message, ToolCall, ChatOptions } from '~~/shared/types/provider'
 import type { LLMProvider } from '~~/server/service/llm/types'
 import type { AgentEvent, AgentRunConfig } from './types'
-import { toolRegistry } from './tools'
+import type { ToolRegistry } from './tools'
+import { McpToolError } from '../mcp/errors'
 import { AgentMemory } from './memory'
 import { mergeAbortSignals } from '~~/server/utils/abort'
 
@@ -137,12 +138,14 @@ async function isolateAndFilterToolResults(
  * @param messages  - 消息列表（system + 历史 + 当前用户消息）
  * @param options   - 聊天选项（model、temperature、maxTokens、systemPrompt、signal）
  *                    注意：tools 由 Runner 内部自动设置，不依赖 options.tools
+ * @param registry  - 请求级工具注册表（内置工具 + 本次可用的 MCP 工具）
  * @param config    - Agent 运行配置（maxIterations 等）
  */
 export async function* runAgentLoop(
   provider: LLMProvider,
   messages: Message[],
   options: ChatOptions,
+  registry: ToolRegistry,
   config: AgentRunConfig = {}
 ): AsyncGenerator<AgentEvent> {
   const maxIterations = config.maxIterations ?? DEFAULT_MAX_ITERATIONS
@@ -203,7 +206,7 @@ export async function* runAgentLoop(
           // disabledTools（如知识库「关闭引用」）从定义里剔除，LLM 就不会看到/调用它们
           tools: budgetExhausted
             ? []
-            : toolRegistry.getDefinitions()
+            : registry.getDefinitions()
                 .filter(tool => !options.toolContext?.disabledTools?.includes(tool.name))
         })
       } catch (error) {
@@ -342,12 +345,12 @@ export async function* runAgentLoop(
       }
 
       // 5b. 并发执行所有工具（缓存优先：相同工具+相同参数不重复执行）
-      const registeredNames = toolRegistry.list().map(t => t.name)
+      const registeredNames = registry.list().map(t => t.name)
 
       const settled = await Promise.allSettled(
         toExecute.map(async (tc) => {
           try {
-            const tool = toolRegistry.get(tc.name)
+            const tool = registry.get(tc.name)
             if (!tool) {
               return {
                 toolCallId: tc.id,
@@ -361,9 +364,11 @@ export async function* runAgentLoop(
             const args = JSON.parse(tc.arguments) as Record<string, unknown>
             // 生成缓存 key：工具名 + 排序后的参数 JSON（保证 {a:1,b:2} 和 {b:2,a:1} 命中同一缓存）
             const cacheKey = `${tc.name}:${JSON.stringify(args, Object.keys(args).sort())}`
+            // 只有明确可缓存的工具才参与（MCP 写操作 / 权限未知时默认不缓存）
+            const cacheable = tool.cacheable !== false
 
             // 命中缓存 → 直接返回，不实际执行
-            const cached = toolCache.get(cacheKey)
+            const cached = cacheable ? toolCache.get(cacheKey) : undefined
             if (cached) {
               return {
                 toolCallId: tc.id,
@@ -376,7 +381,7 @@ export async function* runAgentLoop(
 
             // 未命中 → 实际执行并写入缓存（传入合并后的取消信号 + 会话级工具上下文）
             const result = await tool.execute(args, runSignal, options.toolContext)
-            toolCache.set(cacheKey, { result, success: true })
+            if (cacheable) toolCache.set(cacheKey, { result, success: true })
             return {
               toolCallId: tc.id,
               toolName: tc.name,
@@ -389,7 +394,10 @@ export async function* runAgentLoop(
               toolCallId: tc.id,
               toolName: tc.name,
               success: false as const,
-              result: `工具执行异常：${error instanceof Error ? error.message : '未知错误'}`,
+              // MCP 业务失败直接使用服务端文案；其他异常保留统一的“执行异常”前缀
+              result: error instanceof McpToolError
+                ? error.message
+                : `工具执行异常：${error instanceof Error ? error.message : '未知错误'}`,
               cached: false as const
             }
           }

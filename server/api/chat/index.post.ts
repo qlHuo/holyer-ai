@@ -23,7 +23,8 @@ import { buildSystemPrompt } from '~~/server/service/system-prompt'
 import { ChatBodySchema } from './schema'
 import { SSE_EVENT } from '~~/shared/types/sse'
 import { runAgentLoop } from '~~/server/service/agent/runner'
-import { toolRegistry, knowledgeBaseSearchTool } from '~~/server/service/agent/tools'
+import { createToolRegistry, knowledgeBaseSearchTool } from '~~/server/service/agent/tools'
+import { loadMcpTools } from '~~/server/service/mcp/servers'
 
 export default defineEventHandler(async (event) => {
   const body = ChatBodySchema.parse(await readBody(event))
@@ -117,9 +118,16 @@ export default defineEventHandler(async (event) => {
         // 最终回复消息 id —— 纯聊天路径提前占位；Agent 路径延后到第一个 text 事件才创建，
         // 保证中间轮的 assistant(tool_calls)/tool 消息在 DB 时间线上排在最终回复之前
 
-        // 工具在 tools/index.ts 无条件注册，toolDefinitions 恒非空 → 所有请求都走 Agent 路径。
-        // 原「纯聊天路径」else 分支是死代码，已删除；保留此判断作为「零工具模式」的未来扩展点。
-        const toolDefinitions = toolRegistry.getDefinitions()
+        // 本次对话可用的工具：内置 + 按配置加载的 MCP。
+        // 单个 MCP Server 失败只跳过该 Server，不影响对话；生产环境未接 DB 前恒为空。
+        const mcpTools = await loadMcpTools(llmAbortController.signal).catch((error) => {
+          console.error('[chat] 加载 MCP 工具失败:', error)
+          return []
+        })
+        const registry = createToolRegistry(mcpTools)
+
+        // 内置工具恒存在 → toolDefinitions 恒非空，所有请求都走 Agent 路径。
+        const toolDefinitions = registry.getDefinitions()
 
         // 有工具可用时，追加时间与工具调用准则（防止 LLM 对"你好"也调工具）。
         // 拼装规则见 server/service/system-prompt/：按 priority 稳定排序，空段自动丢弃。
@@ -153,7 +161,7 @@ export default defineEventHandler(async (event) => {
 
         if (toolDefinitions.length > 0) {
           // ─── Agent 路径：AsyncGenerator<AgentEvent> → SSE ───
-          const eventStream = runAgentLoop(llmProvider, allMessages, chatOptions)
+          const eventStream = runAgentLoop(llmProvider, allMessages, chatOptions, registry)
 
           // 当前轮累积的 assistant tool_calls：tool_start 累积，第一个 tool_end 时落库并清空
           let pendingToolCalls: ToolCall[] = []
