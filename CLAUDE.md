@@ -82,7 +82,9 @@ Phase 1 + 1.5 + 2 + 3 全部完成 ✅（Phase 2 = Prompt 管理 + Agent Runtime
 
 **Phase 3 = RAG 知识库 ✅（2026-10-17 收官）**：阶段 A 管道验证 ✅、阶段 B 产品化 ✅（2026-09-09）、阶段 C 质量增强 ✅ —— 3.9 混合检索 ✅（本地 + 线上）、3.11 引用溯源 ✅（本地 + 线上）、3.10 Contextual Retrieval **验证后不采用**（本语料无收益，实现已回退，见[负结果记录](docs/dev-log/2026-10-17-contextual-retrieval-negative-result.md)）。
 
-**下一阶段：Phase 4 = MCP**（HTTP/SSE 传输 + 管理界面 + 垂直场景框架），开工前置：PromptSegment 抽象。
+**Phase 4A = MCP 接入 ✅（2026-10-26 收官）**：4A.0 PromptSegment、4A.1 Client、4A.2 工具适配、4A.3 管理界面（2026-10-22）、4A.5 高德 MCP 真实接入（2026-10-26）、4A.4 安全与可靠性端到端验收通过（[验收记录](docs/dev-log/2026-10-26-mcp-security-acceptance.md)）。线上 migration 0004 待确认。
+
+**下一阶段：Phase 4B = 垂直场景**（预设 Prompt + 工具集 + 知识库 + 模型参数）。
 
 进度快照 [status.md](.claude/plan/status.md) · 全量规划 [roadmap](.claude/plan/roadmap.md) · 推迟项 [todo.md](.claude/plan/todo.md)。
 

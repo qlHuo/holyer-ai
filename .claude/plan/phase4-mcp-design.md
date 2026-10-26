@@ -1,6 +1,6 @@
 # Phase 4A：MCP 接入技术设计
 
-> 日期：2026-10-19 · 状态：🔄 实施中（4A.0–4A.3 已完成，4A.4 待做）
+> 日期：2026-10-19 · 状态：✅ 已完成（2026-10-26；4A.0–4A.5 全部交付，4A.4 端到端验收见[验收记录](../../docs/dev-log/2026-10-26-mcp-security-acceptance.md)）
 >
 > 概念背景：[MCP 概念澄清](../../docs/dev-log/2026-10-18-mcp-concept-clarification.md) — 工具调用 / MCP / ExecutableTool 的边界，以及 2026-07-28 规范的无状态化。
 
@@ -335,12 +335,12 @@ export const mcpServers = pgTable('mcp_servers', {
 
 ### 验收基线
 
-- [ ] 禁用 Server 后，下一次请求中其工具立即消失
-- [ ] 两个 Server 同名工具可被模型正确区分
-- [ ] MCP 工具失败时 `success=false`，对话继续
-- [ ] 非 MCP 地址、内网地址被拒绝且有可读提示
-- [ ] 内置工具行为零回归
-- [ ] 单 Server 故障不影响其他 Server 与内置工具
+- [x] 禁用 Server 后，下一次请求中其工具立即消失
+- [x] 两个 Server 同名工具可被模型正确区分
+- [x] MCP 工具失败时 `success=false`，对话继续
+- [x] 非 MCP 地址、内网地址被拒绝且有可读提示
+- [x] 内置工具行为零回归
+- [x] 单 Server 故障不影响其他 Server 与内置工具
 
 ---
 
@@ -372,6 +372,7 @@ export const mcpServers = pgTable('mcp_servers', {
 
 - [MCP 概念澄清](../../docs/dev-log/2026-10-18-mcp-concept-clarification.md) — 三层模型、接入边界、2026-07-28 规范
 - [MCP 实现全链路解读](../../docs/dev-log/2026-10-21-mcp-implementation-walkthrough.md) — 4A.0–4A.2 落地后的逐步 trace 与数据形状变化
+- [MCP 安全与可靠性验收](../../docs/dev-log/2026-10-26-mcp-security-acceptance.md) — 4A.4 验收场景、实际结果与未覆盖边界
 - [Phase 2 Agent 设计方案](phase2-agent-design.md) — Agent Runtime 与工具系统
 - [Agent 工具系统实现详解](../../docs/dev-log/2026-07-29-agent-tool-system-implementation.md) — `ExecutableTool` / `ToolRegistry`
 - [Agent ReAct 完整流程](../../docs/dev-log/2026-08-05-agent-react-full-flow.md) — 工具调用循环

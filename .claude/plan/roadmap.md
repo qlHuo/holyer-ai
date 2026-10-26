@@ -186,7 +186,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 
 ---
 
-## Phase 4A：MCP 接入（设计定稿，待实施）
+## Phase 4A：MCP 接入 ✅ 已完成（2026-10-26）
 
 > 📋 **技术设计**：[phase4-mcp-design.md](phase4-mcp-design.md) — 主流程、模块边界、数据模型、关键决策与里程碑
 > 📋 **概念背景**：[MCP 概念澄清](../../docs/dev-log/2026-10-18-mcp-concept-clarification.md) — 工具调用 / MCP / ExecutableTool 三层边界；2026-07-28 规范无状态化
@@ -197,7 +197,8 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 4A.1 | MCP Client | Streamable HTTP 单端点；2026 现代格式 + legacy 握手降级；仅 tools | ✅ |
 | 4A.2 | 工具适配 + 请求级注册表 | 快照 → `ExecutableTool`；注册表按请求构建 | ✅ |
 | 4A.3 | MCP 管理界面 | 配置 / 探测 / 工具列表 / 启停 / 刷新 — `mcp_servers` 表 + `/api/mcp/servers` + `/mcp` 管理页；headers 脱敏、配额校验、刷新失败保留旧快照 | ✅ (2026-10-22) |
-| 4A.4 | 安全与可靠性 | SSRF、超时、结果截断、失败隔离、工具上限 | ⬜ |
+| 4A.4 | 安全与可靠性 | SSRF、超时、结果截断、失败隔离、工具上限 — 全部机制端到端验收通过（6 类错误映射、双配额、两条失败隔离路径、禁用即时生效、同名工具区分、内置工具零回归），详见 [验收记录](../../docs/dev-log/2026-10-26-mcp-security-acceptance.md) | ✅ (2026-10-26) |
+| 4A.5 | 真实 Server 验证 | 接入高德 MCP（15 个工具），`maps_schema_*` 唤端结果渲染为可点击按钮（`app/utils/amap.ts`） | ✅ (2026-10-26)，文档沉淀待补 |
 
 > **范围约束**：本期仅 `tools` 原语；不做 resources / prompts / MCP Apps / stdio / OAuth / 写操作审批。
 
