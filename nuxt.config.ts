@@ -23,9 +23,7 @@ export default defineNuxtConfig({
     // 注册获取 1000 次/月免费额度：https://app.tavily.com
     tavilyApiKey: '',
     embeddingBaseUrl: '',
-    embeddingApiKey: '',
-    // 仅开发环境：MCP Server 配置 JSON（M3 接入 DB 后移除）
-    mcpDevServers: ''
+    embeddingApiKey: ''
   },
 
   routeRules: {

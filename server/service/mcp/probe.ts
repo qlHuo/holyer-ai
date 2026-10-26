@@ -10,14 +10,20 @@ import { McpClient, sanitizeRequestHeaders } from './client'
 import { McpError } from './errors'
 import type { ProbeErrorKind, ProbeResult } from './types'
 
+/** 单次 HTTP 请求超时 */
 const PROBE_TIMEOUT_MS = 10_000
+/** 整个探测（含 tools/list 分页）的总时限；必须小于前端 30s 请求超时 */
+const PROBE_DEADLINE_MS = 20_000
 
 export interface ProbeInput {
   url: string
   headers?: Record<string, string>
   /** 仅开发环境：允许 localhost（本地测试 MCP Server） */
   allowLoopback?: boolean
+  /** 单次请求超时 */
   timeoutMs?: number
+  /** 整个探测的总时限（connect + 全部分页） */
+  deadlineMs?: number
 }
 
 export async function probeMcpServer(input: ProbeInput): Promise<ProbeResult> {
@@ -37,9 +43,14 @@ export async function probeMcpServer(input: ProbeInput): Promise<ProbeResult> {
     timeoutMs: input.timeoutMs ?? PROBE_TIMEOUT_MS
   })
 
+  // 单次请求各自有 10s 超时，但 tools/list 最多 10 页顺序请求；
+  // 没有总时限时最坏可拖到 100s，超过前端 30s 超时并造成「前端报失败、后端已写库」。
+  const deadlineMs = input.deadlineMs ?? PROBE_DEADLINE_MS
+  const deadline = AbortSignal.timeout(deadlineMs)
+
   try {
-    await client.connect()
-    const tools = await client.listTools()
+    await client.connect(deadline)
+    const tools = await client.listTools(deadline)
 
     return {
       ok: true,
@@ -48,6 +59,12 @@ export async function probeMcpServer(input: ProbeInput): Promise<ProbeResult> {
       tools
     }
   } catch (error) {
+    if (deadline.aborted) {
+      return {
+        ok: false,
+        error: { kind: 'timeout', message: `探测超时（${deadlineMs}ms），请稍后重试` }
+      }
+    }
     return { ok: false, error: toProbeError(error) }
   }
 }

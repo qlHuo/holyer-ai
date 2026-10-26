@@ -196,7 +196,7 @@ Phase 1 核心功能完整但存在系统性差距——设计规范、错误反
 | 4A.0 | PromptSegment | 系统提示词分段拼装（MCP 工具描述膨胀的前置） | ✅ |
 | 4A.1 | MCP Client | Streamable HTTP 单端点；2026 现代格式 + legacy 握手降级；仅 tools | ✅ |
 | 4A.2 | 工具适配 + 请求级注册表 | 快照 → `ExecutableTool`；注册表按请求构建 | ✅ |
-| 4A.3 | MCP 管理界面 | 配置 / 探测 / 工具列表 / 启停 / 刷新 | ⬜ |
+| 4A.3 | MCP 管理界面 | 配置 / 探测 / 工具列表 / 启停 / 刷新 — `mcp_servers` 表 + `/api/mcp/servers` + `/mcp` 管理页；headers 脱敏、配额校验、刷新失败保留旧快照 | ✅ (2026-10-22) |
 | 4A.4 | 安全与可靠性 | SSRF、超时、结果截断、失败隔离、工具上限 | ⬜ |
 
 > **范围约束**：本期仅 `tools` 原语；不做 resources / prompts / MCP Apps / stdio / OAuth / 写操作审批。

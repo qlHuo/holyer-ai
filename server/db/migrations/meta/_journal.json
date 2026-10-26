@@ -29,6 +29,13 @@
       "when": 1789573059142,
       "tag": "0003_classy_vance_astro",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792598455012,
+      "tag": "0004_mcp_servers",
+      "breakpoints": true
     }
   ]
 }

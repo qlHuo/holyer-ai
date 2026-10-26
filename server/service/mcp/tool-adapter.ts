@@ -21,13 +21,18 @@ const MAX_RESULT_CHARS = 20_000
 
 const ALLOWED_TYPES = new Set(['object', 'array', 'string', 'number', 'integer', 'boolean'])
 
-/** 为一个 Server 的多个工具生成适配器；used 用于同请求内的名称冲突消解 */
+/**
+ * 为一个 Server 的多个工具生成适配器。
+ *
+ * used 由调用方在**所有 Server 之间共享**：不同 Server 可能生成相同的 slug__tool，
+ * 冲突时由 buildToolName 追加哈希后缀，避免 ToolRegistry.register 重名抛错。
+ */
 export function createMcpTools(
   server: McpServerConfig,
   snapshots: McpToolSnapshot[],
-  client: McpClient
+  client: McpClient,
+  used: Set<string> = new Set()
 ): ExecutableTool[] {
-  const used = new Set<string>()
   return snapshots.map(snapshot => createMcpTool(server, snapshot, client, used))
 }
 
@@ -53,7 +58,7 @@ function createMcpTool(
     },
     async execute(args: Record<string, unknown>, signal?: AbortSignal) {
       const result = await client.callTool(snapshot.name, args, signal)
-      const text = flattenContent(result.content)
+      const text = mergeStructuredContent(flattenContent(result.content), result.structuredContent)
 
       // 业务失败：抛给 runner 标记 success=false，同时把服务端文案回填给模型
       if (result.isError) {
@@ -248,6 +253,39 @@ function resolveRef(ref: string, root: Record<string, unknown>): unknown {
 // ─────────────────────────────────────────────
 // 结果拍平
 // ─────────────────────────────────────────────
+
+/**
+ * 部分 Server（如 Tomorrow.io 的 widget 型工具）把真实数据放在 structuredContent，
+ * content 里只有一句标题。此时只拍平 content 会让模型拿到空壳。
+ *
+ * 判定方式：content 文本很短（< 200 字符）且存在 structuredContent 时，
+ * 把结构化数据追加为 JSON。文本已经足够长时视为完整渲染，避免重复占用上下文。
+ */
+const PLACEHOLDER_TEXT_LIMIT = 200
+
+function mergeStructuredContent(text: string, structured: unknown): string {
+  const json = serializeStructured(structured)
+  if (!json || text.length >= PLACEHOLDER_TEXT_LIMIT) return text
+
+  const combined = text
+    ? `${text}\n\n[结构化数据]\n${json}`
+    : `[结构化数据]\n${json}`
+
+  return combined.length > MAX_RESULT_CHARS
+    ? `${combined.slice(0, MAX_RESULT_CHARS)}\n\n（结果过长，已截断）`
+    : combined
+}
+
+function serializeStructured(value: unknown): string {
+  if (value === undefined || value === null) return ''
+
+  try {
+    const json = JSON.stringify(value)
+    return json && json !== '{}' && json !== '[]' ? json : ''
+  } catch {
+    return ''
+  }
+}
 
 function flattenContent(content: McpContent[]): string {
   const parts: string[] = []

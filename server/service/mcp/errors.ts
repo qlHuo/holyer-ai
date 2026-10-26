@@ -23,3 +23,15 @@ export class McpToolError extends Error {
     this.name = 'McpToolError'
   }
 }
+
+/**
+ * 配置层拒绝（配额、slug 重复等）。
+ *
+ * 由 API 路由捕获并转成 400，避免把领域错误直接暴露给前端。
+ */
+export class McpConfigError extends Error {
+  constructor(readonly kind: 'limit' | 'duplicate', message: string) {
+    super(message)
+    this.name = 'McpConfigError'
+  }
+}
