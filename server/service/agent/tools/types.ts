@@ -10,6 +10,11 @@ export interface ExecutableTool {
   readonly permission: ToolPermission
   readonly parameters: Record<string, any>
   /**
+   * 是否参与 runner 的单轮结果缓存（默认 true）。
+   * 写操作、或结果随时间变化的工具应显式设为 false。
+   */
+  readonly cacheable?: boolean
+  /**
    * 执行工具
    * @param args   LLM 构造的参数（JSON.parse 后的对象）
    * @param signal 取消信号（客户端断开 + Agent 超时合并）

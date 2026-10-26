@@ -10,6 +10,8 @@
  */
 
 import type { AgentToolCallItem } from '~/types/agent'
+import type { AmapAction } from '~/utils/amap'
+import { amapToolMeta, resolveAmapAction } from '~/utils/amap'
 import { stripCitationTrailer } from '#shared/citation'
 
 const props = defineProps<{
@@ -22,6 +24,26 @@ const props = defineProps<{
  */
 function displayResult(result: string | undefined): string {
   return stripCitationTrailer(result)
+}
+
+// ---------------------------------------------------------------------------
+// 高德 schema 工具：结果本身就是唤端 URI，直接渲染成可点按钮
+// ---------------------------------------------------------------------------
+
+/** 已完成的高德 schema 工具 → 按钮数据（按 toolCall id 索引） */
+const mapActions = computed(() => {
+  const actions = new Map<string, AmapAction>()
+
+  for (const tc of props.toolCalls) {
+    const action = resolveAmapAction(tc.name, tc.status, tc.result)
+    if (action) actions.set(tc.id, action)
+  }
+
+  return actions
+})
+
+function actionFor(id: string): AmapAction | undefined {
+  return mapActions.value.get(id)
 }
 
 /** 工具元数据：中文标签 + Lucide 图标 */
@@ -39,7 +61,7 @@ const sectionCollapsed = ref(false)
 const expandedId = ref<string | null>(null)
 
 function toolMeta(name: string) {
-  return TOOL_META[name] ?? { label: name, icon: 'i-lucide-wrench' }
+  return TOOL_META[name] ?? amapToolMeta(name) ?? { label: name, icon: 'i-lucide-wrench' }
 }
 
 function toggleSection() {
@@ -179,6 +201,24 @@ const headerText = computed(() => {
             />
           </span>
         </button>
+
+        <!-- 高德 schema 工具：结果就是唤端 URI，直接给按钮，避免用户去 JSON 里复制 -->
+        <div
+          v-if="actionFor(tc.id)"
+          class="tool-card-action"
+        >
+          <UButton
+            size="xs"
+            color="primary"
+            variant="soft"
+            :icon="actionFor(tc.id)!.icon"
+            :href="actionFor(tc.id)!.url"
+            :target="actionFor(tc.id)!.external ? '_blank' : undefined"
+            rel="noopener noreferrer"
+          >
+            {{ actionFor(tc.id)!.label }}
+          </UButton>
+        </div>
 
         <!-- 展开详情：输入 + 输出 -->
         <div
@@ -332,6 +372,11 @@ const headerText = computed(() => {
   color: var(--ui-text-dimmed);
   opacity: 0.5;
   transition: transform var(--duration-base) var(--ease-out);
+}
+
+/* ==================== schema 唤端按钮 ==================== */
+.tool-card-action {
+  padding: 0 12px 9px;
 }
 
 /* ==================== 展开详情 ==================== */

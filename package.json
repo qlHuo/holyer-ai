@@ -9,7 +9,8 @@
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test:amap": "tsx scripts/test-amap-link.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",

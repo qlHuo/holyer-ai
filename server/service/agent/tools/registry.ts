@@ -26,5 +26,3 @@ export class ToolRegistry {
     return [...this.tools.values()]
   }
 }
-
-export const toolRegistry = new ToolRegistry()

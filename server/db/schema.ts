@@ -1,5 +1,6 @@
-import { pgTable, uuid, varchar, text, jsonb, timestamp, integer, index, vector, customType } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, text, jsonb, timestamp, integer, boolean, index, vector, customType } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
+import type { McpServerInfo, McpToolSnapshot } from '~~/shared/types/mcp'
 
 // 对话会话
 export const conversations = pgTable('conversations', {
@@ -98,3 +99,32 @@ export const chunks = pgTable('chunks', {
   kbIdx: index('idx_chunks_kb_id').on(table.kbId),
   tsvIdx: index('idx_chunks_content_tsv').using('gin', table.contentTsv)
 }))
+
+// ─────────────────────────────────────────────
+// MCP Server：配置 + 工具快照（单表 + JSONB）
+// ─────────────────────────────────────────────
+
+/**
+ * MCP Server 配置。
+ *
+ * 工具是 Server 的从属数据，无独立生命周期，因此用 JSONB 快照而不是独立表。
+ * 对话侧只读快照，不在聊天路径上做远程 tools/list。
+ * slug 创建后不可修改——它参与工具命名（slug__tool）。
+ */
+export const mcpServers = pgTable('mcp_servers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 100 }).notNull(),
+  slug: varchar('slug', { length: 20 }).notNull().unique(),
+  url: text('url').notNull(),
+  headers: jsonb('headers').$type<Record<string, string>>().default({}).notNull(),
+  enabled: boolean('enabled').default(false).notNull(),
+  protocolVersion: varchar('protocol_version', { length: 20 }),
+  serverInfo: jsonb('server_info').$type<McpServerInfo>(),
+  tools: jsonb('tools').$type<McpToolSnapshot[]>().default([]).notNull(),
+  disabledTools: jsonb('disabled_tools').$type<string[]>().default([]).notNull(),
+  toolsFetchedAt: timestamp('tools_fetched_at'),
+  lastCheckedAt: timestamp('last_checked_at'),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+})

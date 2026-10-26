@@ -98,6 +98,11 @@ function handleToRag() {
   navigateTo('/rag')
   emit('close')
 }
+function handleToMcp() {
+  chatStore.currentConvId = null
+  navigateTo('/mcp')
+  emit('close')
+}
 </script>
 
 <template>
@@ -150,6 +155,18 @@ function handleToRag() {
           class="w-4 h-4 shrink-0"
         />
         <span class="text-sm">知识库管理</span>
+      </div>
+      <div
+        class="flex items-center gap-2 mt-1 px-3 py-2 rounded-lg cursor-pointer
+               hover:bg-default text-dimmed transition-colors"
+        :class="{ 'bg-primary/10 text-primary!': route.path.startsWith('/mcp') }"
+        @click="handleToMcp"
+      >
+        <UIcon
+          name="i-lucide-plug"
+          class="w-4 h-4 shrink-0"
+        />
+        <span class="text-sm">MCP 工具</span>
       </div>
     </div>
     <!-- ═══════════════════════════════════════════ -->
